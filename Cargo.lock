@@ -473,18 +473,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pullatin-rust"
-version = "0.1.0"
-dependencies = [
- "csv",
- "image",
- "regex",
- "rust-ini",
- "serde",
- "serde_derive",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -540,6 +528,18 @@ checksum = "f6d5f2436026b4f6e79dc829837d467cc7e9a55ee40e750d716713540715a2df"
 dependencies = [
  "cfg-if",
  "ordered-multimap",
+]
+
+[[package]]
+name = "rusty-pullauta"
+version = "0.1.0"
+dependencies = [
+ "csv",
+ "image",
+ "regex",
+ "rust-ini",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]

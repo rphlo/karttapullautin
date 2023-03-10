@@ -4,3 +4,4 @@ temp*/
 *.las
 in/
 out/
+.DS_Store
