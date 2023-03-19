@@ -2172,7 +2172,7 @@ to the same folder as pullautin.exe \n ";
 ## 2m grid & controus 0.3
     print "\nKnoll detection part 1\n";
     system(
-"perl pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
+"rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
     );
  
 
@@ -2184,10 +2184,9 @@ to the same folder as pullautin.exe \n ";
     }
     close ULOS;
     close SISAAN;
-    
 	if($basemapcontours >0){
         print "\nBasemap contours\n";
-        system("perl pullauta $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
+        system("rusty-pullauta $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
     } 
     if(1*$Config->{_}->{skipknolldetection} != 1){
         ## detector
@@ -2200,12 +2199,10 @@ to the same folder as pullautin.exe \n ";
     if(1*$Config->{_}->{skipknolldetection} != 1){
     ## contours 2.5
         print "\nContour generation part 2\n";
-        system("perl pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
+        system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
     }else {
-        system("perl pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
+        system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
     }
-    exit;
-    # kayak
 
 ## smoothjoin
     print "\nContour generation part 3\n";
@@ -5123,7 +5120,7 @@ if ( $command eq 'xyz2contours' ) {
                         #$l = $l + $v;
                         #}
                     }
-
+                    #
                     # se oli abc-kolmio, seuraavana cdb
 
                     if ( $c < $d ) {
@@ -5216,12 +5213,10 @@ if ( $command eq 'xyz2contours' ) {
 
         #print "Number of objects ".$ob;
 
-        #cerf volant
         #####################
 
         #print "\n\nYhdist\E4\n";
         open( ULOS2, ">>" . $tempfolder . "temp_polylines.txt" );
-        continue;
         for ( $i = 0 ; $i < $ob ; $i++ ) {
 
             if ( $kayra{ $ka[$i] } ne "" ) {
@@ -5288,8 +5283,6 @@ if ( $command eq 'xyz2contours' ) {
         close(ULOS2);
 
     }
-    # canoe
-    exit;
 
 ##############
 
@@ -5328,15 +5321,14 @@ ENTITIES
         @data = split( /\;/, $reca );
 
         $i = 0;
-        foreach $rec (@data) {
-            $i++;
-            if ( $rec ne "" ) {
-
-                if ( $i > 5 && $i < $#data - 5 && $#data > 12 && $i % 2 == 0 ) {
-                    $rec = '';
-                }
-            }
-        }
+        #foreach $rec (@data) {
+        #    $i++;
+        #    if ( $rec ne "" ) {
+        #        if ( $i > 5 && $i < $#data - 5 && $#data > 12 && $i % 2 == 0 ) {
+        #            $rec = '';
+        #        }
+        #    }
+        #}
 
         print ULOS "POLYLINE
  66
@@ -10783,7 +10775,7 @@ sub drawshape {
 }
 
 sub kaksataa() {
-
+    #print "$x1,$y1,$x2,$y2\n";
     $x1 = floor( $x1 * 100 ) / 100;
     $x2 = floor( $x2 * 100 ) / 100;
     $y1 = floor( $y1 * 100 ) / 100;

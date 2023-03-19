@@ -6,9 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-csv = "1.2.1"
 image = "0.24.5"
 regex = "1"
 rust-ini = "0.18.0"
-serde = "1.0.154"
-serde_derive = "1.0.154"

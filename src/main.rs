@@ -9,14 +9,11 @@ use std::fs::File;
 use std::fs;
 use std::io::{self, BufRead};
 use image::io::Reader as ImageReader;
+use image::{ImageBuffer, RgbaImage};
 use std::process::Command;
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
-extern crate csv;
-extern crate serde;
-// This lets us write `#[derive(Deserialize)]`.
-#[macro_use]
-extern crate serde_derive;
+use std::collections::HashMap;
 
 
 fn main() {
@@ -114,6 +111,20 @@ fn main() {
         return();
     }
 
+    if command == "xyz2contours" {
+        println!("{}", args[1]);
+        let cinterval: f64 = args[0].parse::<f64>().unwrap();
+        let xyzfilein = args[1].clone();
+        let xyzfileout = args[2].clone();
+        let dxffile = args[3].clone();
+        let mut ground: bool = false;
+        if args.len() > 4 && args[4] == "ground" {
+            ground = true;
+        }
+        xyz2contours(&thread, cinterval, &xyzfilein, &xyzfileout, &dxffile, ground).unwrap();
+        return();
+    }
+
     fn batch_process(thread: &String) {
         println!("Pullauta thread started  {}", thread);
         let _thread_number = thread.parse::<u64>().unwrap_or(0);
@@ -186,15 +197,15 @@ fn main() {
         println!("Done");
         println!("Knoll detection part 1");
         let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-        xyz2countours(&thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "contours03.dxf", true).expect("countour generation failed");
-        
+        xyz2contours(&thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "contours03.dxf", true).expect("countour generation failed");
+        /*
         fs::copy(format!("{}/xyz_03.xyz", tmpfolder), format!("{}/xyz2.xyz", tmpfolder)).expect("Could not copy file");
         
         let basemapcontours: f64 = conf.general_section().get("basemapinterval").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
 
         if basemapcontours != 0.0 {
             println!("Basemap contours");
-            xyz2countours(&thread, basemapcontours, "xyz2.xyz", "", "basemap.dxf", false).expect("countour generation failed");
+            xyz2contours(&thread, basemapcontours, "xyz2.xyz", "", "basemap.dxf", false).expect("countour generation failed");
         }
         
         if conf.general_section().get("skipknolldetection").unwrap_or("0") == "1" {
@@ -208,22 +219,23 @@ fn main() {
         if conf.general_section().get("skipknolldetection").unwrap_or("0") == "1" {
             // contours 2.5
             println!("Contour generation part 2");
-            xyz2countours(&thread, 2.5 * scalefactor, "xyz_knolls.xyz", "", "out.dxf", false).expect("countour generation failed");
+            xyz2contours(&thread, 2.5 * scalefactor, "xyz_knolls.xyz", "", "out.dxf", false).expect("countour generation failed");
         } else {
-            xyz2countours(&thread, basemapcontours, "xyztemp.xyz", "", "out.dxf", true).expect("countour generation failed");
+            xyz2contours(&thread, basemapcontours, "xyztemp.xyz", "", "out.dxf", true).expect("countour generation failed");
         }
+        */
         println!("Not implemented further");
     }
 }
 
 
-fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &str, dxffile: &str, ground: bool) -> Result<(), Box<dyn Error>> {
-    println!("Running xyz2countours {} {} {} {} {} {}", thread, cinterval, xyzfilein, xyzfileout, dxffile, ground);
+fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &str, dxffile: &str, ground: bool) -> Result<(), Box<dyn Error>> {
+    println!("Running xyz2contours {} {} {} {} {} {}", thread, cinterval, xyzfilein, xyzfileout, dxffile, ground);
     println!(".");
 
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-    let water_class: u32 = conf.general_section().get("waterclass").unwrap_or("9").parse::<u32>().unwrap_or(9);
+    let water_class = conf.general_section().get("waterclass").unwrap_or("9");
 
     let tmpfolder = format!("temp{}", thread);
 
@@ -238,47 +250,38 @@ fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &
     
     let xyz_file_in = format!("{}/{}", tmpfolder, xyzfilein);
     
-    #[derive(Debug, Deserialize)]
-    struct XYZCRecord {
-        x: f64,
-        y: f64,
-        h: f64,
-        c: u32,
-        _x: u32,
-        _y: u32,
-        _z: u32
-    }
-
-    let mut rdr = csv::ReaderBuilder::new().delimiter(b' ').has_headers(false).from_path(&xyz_file_in)?;
-    let mut iter = rdr.deserialize();
-    while let Some(result) = iter.next() {
-        let r: XYZCRecord = result.unwrap();
-        if r.c == 2 || r.c == water_class || !ground {
-            let x = r.x;
-            let y = r.y;
-            let h = r.h;
-            if xmin > x {
-                xmin = x;
-            }
-            
-            if xmax < x {
-                xmax = x;
-            }
-            
-            if ymin > y {
-                ymin = y;
-            }
-            
-            if ymax < y {
-                ymax = y;
-            }
-            
-            if hmin > h {
-                hmin = h;
-            } 
-            
-            if hmax < h {
-                hmax = h;
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            if (r.len() > 3 && (r[3] == "2" || r[3] == water_class)) || !ground {
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                let h: f64 = r[2].parse::<f64>().unwrap();
+                if xmin > x {
+                    xmin = x;
+                }
+                
+                if xmax < x {
+                    xmax = x;
+                }
+                
+                if ymin > y {
+                    ymin = y;
+                }
+                
+                if ymax < y {
+                    ymax = y;
+                }
+                
+                if hmin > h {
+                    hmin = h;
+                } 
+                
+                if hmax < h {
+                    hmax = h;
+                }
             }
         }
     }
@@ -288,19 +291,23 @@ fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &
 
     let w: usize = ((xmax - xmin).ceil() / 2.0 / scalefactor) as usize;
     let h: usize = ((ymax - ymin).ceil() / 2.0 / scalefactor) as usize;
-    
-    println!("{} {}", w, h);
 
-    let mut list_alt = vec![vec![Vec::new(); w + 1]; h + 1];
-    let mut rdr2 = csv::ReaderBuilder::new().delimiter(b' ').has_headers(false).from_path(&xyz_file_in)?;
-    let mut iter2 = rdr2.deserialize();
-    while let Some(result) = iter2.next() {
-        let r: XYZCRecord = result.unwrap();
-        if r.c == 2 || r.c == water_class || !ground {
-            list_alt[((r.x - xmin).floor() / 2.0 / scalefactor) as usize][((r.y - ymin).floor() / 2.0 / scalefactor) as usize].push(r.h);
+    let mut list_alt = vec![vec![Vec::new(); h + 1]; w + 1];
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            if (r.len() > 3 && (r[3] == "2" || r[3] == water_class)) || !ground {
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                let h: f64 = r[2].parse::<f64>().unwrap();
+
+                list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize][((y - ymin).floor() / 2.0 / scalefactor) as usize].push(h);
+            }
         }
     }
-    let mut avg_alt = vec![vec![f64::NAN; w + 1]; h + 1];
+    let mut avg_alt = vec![vec![f64::NAN; h + 1]; w + 1];
 
     for x in 0..w {
         for y in 0..h {
@@ -309,10 +316,6 @@ fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &
             }
         }
     }
-
-    let count: u32 = 0;
-    let count2: u32 = 0;
-    let row: u32 = 0;
 
     for x in 0..w {
         for y in 0..h {
@@ -362,17 +365,16 @@ fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &
         }
     }
 
-
     for x in 0..w {
         for y in 0..h {
             if avg_alt[x][y].is_nan() {
                 // second round of interpolation of altitude of pixel
                 let mut val: f64 = 0.0;
-                let mut c   = 0;
+                let mut c = 0;
                 for i in 0..3 {
-                    let ii: i32 = i - 1;
+                    let ii: i32 = i as i32 - 1;
                     for j in 0..3 {
-                        let jj: i32 = j - 1;
+                        let jj: i32 = j as i32 - 1;
                         if y as i32 + jj > 0 && x as i32 + ii > 0 {
                             let x_idx = (x as i32 + ii) as usize;
                             let y_idx = (y as i32 + jj) as usize;
@@ -398,11 +400,11 @@ fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &
         }
         for y in 1..h {
             let yy = h - y;
-            if avg_alt[x][h].is_nan() { 
-                avg_alt[x][y] = avg_alt[x][yy + 1]; 
+            if avg_alt[x][yy].is_nan() {
+                println!("{}", yy);
+                avg_alt[x][yy] = avg_alt[x][yy + 1]; 
             }
         }
-
     }
 
     xmin += 1.0;
@@ -422,19 +424,22 @@ fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &
                 avg_alt[x][y] = ele;
             }
         }
-    }
-    if xyzfileout != "" {
+    }      
+    
+    if xyzfileout != "" && xyzfileout != "null" {
         let xyz_file_out = format!("{}/{}", tmpfolder, xyzfileout);
         let f = File::create(&xyz_file_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
         for x in 0..w {
             for y in 0..h {
                 let ele = avg_alt[x][y];
+                let xx = x as f64 * 2.0 * scalefactor + xmin as f64;
+                let yy = y as f64 * 2.0 * scalefactor + ymin as f64;
                 f.write(
                     format!(
                         "{} {} {}\n",
-                        x as f64 * 2.0 * scalefactor + xmin,
-                        y as f64 * 2.0 * scalefactor + ymin,
+                        xx,
+                        yy,
                         ele
                     ).as_bytes()
                 ).expect("Cannot write to output file");
@@ -449,6 +454,11 @@ fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &
     let total: f64 = (hmax - hmin) / v;
     let mut level: f64 = (hmin / v).floor() * v;
     let polyline_out = format!("{}/temp_polylines.txt", tmpfolder);
+
+    let f = File::create(&polyline_out).expect("Unable to create file");
+    let mut f = BufWriter::new(f);
+    f.write(b"").expect("Unable to create file");
+
     while level < hmax {
         level += v;
         progress += 1.0;
@@ -456,27 +466,313 @@ fn xyz2countours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &
             progprev = (progress / total * 18.0).floor();
             println!("Generating temp polylines: {}%", (progress / total * 100.0).floor() as u32);
         }
-        let obj = Vec::<String>::new();
-
+        let mut obj = Vec::<String>::new();
+        let mut curves: HashMap<String, String> = HashMap::new();
         for i in 0..w-1 {
             for j in 0..h-1 {
-                let a = avg_alt[i][j];
-                let b = avg_alt[i][j + 1];
-                let c = avg_alt[i + 1][j];
-                let d = avg_alt[i + 1][j + 1];
-                if a < level && b < level && c < level && d < level || a > level && b > level && c > level && d > level {
+                let mut a = avg_alt[i][j];
+                let mut b = avg_alt[i][j + 1];
+                let mut c = avg_alt[i + 1][j];
+                let mut d = avg_alt[i + 1][j + 1];
+                if a < level && b < level && c < level && d < level
+                || a > level && b > level && c > level && d > level {
                     // skip
                 } else {
+                    let temp: f64 = (a / v + 0.5).floor() * v;
+                    if  (a - temp).abs() < 0.05 {
+                        if a - temp < 0.0 {
+                            a = temp - 0.05;
+                        } else {
+                            a = temp + 0.05;
+                        }
+                    }
 
+                    let temp: f64 = (b / v + 0.5).floor() * v;
+                    if  (b - temp).abs() < 0.05 {
+                        if b - temp < 0.0 {
+                            b = temp - 0.05;
+                        } else {
+                            b = temp + 0.05;
+                        }
+                    }
+
+                    let temp: f64 = (c / v + 0.5).floor() * v;
+                    if  (c - temp).abs() < 0.05 {
+                        if c - temp < 0.0 {
+                            c = temp - 0.05;
+                        } else {
+                            c = temp + 0.05;
+                        }
+                    }
+
+                    let temp: f64 = (d / v + 0.5).floor() * v;
+                    if  (d - temp).abs() < 0.05 {
+                        if d - temp < 0.0 {
+                            d = temp - 0.05;
+                        } else {
+                            d = temp + 0.05;
+                        }
+                    }
+
+                    if a < b {
+                        if level < b && level > a {
+                            let x1: f64 = i as f64;
+                            let y1: f64 = j as f64 + (level - a) / (b - a);
+                            if level > c {
+                                let x2: f64 = i as f64 + (b - level) / (b - c);
+                                let y2: f64 = j as f64 + (level - c) / (b - c);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            } else if level < c {
+                                let x2: f64 = i as f64 + (level - a) / (c - a);
+                                let y2: f64 = j as f64;
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            }
+                        }
+                    }
+                    else if b < a {
+                        if level < a && level > b {
+                            let x1: f64 = i as f64;
+                            let y1: f64 = j as f64 + (a - level) / (a - b);
+                            if level < c {
+                                let x2: f64 = i as f64 + (level - b) / (c - b);
+                                let y2: f64 = j as f64 + (c - level) / (c - b);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            } else if level > c {
+                                let x2: f64 = i as f64 + (a - level) / (a - c);
+                                let y2: f64 = j as f64;
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            }
+                        }
+                    }
+
+                    if a < c {
+                        if level < c && level > a {
+                            let x1: f64 = i as f64 + (level - a) / (c - a);
+                            let y1: f64 = j as f64;
+                            if level > b {
+                                let x2: f64 = i as f64 + (level - b) / (c - b);
+                                let y2: f64 = j as f64 + (c - level) / (c - b);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            }
+                        }
+                    } else if a > c {
+                        if level < a && level > c {
+                            let x1: f64 = i as f64 + (a - level) / (a - c);
+                            let y1: f64 = j as f64;
+                            if level < b {
+                                let x2: f64 = i as f64 + (b - level) / (b - c);
+                                let y2: f64 = j as f64 + (level - c) / (b - c);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            }
+                        }
+                    }
+
+                    if c < d {
+                        if level < d && level > c {
+                            let x1: f64 = i as f64 + 1.0;
+                            let y1: f64 = j as f64 + (level - c) / (d - c);
+                            if level < b {
+                                let x2: f64 = i as f64 + (b - level) / (b - c);
+                                let y2: f64 = j as f64 + (level - c) / (b - c);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            } else if level > b {
+                                let x2: f64 = i as f64 + (level - b) / (d - b);
+                                let y2: f64 = j as f64 + 1.0;
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            }
+                        }
+                    } else if c > d {
+                        if level < c && level > d {
+                            let x1: f64 = i as f64 + 1.0;
+                            let y1: f64 = j as f64 + (c - level) / (c - d);
+                            if level > b {
+                                let x2: f64 = i as f64 + (level - b) / (c - b);
+                                let y2: f64 = j as f64 + (c - level) / (c - b);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            } else if level < b {
+                                let x2: f64 = i as f64 + (b - level) / (b - d);
+                                let y2: f64 = j as f64 + 1.0;
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            }
+                        }
+                    }
+
+                    if d < b {
+                        if level < b && level > d {
+                            let x1: f64 = i as f64 + (b - level) / (b - d);
+                            let y1: f64 = j as f64 + 1.0;
+                            if level > c {
+                                let x2: f64 = i as f64 + (b - level) / (b - c);
+                                let y2: f64 = j as f64 + (level - c) / (b - c);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            }
+                        }
+                    } else if d > b {
+                        if level < d && level > b {
+                            let x1: f64 = i as f64 + (level - b) / (d - b);
+                            let y1: f64 = j as f64 + 1.0;
+                            if level < c {
+                                let x2: f64 = i as f64 + (level - b) / (c - b);
+                                let y2: f64 = j as f64 + (c - level) / (c - b);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            }
+                        }
+                    }
                 }
             }
         }
-        let f = OpenOptions::new().create(true).append(true).open(&polyline_out).expect("Unable to create file");
-        let mut f = BufWriter::new(f);
-        f.write(format!("Content comming: level {}\n", level).as_bytes()).expect("Cannot write to output file");
-    }
 
-    println!("Not implemented futher");
+        let f = OpenOptions::new().append(true).open(&polyline_out).expect("Unable to create file");
+        let mut f = BufWriter::new(f);
+
+        for k in obj.iter() {
+            if curves.contains_key(k) {
+                let separator = "_".to_string();
+                let parts = k.split(&separator);
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
+                let mut res = format!("{}_{}", x, y);
+
+                let parts = curves.get(&k.clone()).unwrap().split(&separator);
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
+                curves.remove(&k.clone());
+                
+                let mut head = format!("{}_{}", x, y);
+                if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
+                    curves.remove(&format!("{}_1", head));
+                }
+                if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res {
+                    curves.remove(&format!("{}_2", head));
+                }
+                loop {
+                    if curves.contains_key(&format!("{}_1", head))
+                    && curves.get(&format!("{}_1", head)).unwrap() != &res {
+                        res = head.clone();
+
+                        let parts = curves.get(&format!("{}_1", head)).unwrap().split(&separator);
+                        let r = parts.collect::<Vec<&str>>();
+                        let x: f64 = r[0].parse::<f64>().unwrap();
+                        let y: f64 = r[1].parse::<f64>().unwrap();
+                        f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
+                        curves.remove(&format!("{}_1", head));
+
+                        head = format!("{}_{}", x, y);
+                        if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
+                            curves.remove(&format!("{}_1", head));
+                        }
+                        if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res {
+                            curves.remove(&format!("{}_2", head));
+                        }
+                    } else {
+                        if curves.contains_key(&format!("{}_2", head))
+                        && curves.get(&format!("{}_2", head)).unwrap() != &res {
+                            res = head.clone();
+
+                            let parts = curves.get(&format!("{}_2", head)).unwrap().split(&separator);
+                            let r = parts.collect::<Vec<&str>>();
+                            let x: f64 = r[0].parse::<f64>().unwrap();
+                            let y: f64 = r[1].parse::<f64>().unwrap();
+                            f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
+                            curves.remove(&format!("{}_2", head));
+
+                            head = format!("{}_{}", x, y);
+                            if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
+                                curves.remove(&format!("{}_1", head));
+                            }
+                            if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res {
+                                curves.remove(&format!("{}_2", head));
+                            }
+                        } else {
+                            f.write("\n".as_bytes()).expect("Cannot write to output file");
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        f.flush().expect("Cannot flush");
+    }
+    let f = File::create(&format!("{}/{}", tmpfolder, dxffile)).expect("Unable to create file");
+    let mut f = BufWriter::new(f);
+
+    f.write(format!("  0
+SECTION
+  2
+HEADER
+  9
+$EXTMIN
+ 10
+{}
+ 20
+{}
+  9
+$EXTMAX
+ 10
+{}
+ 20
+{}
+  0
+ENDSEC
+  0
+SECTION
+  2
+ENTITIES
+  0
+", xmin, ymin, xmax, ymax).as_bytes()).expect("Cannot write dxf file");
+
+    if let Ok(lines) = read_lines(&polyline_out) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(";");
+            let r = parts.collect::<Vec<&str>>();   
+            /*
+            for (i, d) in r.iter().enumerate() {
+                if d != "" {
+                    if i > 5 && i < r.len() - 4 && r.len() + 1 > 12 && i % 2 == 0 {
+                        d
+                    }
+                }
+            }
+            */
+            f.write("POLYLINE
+ 66
+1
+  8
+cont
+  0
+".as_bytes()).expect("Cannot write dxf file");
+            for d in r.iter() {
+                if d != &"" {
+                    let xy_raw = d.split(",");
+                    let xy = xy_raw.collect::<Vec<&str>>();
+                    let x: f64 = xy[0].parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
+                    let y: f64 = xy[1].parse::<f64>().unwrap() * 2.0 * scalefactor + ymin;
+                    f.write(format!("VERTEX
+  8
+cont
+ 10
+{}
+ 20
+{}
+  0
+", x, y).as_bytes()).expect("Cannot write dxf file");
+                }
+            }
+            f.write("SEQEND
+  0
+".as_bytes()).expect("Cannot write dxf file");
+        }
+        f.write("ENDSEC
+  0
+EOF
+".as_bytes()).expect("Cannot write dxf file");
+        println!("Done");
+    }
     Ok(())
 }
 
@@ -495,9 +791,32 @@ fn average(numbers: &Vec<f64>) -> f64 {
     sum / numbers.len() as f64 
 }
 
-fn check_obj_in (obj: &Vec<String>, x1: f64, x2: f64, y1: f64, y2: f64) {
+fn check_obj_in (obj: &mut Vec<String>, curves: &mut HashMap<String, String>, x1: f64, x2: f64, y1: f64, y2: f64) {
+    //println!("{},{},{},{}", x1, y1, x2, y2);
     let x1 = (x1 * 100.0).floor() / 100.0;
-    let x2 = (x1 * 100.0).floor() / 100.0;
-    let y1 = (x1 * 100.0).floor() / 100.0;
-    let y2 = (x1 * 100.0).floor() / 100.0;
+    let x2 = (x2 * 100.0).floor() / 100.0;
+    let y1 = (y1 * 100.0).floor() / 100.0;
+    let y2 = (y2 * 100.0).floor() / 100.0;
+    if x1 == x2 && y1 == y2 {
+
+    } else {
+        let mut key: String = format!("{}_{}_1", x1, y1);
+        if !curves.contains_key(&key) {
+            curves.insert(key.clone(), format!("{}_{}", x2, y2));
+            obj.push(key.clone());
+        } else {
+            key = format!("{}_{}_2", x1, y1);
+            curves.insert(key.clone(), format!("{}_{}", x2, y2));
+            obj.push(key.clone());
+        }
+        key = format!("{}_{}_1", x2, y2);
+        if !curves.contains_key(&key) {
+            curves.insert(key.clone(), format!("{}_{}", x1, y1));
+            obj.push(key.clone());
+        } else {
+            key = format!("{}_{}_2", x2, y2);
+            curves.insert(key.clone(), format!("{}_{}", x1, y1));
+            obj.push(key.clone());
+        }
+    }
 }
