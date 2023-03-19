@@ -10,7 +10,7 @@ To use run:
 
 Then add the binary to your $PATH for example:
 
-`cp target/release/rusty-pullauta /usr/local/bin`
+`cp target/release/rusty-pullauta /usr/local/bin/`
 
 Finally run the perl script as usual, it will invoke the rust binary when posible, eg: 
 
