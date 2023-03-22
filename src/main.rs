@@ -126,22 +126,30 @@ fn main() {
     }
 
     fn batch_process(thread: &String) {
-        println!("Pullauta thread started  {}", thread);
-        let _thread_number = thread.parse::<u64>().unwrap_or(0);
-        println!("Not implemented further");
+        let out = Command::new("perl")
+                    .arg("pullauta")
+                    .arg("startthread")
+                    .arg(thread)
+                    .output();
+        // let _thread_number = thread.parse::<u64>().unwrap_or(0);
+        // println!("Not implemented further");
         return();
     }
 
     let proc: u64 = conf.general_section().get("processes").unwrap().parse::<u64>().unwrap();
     if command == "" && batch && proc > 1 {
-        let handle = thread::spawn(move || {
-          for i in 0..proc {
+        let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
+        for i in 0..proc {
+            let handle = thread::spawn(move || {
                 println!("Starting thread {}", i + 1);
-                batch_process(&format!("{}", i + 1)); 
-                thread::sleep(time::Duration::from_millis(100));
-            }
-        });
-        handle.join().unwrap();
+                batch_process(&format!("{}", i + 1));     
+            });
+            thread::sleep(time::Duration::from_millis(100));
+            handles.push(handle);
+        }
+        for handle in handles {
+            handle.join().unwrap();
+        }
         return();
     }
 

@@ -1603,12 +1603,7 @@ $ymax
 }
 
 if ( $command eq '' && $batch == 1 && $proc > 1 ) {
-    
-    for ( $i = 1 ; $i < $proc + 1 ; $i++ ) {
-        
-        # start independent shell window
-        system("gnome-terminal -- perl pullauta startthread $i");
-    }
+    system("rusty-pullauta");
     exit;
 }
 
@@ -1625,7 +1620,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
     mkdir $batchoutfolder;
 
     unlink "ziplist$thread.txt";
-    system( 'dir ' . $lazfolder . '*.zip /b > ziplist' . $thread . '.txt' );
+    system( 'ls -1 ' . $lazfolder . '*.zip /b > ziplist' . $thread . '.txt' );
 
     open( SISAAN, "<ziplist" . $thread . ".txt" );
     @ziplist = <SISAAN>;
@@ -1642,7 +1637,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
     unlink "lazlist$thread.txt";
 
     print "\ndir \*.laz\n";
-    system( 'dir ' . $lazfolder . '*.laz /b > lazlist' . $thread . '.txt' );
+    system( 'ls -1 ' . $lazfolder . '*.laz > lazlist' . $thread . '.txt' );
 
     open( SISAAN, "<lazlist$thread.txt" );
     @lazlist = <SISAAN>;
@@ -1800,19 +1795,19 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 
             #print "filecopy ";
 
-            system( "\\cp pullautus$thread.png "
+            system( "cp pullautus$thread.png "
                   . $batchoutfolderwin . "/"
                   . $laz
                   . '.png' );
-            system( "\\cp pullautus$thread.pgw "
+            system( "cp pullautus$thread.pgw "
                   . $batchoutfolderwin . "/"
                   . $laz
                   . '.pgw' );
-            system( "\\cp pullautus_depr$thread.png "
+            system( "cp pullautus_depr$thread.png "
                   . $batchoutfolderwin . "/"
                   . $laz
                   . '_depr.png' );
-            system( "\\cp pullautus_depr$thread.pgw "
+            system( "cp pullautus_depr$thread.pgw "
                   . $batchoutfolderwin . "/"
                   . $laz
                   . '_depr.pgw' );
@@ -2007,7 +2002,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 			
             if ( $savetempfolders == 1 ) {
                 system "mkdir \"temp_" . $laz . "_dir\"";
-                system "\\cp temp$thread/\*\.\* \"temp_" . $laz
+                system "cp temp$thread/\*\.\* \"temp_" . $laz
                   . "_dir/\"";
             }
 
@@ -7702,11 +7697,9 @@ $fooy=floor( ( $yave - $ystart ) / $size );
                 }
                 if ( $x[0] == $x[$#x] && $y[0] == $y[$#x] ) {
                     $xa[0] =
-                      ( $x[1] + $x[0] / ( 0.01 + $smoothing ) + $x[ $#x - 1 ] )
-                      / ( 2 + 1 / ( 0.01 + $smoothing ) );
+                      ( $x[1] + $x[0] / ( 0.01 + $smoothing ) + $x[ $#x - 1 ] ) / ( 2 + 1 / ( 0.01 + $smoothing ) );
                     $ya[0] =
-                      ( $y[1] + $y[0] / ( 0.01 + $smoothing ) + $y[ $#x - 1 ] )
-                      / ( 2 + 1 / ( 0.01 + $smoothing ) );
+                      ( $y[1] + $y[0] / ( 0.01 + $smoothing ) + $y[ $#x - 1 ] ) / ( 2 + 1 / ( 0.01 + $smoothing ) );
                     $xa[$#x] = $xa[0];
                     $ya[$#x] = $ya[0];
                 }
