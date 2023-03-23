@@ -300,7 +300,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
     let w: usize = ((xmax - xmin).ceil() / 2.0 / scalefactor) as usize;
     let h: usize = ((ymax - ymin).ceil() / 2.0 / scalefactor) as usize;
 
-    let mut list_alt = vec![vec![Vec::new(); h + 1]; w + 1];
+    let mut list_alt = vec![vec![Vec::new(); h + 2]; w + 2];
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
@@ -315,18 +315,18 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             }
         }
     }
-    let mut avg_alt = vec![vec![f64::NAN; h + 1]; w + 1];
+    let mut avg_alt = vec![vec![f64::NAN; h + 2]; w + 2];
 
-    for x in 0..w {
-        for y in 0..h {
+    for x in 0..w+1 {
+        for y in 0..h+1 {
             if !list_alt[x][y].is_empty() {
                 avg_alt[x][y] = average(&list_alt[x][y]);
             }
         }
     }
 
-    for x in 0..w {
-        for y in 0..h {
+    for x in 0..w+1 {
+        for y in 0..h+1 {
             if avg_alt[x][y].is_nan() {
                 // interpolate altitude of pixel
                 // Todo: optimize to first clasify area then assign values
@@ -373,8 +373,8 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
         }
     }
 
-    for x in 0..w {
-        for y in 0..h {
+    for x in 0..w+1 {
+        for y in 0..h+1 {
             if avg_alt[x][y].is_nan() {
                 // second round of interpolation of altitude of pixel
                 let mut val: f64 = 0.0;
@@ -400,17 +400,16 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
         }
     }
 
-    for x in 0..w {
-        for y in 1..h {
+    for x in 0..w+1 {
+        for y in 1..h+1 {
             if avg_alt[x][y].is_nan() { 
                 avg_alt[x][y] = avg_alt[x][y - 1]; 
             }
         }
-        for y in 1..h {
-            let yy = h - y;
-            if avg_alt[x][yy].is_nan() {
-                println!("{}", yy);
-                avg_alt[x][yy] = avg_alt[x][yy + 1]; 
+        for yy in 1..h+1 {
+            let y = h - yy;
+            if avg_alt[x][y].is_nan() {
+                avg_alt[x][y] = avg_alt[x][y + 1];
             }
         }
     }
@@ -418,8 +417,8 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
     xmin += 1.0;
     ymin += 1.0;
 
-    for x in 0..w {
-        for y in 0..h {
+    for x in 0..w+1 {
+        for y in 0..h+1 {
             let mut ele = avg_alt[x][y];
             let temp: f64 = (ele / cinterval + 0.5).floor() * cinterval;
             if (ele - temp).abs() < 0.02 {
@@ -432,14 +431,14 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
                 avg_alt[x][y] = ele;
             }
         }
-    }      
+    }
     
     if xyzfileout != "" && xyzfileout != "null" {
         let xyz_file_out = format!("{}/{}", tmpfolder, xyzfileout);
         let f = File::create(&xyz_file_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
-        for x in 0..w {
-            for y in 0..h {
+        for x in 0..w+1 {
+            for y in 0..h+1 {
                 let ele = avg_alt[x][y];
                 let xx = x as f64 * 2.0 * scalefactor + xmin as f64;
                 let yy = y as f64 * 2.0 * scalefactor + ymin as f64;
@@ -467,8 +466,10 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
     let mut f = BufWriter::new(f);
     f.write(b"").expect("Unable to create file");
 
-    while level < hmax {
-        level += v;
+    loop {
+        if level >= hmax {
+            break
+        }
         progress += 1.0;
         if (progress / total * 18.0).floor() > progprev {
             progprev = (progress / total * 18.0).floor();
@@ -476,14 +477,16 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
         }
         let mut obj = Vec::<String>::new();
         let mut curves: HashMap<String, String> = HashMap::new();
-        for i in 0..w-1 {
-            for j in 0..h-1 {
+
+        for i in 1..((xmax - xmin) / 2.0 / scalefactor - 1.0) as usize {
+            for j in 2..((ymax - ymin) / 2.0 / scalefactor - 1.0) as usize {
                 let mut a = avg_alt[i][j];
                 let mut b = avg_alt[i][j + 1];
                 let mut c = avg_alt[i + 1][j];
                 let mut d = avg_alt[i + 1][j + 1];
-                if a < level && b < level && c < level && d < level
-                || a > level && b > level && c > level && d > level {
+                
+                if (a < level && b < level && c < level && d < level)
+                || (a > level && b > level && c > level && d > level) {
                     // skip
                 } else {
                     let temp: f64 = (a / v + 0.5).floor() * v;
@@ -536,8 +539,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
                                 check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                             }
                         }
-                    }
-                    else if b < a {
+                    } else if b < a {
                         if level < a && level > b {
                             let x1: f64 = i as f64;
                             let y1: f64 = j as f64 + (a - level) / (a - b);
@@ -615,7 +617,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
                                 check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                             }
                         }
-                    } else if d > b {
+                    } else if b < d {
                         if level < d && level > b {
                             let x1: f64 = i as f64 + (level - b) / (d - b);
                             let y1: f64 = j as f64 + 1.0;
@@ -704,6 +706,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             }
         }
         f.flush().expect("Cannot flush");
+        level += v;
     }
     let f = File::create(&format!("{}/{}", tmpfolder, dxffile)).expect("Unable to create file");
     let mut f = BufWriter::new(f);

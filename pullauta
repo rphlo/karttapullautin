@@ -4768,8 +4768,8 @@ if ( $command eq 'xyz2contours' ) {
     $xmin = floor( $xmin / 2 /$scalefactor) * 2*$scalefactor;
     $ymin = floor( $ymin / 2 /$scalefactor) * 2*$scalefactor;
 
-    $w = floor( $xmax - $xmin ) / 2/$scalefactor;
-    $h = floor( $ymax - $ymin ) / 2/$scalefactor;
+    $w = floor( $xmax - $xmin ) / 2 / $scalefactor;
+    $h = floor( $ymax - $ymin ) / 2 / $scalefactor;
 
     open( SISAAN, "<" . $tempfolder . "$xyzfilein" );
 
@@ -4872,7 +4872,6 @@ if ( $command eq 'xyz2contours' ) {
         }
 
     }
-
 ###
     for ( $x = 0 ; $x < $w + 1 ; $x++ ) {
 
@@ -4924,7 +4923,7 @@ if ( $command eq 'xyz2contours' ) {
             $ele = $m[$x][$y];
             $temp = ( floor( ( $ele / $cinterval + 0.5 ) ) * $cinterval );
             if ( abs( $ele - $temp ) < 0.02 ) {
-                if ( $$ele - $temp < 0 ) {
+                if ( $ele - $temp < 0 ) {
                     $ele = $temp - 0.02;
                 }
                 else {
@@ -4973,8 +4972,6 @@ if ( $command eq 'xyz2contours' ) {
         undef %kayra;
         undef @ka;
 
-        #print " $l \n";
-
         for ( $i = 1 ; $i < $w - 1 ; $i++ ) {
 
             for ( $j = 2 ; $j < $h - 1 ; $j++ ) {
@@ -4984,7 +4981,7 @@ if ( $command eq 'xyz2contours' ) {
                 $b = 1 * ( $m[$i][ $j + 1 ] );
                 $c = 1 * ( $m[ $i + 1 ][$j] );
                 $d = 1 * ( $m[ $i + 1 ][ $j + 1 ] );
-
+                
                 if (   $a < $l && $b < $l && $c < $l && $d < $l
                     || $a > $l && $b > $l && $c > $l && $d > $l )
                 {
@@ -4992,7 +4989,6 @@ if ( $command eq 'xyz2contours' ) {
                     # skip
                 }
                 else {
-
                     $temp = ( floor( ( $a / $v + 0.5 ) ) * $v );
                     if ( abs( $a - $temp ) < 0.05 ) {
                         if ( $a - $temp < 0 ) {
@@ -5212,6 +5208,7 @@ if ( $command eq 'xyz2contours' ) {
 
         #print "\n\nYhdist\E4\n";
         open( ULOS2, ">>" . $tempfolder . "temp_polylines.txt" );
+
         for ( $i = 0 ; $i < $ob ; $i++ ) {
 
             if ( $kayra{ $ka[$i] } ne "" ) {
