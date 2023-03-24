@@ -2179,7 +2179,7 @@ to the same folder as pullautin.exe \n ";
     }
     close ULOS;
     close SISAAN;
-	if($basemapcontours >0){
+	if($basemapcontours > 0){
         print "\nBasemap contours\n";
         system("rusty-pullauta $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
     } 
@@ -2198,7 +2198,6 @@ to the same folder as pullautin.exe \n ";
     }else {
         system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
     }
-
 ## smoothjoin
     print "\nContour generation part 3\n";
     system("perl pullauta $thread smoothjoin");
@@ -5313,14 +5312,14 @@ ENTITIES
         @data = split( /\;/, $reca );
 
         $i = 0;
-        #foreach $rec (@data) {
-        #    $i++;
-        #    if ( $rec ne "" ) {
-        #        if ( $i > 5 && $i < $#data - 5 && $#data > 12 && $i % 2 == 0 ) {
-        #            $rec = '';
-        #        }
-        #    }
-        #}
+        foreach $rec (@data) {
+            $i++;
+            if ( $rec ne "" ) {
+                if ( $i > 5 && $i < $#data - 5 && $#data > 12 && $i % 2 == 0 ) {
+                    $rec = '';
+                }
+            }
+        }
 
         print ULOS "POLYLINE
  66

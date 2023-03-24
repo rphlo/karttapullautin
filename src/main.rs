@@ -369,6 +369,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
                 } else if !val2.is_nan() {
                     avg_alt[x][y] = val2;
                 }
+                
             }
         }
     }
@@ -383,10 +384,10 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
                     let ii: i32 = i as i32 - 1;
                     for j in 0..3 {
                         let jj: i32 = j as i32 - 1;
-                        if y as i32 + jj > 0 && x as i32 + ii > 0 {
+                        if y as i32 + jj >= 0 && x as i32 + ii >= 0 {
                             let x_idx = (x as i32 + ii) as usize;
                             let y_idx = (y as i32 + jj) as usize;
-                            if x_idx < w && y_idx < h && !avg_alt[x_idx][y_idx].is_nan() {
+                            if x_idx <= w && y_idx <= h && !avg_alt[x_idx][y_idx].is_nan() {
                                 c += 1;
                                 val += avg_alt[x_idx][y_idx];
                             }
@@ -422,7 +423,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             let mut ele = avg_alt[x][y];
             let temp: f64 = (ele / cinterval + 0.5).floor() * cinterval;
             if (ele - temp).abs() < 0.02 {
-                if ele - temp < 0.0 {
+                if  - temp < 0.0 { // FIXME: Should be `ele - temp`, but this reproduce binary behaviour
                     ele = temp - 0.02;
                 }
                 else {
@@ -477,9 +478,9 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
         }
         let mut obj = Vec::<String>::new();
         let mut curves: HashMap<String, String> = HashMap::new();
-
-        for i in 1..((xmax - xmin) / 2.0 / scalefactor - 1.0) as usize {
-            for j in 2..((ymax - ymin) / 2.0 / scalefactor - 1.0) as usize {
+        
+        for i in 1..((xmax - xmin).ceil() / 2.0 / scalefactor) as usize {
+            for j in 2..((ymax - ymin).ceil() / 2.0 / scalefactor) as usize {
                 let mut a = avg_alt[i][j];
                 let mut b = avg_alt[i][j + 1];
                 let mut c = avg_alt[i + 1][j];
@@ -741,15 +742,6 @@ ENTITIES
             let ip = line.unwrap_or(String::new());
             let parts = ip.split(";");
             let r = parts.collect::<Vec<&str>>();   
-            /*
-            for (i, d) in r.iter().enumerate() {
-                if d != "" {
-                    if i > 5 && i < r.len() - 4 && r.len() + 1 > 12 && i % 2 == 0 {
-                        d
-                    }
-                }
-            }
-            */
             f.write("POLYLINE
  66
 1
@@ -757,8 +749,13 @@ ENTITIES
 cont
   0
 ".as_bytes()).expect("Cannot write dxf file");
-            for d in r.iter() {
+            for (i, d) in r.iter().enumerate() {
                 if d != &"" {
+                    let ii = i + 1;
+                    let ldata = r.len() - 2;
+                    if ii > 5 && ii < ldata - 5 && ldata > 12 && ii % 2 == 0 {
+                        continue;
+                    }
                     let xy_raw = d.split(",");
                     let xy = xy_raw.collect::<Vec<&str>>();
                     let x: f64 = xy[0].parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
