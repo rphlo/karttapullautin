@@ -524,7 +524,7 @@ ENTITIES
                             temp_max = h0;
                         }
                         if
-                            true || // FIXME: bug in original script
+                            //true || // FIXME: bug in original script
                             temp_min > h0
                         {
                             temp_min = h0;
@@ -563,7 +563,7 @@ ENTITIES
                             let temp = h0 - ht;
                             let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
                             if dist > 0.0 {
-                                if steep < no_small_ciffs && temp > limit && temp > (limit + (dist -limit) * 0.85) {
+                                if steep < no_small_ciffs && temp > limit && temp > (limit + (dist - limit) * 0.85) {
                                     let p = img.get_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32);
                                     if p[0] == 255 {
                                         img.put_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32, Rgb([0, 0, 0]));
@@ -956,7 +956,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             let mut ele = avg_alt[x][y];
             let temp: f64 = (ele / cinterval + 0.5).floor() * cinterval;
             if (ele - temp).abs() < 0.02 {
-                if  - temp < 0.0 { // FIXME: Should be `ele - temp`, but this reproduce binary behaviour
+                if ele - temp < 0.0 { // FIXME: Should be `ele - temp`, but this reproduce binary behaviour
                     ele = temp - 0.02;
                 }
                 else {
