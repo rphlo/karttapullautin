@@ -2,7 +2,7 @@
 
 Work In Progress
 
-Currently only xyz2contour is translated to rust, however it can already be used.
+Currently only xyz2contour and makecliffs is translated to rust, however it can already be used.
 
 To use run:
 
