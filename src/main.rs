@@ -8,8 +8,7 @@ use std::error::Error;
 use std::fs::File;
 use std::fs;
 use std::io::{self, BufRead};
-use image::io::Reader as ImageReader;
-use image::{ImageBuffer, RgbImage, Rgb};
+use image::{RgbImage, Rgb};
 use std::process::Command;
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
@@ -127,12 +126,12 @@ fn main() {
     }
 
     if command == "makecliffs" {
-        makecliffs(&thread);
+        makecliffs(&thread).unwrap();
         return();
     }
 
     fn batch_process(thread: &String) {
-        let out = Command::new("perl")
+        let _out = Command::new("perl")
                     .arg("pullauta")
                     .arg("startthread")
                     .arg(thread)
@@ -248,7 +247,7 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
 
     let c1_limit: f64 = conf.general_section().get("cliff1").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     let c2_limit: f64 = conf.general_section().get("cliff2").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-    let c3_limit: f64 = conf.general_section().get("cliff3").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    // let c3_limit: f64 = conf.general_section().get("cliff3").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     
     let cliff_thin: f64 = conf.general_section().get("cliffthin").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     
@@ -324,7 +323,6 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
             if i == 0 {
                 xstart = x;
                 ystart = y;
@@ -337,7 +335,7 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
     }
     let mut xyz = vec![vec![f64::NAN; ((ymax - ystart) / size).ceil() as usize + 1]; ((xmax - xstart) / size).ceil() as usize + 1];
     if let Ok(lines) = read_lines(&xyz_file_in) {
-        for (i, line) in lines.enumerate() {
+        for line in lines {
             let ip = line.unwrap_or(String::new());
             let parts = ip.split(" ");
             let r = parts.collect::<Vec<&str>>();
@@ -499,16 +497,18 @@ ENTITIES
 
                 if d.len() > 31 {
                     let b = ((d.len() - 1) as f64 / 30.0).floor() as usize;
-                    let zz = d.len() - 1 as usize;
-                    for i in 0..zz {
-                        let _: Vec<_> = d.drain(i..i+b+1).collect();
+                    let mut i: usize = 0;
+                    while i <= d.len() {
+                        let _: Vec<_> = d.drain(i..i+b).collect();
+                        i += 1;
                     }
                 }
                 if t.len() > 301 {
                     let b = ((t.len() - 1) as f64 / 300.0).floor() as usize;
-                    let zz = t.len() - 1 as usize;
-                    for i in 0..zz {
-                        let _: Vec<_> = t.drain(i..i+b+1).collect();
+                    let mut i: usize = 0;
+                    while i <= t.len() {
+                        let _: Vec<_> = t.drain(i..i+b).collect();
+                        i += 1;
                     }
                 }
                 let mut temp_max: f64 = f64::MIN;
@@ -517,8 +517,6 @@ ENTITIES
                     if t.len() > 0 {
                         let parts = rec.split(" ");
                         let r = parts.collect::<Vec<&str>>();
-                        let x0: f64 = r[0].parse::<f64>().unwrap();
-                        let y0: f64 = r[1].parse::<f64>().unwrap();
                         let h0: f64 = r[2].parse::<f64>().unwrap();
                         if temp_max < h0 {
                             temp_max = h0;
@@ -956,7 +954,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             let mut ele = avg_alt[x][y];
             let temp: f64 = (ele / cinterval + 0.5).floor() * cinterval;
             if (ele - temp).abs() < 0.02 {
-                if ele - temp < 0.0 { // FIXME: Should be `ele - temp`, but this reproduce binary behaviour
+                if ele - temp < 0.0 {
                     ele = temp - 0.02;
                 }
                 else {
