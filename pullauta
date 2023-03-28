@@ -3229,7 +3229,7 @@ ENTITIES
                             if ( $rec ne '' ) {
                                 ( $x0, $y0, $h0 ) = split( /\,/, $rec );	
 							    if($tempmax eq '' || $tempmax<$h0){$tempmax=$h0;}
-							    if($tempin eq '' || $tempmin>$h0){$tempmin=$h0;}
+							    if($tempmin eq '' || $tempmin>$h0){$tempmin=$h0;}
 							}
 				}
 				if($tempmax-$tempmin < $c1limit*0.999){ @d=();}

@@ -499,7 +499,11 @@ ENTITIES
                     let b = ((d.len() - 1) as f64 / 30.0).floor() as usize;
                     let mut i: usize = 0;
                     while i <= d.len() {
-                        let _: Vec<_> = d.drain(i..i+b).collect();
+                        let mut e = i+b;
+                        if e > d.len() {
+                            e = d.len();
+                        }
+                        let _: Vec<_> = d.drain(i..e).collect();
                         i += 1;
                     }
                 }
@@ -507,7 +511,11 @@ ENTITIES
                     let b = ((t.len() - 1) as f64 / 300.0).floor() as usize;
                     let mut i: usize = 0;
                     while i <= t.len() {
-                        let _: Vec<_> = t.drain(i..i+b).collect();
+                        let mut e = i+b;
+                        if e > d.len() {
+                            e = d.len();
+                        }
+                        let _: Vec<_> = t.drain(i..e).collect();
                         i += 1;
                     }
                 }
