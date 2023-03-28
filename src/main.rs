@@ -86,11 +86,6 @@ fn main() {
         return();
     }
 
-    if command == "ground2" {
-        println!("Not implemented");
-        return();
-    }
-
     if command == "blocks" {
         println!("Not implemented");
         return();
@@ -498,8 +493,8 @@ ENTITIES
                 if d.len() > 31 {
                     let b = ((d.len() - 1) as f64 / 30.0).floor() as usize;
                     let mut i: usize = 0;
-                    while i <= d.len() {
-                        let mut e = i+b;
+                    while i < d.len() {
+                        let mut e = i + b;
                         if e > d.len() {
                             e = d.len();
                         }
@@ -510,8 +505,8 @@ ENTITIES
                 if t.len() > 301 {
                     let b = ((t.len() - 1) as f64 / 300.0).floor() as usize;
                     let mut i: usize = 0;
-                    while i <= t.len() {
-                        let mut e = i+b;
+                    while i < t.len() {
+                        let mut e = i + b;
                         if e > d.len() {
                             e = d.len();
                         }
