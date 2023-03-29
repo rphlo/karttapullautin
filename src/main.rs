@@ -507,8 +507,8 @@ ENTITIES
                     let mut i: usize = 0;
                     while i < t.len() {
                         let mut e = i + b;
-                        if e > d.len() {
-                            e = d.len();
+                        if e > t.len() {
+                            e = t.len();
                         }
                         let _: Vec<_> = t.drain(i..e).collect();
                         i += 1;
@@ -703,6 +703,55 @@ SEQEND
                 }
                 let mut d = Vec::<&String>::new();
                 d.extend(&list_alt[x][y]);
+
+                if d.len() > 31 {
+                    let b = ((d.len() - 1) as f64 / 30.0).floor() as usize;
+                    let mut i: usize = 0;
+                    while i < d.len() {
+                        let mut e = i + b;
+                        if e > d.len() {
+                            e = d.len();
+                        }
+                        let _: Vec<_> = d.drain(i..e).collect();
+                        i += 1;
+                    }
+                }
+                if t.len() > 301 {
+                    let b = ((t.len() - 1) as f64 / 300.0).floor() as usize;
+                    let mut i: usize = 0;
+                    while i < t.len() {
+                        let mut e = i + b;
+                        if e > t.len() {
+                            e = t.len();
+                        }
+                        let _: Vec<_> = t.drain(i..e).collect();
+                        i += 1;
+                    }
+                }
+
+                let mut temp_max: f64 = f64::MIN;
+                let mut temp_min: f64 = f64::MAX;
+                for rec in t.iter() {
+                    if t.len() > 0 {
+                        let parts = rec.split(" ");
+                        let r = parts.collect::<Vec<&str>>();
+                        let h0: f64 = r[2].parse::<f64>().unwrap();
+                        if temp_max < h0 {
+                            temp_max = h0;
+                        }
+                        if
+                            //true || // FIXME: bug in original script
+                            temp_min > h0
+                        {
+                            temp_min = h0;
+                        }
+                    }
+                }
+
+                if temp_max - temp_min < c2_limit * 0.999 { 
+                    d.clear();
+                }
+
                 for rec in d.iter() {
                     if d.len() > 0 {
                         let parts = rec.split(" ");
