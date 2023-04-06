@@ -8,12 +8,15 @@ use std::error::Error;
 use std::fs::File;
 use std::fs;
 use std::io::{self, BufRead};
-use image::{RgbImage, Rgb};
+use image::{RgbImage, RgbaImage, Rgb, Rgba};
 use std::process::Command;
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
 use std::collections::HashMap;
 use rand::prelude::*;
+use imageproc::drawing::{draw_filled_rect_mut, draw_line_segment_mut};
+use imageproc::rect::Rect;
+use imageproc::filter::median_filter;
 
 
 fn main() {
@@ -101,6 +104,14 @@ fn main() {
         return();
     }
 
+    if command == "pngmergevege" {
+        println!("Not implemented");
+        return();
+    }
+
+    if command == "makevegenew" {
+        makevegenew(&thread).unwrap();
+    }
     if command == "pngmergevege" {
         println!("Not implemented");
         return();
@@ -1383,7 +1394,6 @@ fn average(numbers: &Vec<f64>) -> f64 {
 }
 
 fn check_obj_in (obj: &mut Vec<String>, curves: &mut HashMap<String, String>, x1: f64, x2: f64, y1: f64, y2: f64) {
-    //println!("{},{},{},{}", x1, y1, x2, y2);
     let x1 = (x1 * 100.0).floor() / 100.0;
     let x2 = (x2 * 100.0).floor() / 100.0;
     let y1 = (y1 * 100.0).floor() / 100.0;
@@ -1410,4 +1420,598 @@ fn check_obj_in (obj: &mut Vec<String>, curves: &mut HashMap<String, String>, x1
             obj.push(key.clone());
         }
     }
+}
+
+fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
+    println!("Running makevege");
+
+    let tmpfolder = format!("temp{}", thread);
+
+    let xyz_file_in = format!("{}/xyz2.xyz", tmpfolder);
+    
+    let mut xstart: f64 = 0.0;
+    let mut ystart: f64 = 0.0;
+    let mut size: f64 = 0.0;
+
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for (i, line) in lines.enumerate() {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            if i == 0 {
+                xstart = x;
+                ystart = y;
+            } else if i == 1 {
+                size = y - ystart;
+            } else {
+                break;
+            }
+        }
+    }
+
+    let mut xmax: f64 = 0.0;
+    let mut ymax: f64 = 0.0;
+
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let block: f64 = conf.general_section().get("greendetectsize").unwrap_or("3").parse::<f64>().unwrap_or(3.0);
+    
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
+    let mut top: HashMap<(u64, u64), f64> = HashMap::new();
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            let h: f64 = r[2].parse::<f64>().unwrap();
+            xyz.insert((((x - xstart) / size).floor() as u64,((y - ystart) / size).floor() as u64), h);
+            if xmax < ((x - xstart) / size).floor() {
+                xmax = ((x - xstart) / size).floor();
+            }
+            if ymax < ((y - ystart) / size).floor() {
+                ymax = ((y - ystart) / size).floor();
+            }
+
+            if top.contains_key(&(((x - xstart) / block).floor() as u64,((y - ystart) / block).floor() as u64))
+                && h > *top.get(&(((x - xstart) / block).floor() as u64,((y - ystart) / block).floor() as u64)).unwrap()
+            {
+                top.insert((((x - xstart) / block).floor() as u64,((y - ystart) / block).floor() as u64), h);
+            }
+        }
+    }
+
+    let mut zones = vec![];
+    let mut i: u32 = 1;
+    loop {
+        let last_zone = conf.general_section().get(format!("zone{}", i)).unwrap_or("");
+        if last_zone == "" {
+            break
+        }
+        zones.push(last_zone);
+        i += 1;
+    }
+
+    let mut thresholds = vec![];
+    let mut i: u32 = 1;
+    loop {
+        let last_threshold = conf.general_section().get(format!("thresold{}", i)).unwrap_or("");
+        if last_threshold == "" {
+            break
+        }
+        thresholds.push(last_threshold);
+        i += 1;
+    }
+
+    let greenshades = conf.general_section().get("greenshades").unwrap_or("").split("|").collect::<Vec<&str>>();
+    // kayak
+    let yellowheight: f64 = conf.general_section().get("yellowheight").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
+    let yellowthreshold: f64 = conf.general_section().get("yellowthreshold").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
+    let greenground: f64 = conf.general_section().get("greenground").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
+    let pointvolumefactor: f64 = conf.general_section().get("pointvolumefactor").unwrap_or("0.1").parse::<f64>().unwrap_or(0.1);
+    let pointvolumeexponent: f64 = conf.general_section().get("pointvolumeexponent").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let greenhigh: f64 = conf.general_section().get("greenhigh").unwrap_or("2").parse::<f64>().unwrap_or(2.0);
+    let topweight: f64 = conf.general_section().get("topweight").unwrap_or("0.8").parse::<f64>().unwrap_or(0.8);
+    let greentone: f64 = conf.general_section().get("lightgreentone").unwrap_or("200").parse::<f64>().unwrap_or(200.0);
+    let zoffset: f64 = conf.general_section().get("vegezoffset").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+    let uglimit: f64 = conf.general_section().get("undergrowth").unwrap_or("0.35").parse::<f64>().unwrap_or(0.35);
+    let uglimit2: f64 = conf.general_section().get("undergrowth2").unwrap_or("0.56").parse::<f64>().unwrap_or(0.56);
+    let addition: i32 = conf.general_section().get("greendotsize").unwrap_or("0").parse::<i32>().unwrap_or(0);
+    let firstandlastreturnasground = conf.general_section().get("firstandlastreturnasground").unwrap_or("").parse::<u64>().unwrap_or(1);
+    let firstandlastfactor = conf.general_section().get("firstandlastreturnfactor").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+    let lastfactor = conf.general_section().get("lastreturnfactor").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+
+    let yellowfirstlast = conf.general_section().get("yellowfirstlast").unwrap_or("").parse::<u64>().unwrap_or(1);
+    let vegethin: u32 = conf.general_section().get("vegethin").unwrap_or("0").parse::<u32>().unwrap_or(0);
+    
+    let xyz_file_in = format!("{}/xyztemp.xyz", tmpfolder);
+    
+    let xmin = xstart;
+    let ymin = ystart;
+    let mut xmax: f64 = f64::MIN;
+    let mut ymax: f64 = f64::MIN;
+
+    let mut hits: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut yhit: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut noyhit: HashMap<(u64, u64), u64> = HashMap::new();
+
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for (i, line) in lines.enumerate() {
+            if vegethin == 0 || i as u32 + 1 % vegethin == 0 {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(" ");
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                let h: f64 = r[2].parse::<f64>().unwrap();
+                if xmax < x {
+                    xmax = x;
+                }
+                if ymax < y {
+                    ymax = y;
+                }
+                if x > xmin && y > ymin {
+                    let xx = ((x - xmin) / block).floor() as u64;
+                    let yy = ((y - ymin) / block).floor() as u64;
+                    if h > *top.get(&(xx, yy)).unwrap_or(&0.0) {
+                        top.insert((xx, yy), h);
+                    }
+                    let xx = ((x - xmin) / 3.0).floor() as u64;
+                    let yy = ((y - ymin) / 3.0).floor() as u64;
+                    if hits.contains_key(&(xx, yy)) {
+                        *hits.get_mut(&(xx, yy)).unwrap() += 1;
+                    } else {
+                        hits.insert((xx, yy), 1);
+                    }
+                    if r[3] == "2" || h < yellowheight + *xyz.get(&(((x - xmin) / size).floor() as u64, ((y - ymin) / size).floor() as u64)).unwrap_or(&0.0) {
+                        if yhit.contains_key(&(xx, yy)) {
+                            *yhit.get_mut(&(xx, yy)).unwrap() += 1;
+                        } else {
+                            yhit.insert((xx, yy), 1);
+                        }
+                    } else {
+                        if r[4] == "1" && r[5] == "1" {
+                            if noyhit.contains_key(&(xx, yy)) {
+                                *noyhit.get_mut(&(xx, yy)).unwrap() += yellowfirstlast;
+                            } else {
+                                noyhit.insert((xx, yy), yellowfirstlast);
+                            }
+                        } else {
+                            if noyhit.contains_key(&(xx, yy)) {
+                                *noyhit.get_mut(&(xx, yy)).unwrap() += 1;
+                            } else {
+                                noyhit.insert((xx, yy), 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut firsthit: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut ugg: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut ug: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut ghit: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut greenhit: HashMap<(u64, u64), f64> = HashMap::new();
+    let mut highit: HashMap<(u64, u64), u64> = HashMap::new();
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for (i, line) in lines.enumerate() {
+            if vegethin == 0 || i as u32 + 1 % vegethin == 0 {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(" ");
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                let h: f64 = r[2].parse::<f64>().unwrap() - zoffset;
+                if x > xmin && y > ymin {
+                    
+                    if r[5] == "1" {
+                        let xx = ((x - xmin) / block + 0.5).floor() as u64;
+                        let yy = ((y - ymin) / block + 0.5).floor() as u64;
+                        if firsthit.contains_key(&(xx, yy)) {
+                            *firsthit.get_mut(&(xx, yy)).unwrap() += 1;
+                        } else {
+                            firsthit.insert((xx, yy), 1);
+                        }
+                    }
+
+                    let xx = ((x - xmin) / size).floor() as u64;
+                    let yy = ((y - ymin) / size).floor() as u64;
+                    let a = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
+                    let b = *xyz.get(&(xx + 1, yy)).unwrap_or(&0.0);
+                    let c = *xyz.get(&(xx, yy + 1)).unwrap_or(&0.0);
+                    let d = *xyz.get(&(xx + 1, yy + 1)).unwrap_or(&0.0);
+
+                    let distx = (x - xmin) / size - xx as f64;
+                    let disty = (y - ymin) / size - yy as f64;
+                    
+                    let ab = a * (1.0 - distx) + b * distx;
+                    let cd = c * (1.0 - distx) + d * distx;
+                    let thelele = ab * (1.0 - disty) + cd * disty;
+
+                    let xx = ((x - xmin) / block / 6.0 + 0.5).floor() as u64;
+                    let yy = ((y - ymin) / block / 6.0 + 0.5).floor() as u64;
+                    let hh = h - thelele;
+                    if hh <= 1.2 {
+                        if r[3] == "2" {
+                            if ugg.contains_key(&(xx, yy)) {
+                                *ugg.get_mut(&(xx, yy)).unwrap() += 1;
+                            } else {
+                                ugg.insert((xx, yy), 1);
+                            }
+                        } else {
+                            if hh > 0.25 {
+                                if ug.contains_key(&(xx, yy)) {
+                                    *ug.get_mut(&(xx, yy)).unwrap() += 1;
+                                } else {
+                                    ug.insert((xx, yy), 1);
+                                }
+                            } else {
+                                if ugg.contains_key(&(xx, yy)) {
+                                    *ugg.get_mut(&(xx, yy)).unwrap() += 1;
+                                } else {
+                                    ugg.insert((xx, yy), 1);
+                                }
+                            }
+                        }
+                    } else {
+                        if ugg.contains_key(&(xx, yy)) {
+                            *ugg.get_mut(&(xx, yy)).unwrap() += 1;
+                        } else {
+                            ugg.insert((xx, yy), 1);
+                        }
+                    }
+
+                    let xx = ((x - xmin) / block + 0.5).floor() as u64;
+                    let yy = ((y - ymin) / block + 0.5).floor() as u64;
+                    let yyy = ((y - ymin) / block).floor() as u64; // necessary due to bug in perl version
+                    if r[3] == "2" || greenground >= hh {
+                        if r[4] == "1" && r[5] == "1" {
+                            if ghit.contains_key(&(xx, yyy)) {
+                                *ghit.get_mut(&(xx, yyy)).unwrap() += firstandlastreturnasground;
+                            } else {
+                                ghit.insert((xx, yyy), firstandlastreturnasground);
+                            }
+                        } else {
+                            if ghit.contains_key(&(xx, yyy)) {
+                                *ghit.get_mut(&(xx, yyy)).unwrap() += 1;
+                            } else {
+                                ghit.insert((xx, yyy), 1);
+                            }
+                        }
+                    } else {
+                        let mut last = 1.0;
+                        if r[4] == r[5] {
+                            last = lastfactor;
+                            if hh < 5.0 {
+                                last = firstandlastfactor;
+                            }
+                        }
+                        for zone in zones.iter() {
+                            let parts = zone.split("|");
+                            let v = parts.collect::<Vec<&str>>();
+                            let low: f64 = v[0].parse::<f64>().unwrap();
+                            let high: f64 = v[1].parse::<f64>().unwrap();
+                            let roof: f64 = v[2].parse::<f64>().unwrap();
+                            let factor: f64 = v[3].parse::<f64>().unwrap(); 
+                            if hh >= low && hh < high && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof {
+                                let offset = factor * last as f64; 
+                                if greenhit.contains_key(&(xx, yy)) {
+                                    *greenhit.get_mut(&(xx, yy)).unwrap() += offset;
+                                } else {
+                                    greenhit.insert((xx, yy), offset);
+                                }
+                                break;
+                            } 
+                        }
+
+                        if greenhigh < hh {
+                            if highit.contains_key(&(xx, yy)) {
+                                *highit.get_mut(&(xx, yy)).unwrap() += 1;
+                            } else {
+                                highit.insert((xx, yy), 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    let w = (xmax - xmin).floor() / block;
+    let h = (ymax - ymin).floor() / block;
+    let wy = (xmax - xmin).floor() / 3.0;
+    let hy = (ymax - ymin).floor() / 3.0;
+
+    let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+
+    let mut imgug = RgbaImage::from_pixel(
+        (w * block * 600.0 / 254.0 / scalefactor) as u32,
+        (h * block * 600.0 / 254.0 / scalefactor) as u32,
+        Rgba([255, 255, 255, 0])
+    );
+    let mut imggr1 = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
+    let mut imggr1b = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
+    let mut imgye2 = RgbaImage::from_pixel((w * block) as u32, (h * block) as u32, Rgba([255, 255, 255, 0]));
+    let mut imgwater = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
+    
+    let mut greens = Vec::new();
+    for i in 0..greenshades.len() {
+        greens.push(Rgb([
+            (greentone - greentone / (greenshades.len() - 1) as f64 * i as f64) as u8,
+            (254.0 - (74.0 / (greenshades.len() - 1) as f64) * i as f64) as u8,
+            (greentone - greentone / (greenshades.len() - 1) as f64 * i as f64) as u8
+        ]))
+    }
+    
+    let mut aveg = 0;
+    let mut avecount = 0;
+
+    for x in 1..(h as usize) {
+        for y in 1..(h as usize) {
+            let xx = x as u64;
+            let yy = y as u64;
+            if *ghit.get(&(xx, yy)).unwrap_or(&0) > 1 {
+                aveg += *firsthit.get(&(xx, yy)).unwrap_or(&0);
+                avecount += 1;
+            }
+        }
+    }
+    let aveg = aveg as f64 / avecount as f64;
+    let ye2 = Rgba([255, 219, 166, 255]);
+    for x in 4..(wy as usize - 3) {
+        for y in 4..(hy as usize - 3) {
+            let mut ghit2 = 0;
+            let mut highhit2 = 0;
+
+            for i in x..x+2 {
+                for j in y..y+2 {
+                    ghit2 += *yhit.get(&(i as u64, j as u64)).unwrap_or(&0);
+                    highhit2 += *noyhit.get(&(i as u64, j as u64)).unwrap_or(&0);
+                }
+            }
+            if ghit2 as f64 / (highhit2 as f64 + ghit2 as f64 + 0.01) > yellowthreshold {
+                draw_filled_rect_mut(
+                    &mut imgye2, 
+                    Rect::at(
+                        x as i32 * 3 + 2,
+                        (hy as i32 - y as i32) * 3 - 4
+                    ).of_size(3, 3),
+                    ye2
+                );
+            }
+        }
+    }
+
+    for x in 2..w as usize {
+        for y in 2..h as usize {
+            let mut ghit2 = 0;
+            let mut highit2 = 0;
+            let roof = *top.get(&(x as u64, y as u64)).unwrap_or(&0.0) - *xyz.get(&((x as f64 * block / size).floor() as u64, (y as f64 * block / size).floor() as u64)).unwrap_or(&0.0);
+
+            let greenhit2 = *greenhit.get(&(x as u64, y as u64)).unwrap_or(&0.0);
+            let mut firsthit2 = *firsthit.get(&(x as u64, y as u64)).unwrap_or(&0);
+            for i in (x-2) as usize..x+3 as usize {
+                for j in (y-2) as usize..y+3 as usize {
+                    if firsthit2 > *firsthit.get(&(i as u64, j as u64)).unwrap_or(&0) {
+                        firsthit2 = *firsthit.get(&(i as u64, j as u64)).unwrap_or(&0);
+                    }
+                }
+            }
+            highit2 += *highit.get(&(x as u64, y as u64)).unwrap_or(&0);
+            ghit2 += *ghit.get(&(x as u64, y as u64)).unwrap_or(&0);
+
+            let mut greenlimit = 9999.0;
+            for threshold in thresholds.iter() {
+                let parts = threshold.split("|");
+                let v = parts.collect::<Vec<&str>>();
+                let v0: f64 = v[0].parse::<f64>().unwrap();
+                let v1: f64 = v[1].parse::<f64>().unwrap();
+                let v2: f64 = v[2].parse::<f64>().unwrap();
+                if roof >= v0 && roof < v1 {
+                    greenlimit = v2;
+                    break;
+                }
+            }
+
+            let mut greenshade = 0;
+
+            let thevalue = greenhit2 / (ghit2 as f64 + greenhit2 + 1.0) * (1.0 - topweight + topweight * highit2 as f64 / (ghit2 as f64 + greenhit2 + highit2 as f64 + 1.0)) * (1.0 - pointvolumefactor * firsthit2 as f64 / (aveg + 0.00001)).powf(pointvolumeexponent);
+            if thevalue > 0.0 {
+                for (i, gshade) in greenshades.iter().enumerate() {
+                    let shade = gshade.parse::<f64>().unwrap();
+                    if thevalue > greenlimit * shade {
+                        greenshade = i + 1;
+                    }
+                }
+                if greenshade > 0 {
+                    draw_filled_rect_mut(
+                        &mut imggr1, 
+                        Rect::at(
+                            ((x as f64 + 0.5) * block) as i32 - addition, 
+                            (((h - y as f64) - 0.5) * block) as i32 - addition
+                        ).of_size(
+                            (block as i32 + addition) as u32,
+                            (block as i32 + addition) as u32,
+                        ),
+                        *greens.get(greenshade - 1).unwrap()
+                    );
+                }
+            }
+        }
+    }
+    let med: u32 = conf.general_section().get("medianboxsize").unwrap_or("0").parse::<u32>().unwrap_or(0);
+    if med > 0 {
+        imggr1b = median_filter(&imggr1, med/2, med/2);
+    }
+    let med2: u32 = conf.general_section().get("medianboxsize2").unwrap_or("0").parse::<u32>().unwrap_or(0);
+    if med2 > 0 {
+        imggr1 = median_filter(&imggr1b, med2/2, med2/2);
+    } else {
+        imggr1 = imggr1b;
+    }
+    imggr1.save(format!("{}/greens.png", tmpfolder)).expect("could not save output png");
+    imgye2.save(format!("{}/yellow.png", tmpfolder)).expect("could not save output png");
+    
+    let mut img = image::open(format!("{}/greens.png", tmpfolder)).ok().expect("Opening image failed");
+    let img2 = image::open(format!("{}/yellow.png", tmpfolder)).ok().expect("Opening image failed");
+    image::imageops::overlay(&mut img, &img2, 0, 0);
+    img.save(format!("{}/vegetation.png", tmpfolder)).expect("could not save output png");
+
+    let black = Rgb([0, 0, 0]);
+    let blue = Rgb([29, 190, 255]);
+    let water = conf.general_section().get("waterclass").unwrap_or("").parse::<u64>().unwrap_or(0);
+    let buildings = conf.general_section().get("buildingsclass").unwrap_or("").parse::<u64>().unwrap_or(0);
+    if buildings > 0 || water > 0 {
+        if let Ok(lines) = read_lines(&xyz_file_in) {
+            for line in lines {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(" ");
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                let c: u64 = r[3].parse::<u64>().unwrap();
+                if c == buildings {
+                    draw_filled_rect_mut(
+                        &mut imgwater, 
+                        Rect::at(
+                            (x - xmin) as i32 - 1,
+                            (ymax - y) as i32 - 1,
+                        ).of_size(3, 3),
+                        black
+                    );
+                }
+                if c == water {
+                    draw_filled_rect_mut(
+                        &mut imgwater, 
+                        Rect::at(
+                            (x - xmin) as i32 - 1,
+                            (ymax - y) as i32 - 1,
+                        ).of_size(3, 3),
+                        blue
+                    );
+                }
+            }
+        }
+    }
+    let waterele = conf.general_section().get("waterelevation").unwrap_or("").parse::<f64>().unwrap_or(-999999.0);
+    
+    let xyz_file_in = format!("{}/xyz2.xyz", tmpfolder);
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            let hh: f64 = r[2].parse::<f64>().unwrap();
+            if hh < waterele {
+                draw_filled_rect_mut(
+                    &mut imgwater, 
+                    Rect::at(
+                        (x - xmin) as i32 - 1,
+                        (ymax - y) as i32 - 1,
+                    ).of_size(3, 3),
+                    blue
+                );
+            }
+        }
+    }
+    imgwater.save(format!("{}/blueblack.png", tmpfolder)).expect("could not save output png");
+    
+    let underg = Rgba([64, 121, 0, 255]);
+    let tmpfactor = (600.0 / 254.0 / scalefactor) as f32;
+
+    let ww = w * block;
+    let hh = h * block;
+
+    let mut x = 0.0;
+    loop {
+        if x >= ww {
+            break;
+        }
+        let mut y = 0.0;
+        loop {
+            if y >= hh {
+                break;
+            }
+            let xx = (x/block/6.0).floor() as u64;
+            let yy = (y/block/6.0).floor() as u64;
+            let foo = *ug.get(&(xx, yy)).unwrap_or(&0) as f64 / (
+                *ug.get(&(xx, yy)).unwrap_or(&0) as f64 +
+                *ugg.get(&(xx, yy)).unwrap_or(&0) as f64 +
+                0.01
+            );
+            if foo > uglimit {
+                draw_line_segment_mut(
+                    &mut imgug, 
+                    (tmpfactor*(x+block*3.0) as f32, tmpfactor*(h*block-y-block*3.0) as f32), 
+                    (tmpfactor*(x+block*3.0) as f32, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    underg
+                );
+                draw_line_segment_mut(
+                    &mut imgug, 
+                    (tmpfactor*(x+block*3.0) as f32 + 1.0, tmpfactor*(h*block-y-block*3.0) as f32), 
+                    (tmpfactor*(x+block*3.0) as f32 + 1.0, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    underg
+                );
+                draw_line_segment_mut(
+                    &mut imgug, 
+                    (tmpfactor*(x-block*3.0) as f32, tmpfactor*(h*block-y-block*3.0) as f32), 
+                    (tmpfactor*(x-block*3.0) as f32, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    underg
+                );
+                draw_line_segment_mut(
+                    &mut imgug, 
+                    (tmpfactor*(x-block*3.0) as f32 + 1.0, tmpfactor*(h*block-y-block*3.0) as f32), 
+                    (tmpfactor*(x-block*3.0) as f32 + 1.0, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    underg
+                );
+            }
+            if foo > uglimit2 {
+                draw_line_segment_mut(
+                    &mut imgug, 
+                    (tmpfactor*x as f32, tmpfactor*(h*block-y-block*3.0) as f32), 
+                    (tmpfactor*x as f32, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    underg
+                );
+                draw_line_segment_mut(
+                    &mut imgug, 
+                    (tmpfactor * x as f32 + 1.0, tmpfactor as f32*(h*block-y-block*3.0) as f32), 
+                    (tmpfactor * x as f32 + 1.0, tmpfactor as f32*(h*block-y+block*3.0) as f32), 
+                    underg
+                );
+            }
+            y += block * 6.0;
+        }
+        x += block * 6.0;
+    }
+    imgug.save(format!("{}/undergrowth.png", tmpfolder)).expect("could not save output png");
+    
+    let ugpgw = File::create(&format!("{}/undergrowth.pgw", tmpfolder)).expect("Unable to create file");
+    let mut ugpgw = BufWriter::new(ugpgw);
+    ugpgw.write(format!("{}
+0.0
+0.0
+-{}
+{}
+{}
+", 1.0/tmpfactor, 1.0/tmpfactor, xmin, ymax).as_bytes()).expect("Cannot write pgw file");
+
+    let vegepgw = File::create(&format!("{}/vegetation.pgw", tmpfolder)).expect("Unable to create file");
+    let mut vegepgw = BufWriter::new(vegepgw);
+    vegepgw.write(format!("1.0
+0.0
+0.0
+-1.0
+{}
+{}
+", xmin, ymax).as_bytes()).expect("Cannot write pgw file");
+
+    println!("Done");
+    Ok(())
 }
