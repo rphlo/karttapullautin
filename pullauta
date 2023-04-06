@@ -2207,7 +2207,7 @@ to the same folder as pullautin.exe \n ";
     if ( $vegemode == 0 ) {
         ## new vege
         print "\nVegetation generation\n";
-        system("perl pullauta $thread makevegenew");
+        system("rusty-pullauta $thread makevegenew");
     }
     else {
         ## old vege
