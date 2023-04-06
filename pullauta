@@ -6139,7 +6139,7 @@ ENTITIES
 ################
 
     for ( $l = 0 ; $l < $j + 1 ; $l++ ) {
-        if ( $l % ( floor( $j / 6 ) ) == 0 ) { print "."; }
+        # if ( $l % ( floor( $j / 6 ) ) == 0 ) { print "."; } # Commented since can cause bug
         $skip = 0;
 
         if ( $elex[$l] ne '' ) {
