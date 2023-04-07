@@ -1599,11 +1599,7 @@ $ymax
 }
 
 if ( $command eq '' && $batch == 1 && $proc > 1 ) {
-    for ( $i = 1 ; $i < $proc + 1 ; $i++ ) {
-
-        # start independent shell window
-        system("start pullauta startthread $i");
-    }
+    system("rusty-pullauta");
     exit;
 }
 
@@ -2172,7 +2168,7 @@ to the same folder as pullautin.exe \n ";
 ## 2m grid & controus 0.3
     print "\nKnoll detection part 1\n";
     system(
-"perl pullauta-win  $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
+"rusty-pullauta  $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
     );
 
  
@@ -2187,7 +2183,7 @@ to the same folder as pullautin.exe \n ";
     close SISAAN;
 	 if($basemapcontours >0){
      print "\nBasemap contours\n";
-   system("perl pullauta-win  $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
+   system("rusty-pullauta $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
  } 
 if(1*$Config->{_}->{skipknolldetection} != 1){
 ## detector
@@ -2197,13 +2193,13 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
 ## xyz_knolls
     print "\nContour generation part 1\n";
     system("perl pullauta-win  $thread xyzknolls");
-if(1*$Config->{_}->{skipknolldetection} != 1){
-## contours 2.5
-    print "\nContour generation part 2\n";
-   system("perl pullauta-win  $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
-   }else {
-system("perl pullauta-win  $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
-}
+    if(1*$Config->{_}->{skipknolldetection} != 1){
+        ## contours 2.5
+        print "\nContour generation part 2\n";
+        system("rusty-pullauta  $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
+    }else {
+        system("rusty-pullauta  $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
+    }
 ## smoothjoin
     print "\nContour generation part 3\n";
     system("perl pullauta-win  $thread smoothjoin");
@@ -2213,7 +2209,7 @@ system("perl pullauta-win  $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.x
     if ( $vegemode == 0 ) {
         ## new vege
         print "\nVegetation generation\n";
-        system("perl pullauta-win  $thread makevegenew");
+        system("rusty-pullauta $thread makevegenew");
     }
     else {
         ## old vege
@@ -2233,14 +2229,14 @@ system("perl pullauta-win  $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.x
         print "Old cliff3 parameter found, using cliff3 instead of cliff2...\n";
         $pcliff2 = $pcliff3;
     }
-    system("perl pullauta-win  $thread makecliffs xyztemp.xyz");
+    system("rusty-pullauta $thread makecliffs xyztemp.xyz");
 ## cliff generalizer
     #    print "\nCliff generation part 2\n";
     #    system("perl pullauta-win  $thread cliffgeneralize $psteepness");
 ## renderer
     if ( $detectbuildings == 1 ) {
         print "\nDetecting buildings\n";
-        system("perl pullauta-win  $thread blocks");
+        system("rusty-pullauta $thread blocks");
     }
 
     if ( $ARGV[1] ne 'norender' ) {
