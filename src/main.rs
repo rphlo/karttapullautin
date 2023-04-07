@@ -110,7 +110,8 @@ fn main() {
     if command == "blocks" {
         let tmpfolder = format!("temp{}", thread);
 
-        let xyz_file_in = format!("{}/xyz2.xyz", tmpfolder);
+        let path = format!("{}/xyz2.xyz", tmpfolder);
+        let xyz_file_in = Path::new(&path);
         let mut size: f64 = f64::NAN;
         let mut xstartxyz: f64 = f64::NAN;
         let mut ystartxyz: f64 = f64::NAN;
@@ -162,7 +163,8 @@ fn main() {
         let black = Rgb([0, 0, 0]);
         let white = Rgba([255, 255, 255, 255]);
 
-        let xyz_file_in = format!("{}/xyztemp.xyz", tmpfolder);
+        let path = format!("{}/xyztemp.xyz", tmpfolder);
+        let xyz_file_in = Path::new(&path);
         if let Ok(lines) = read_lines(&xyz_file_in) {
             for line in lines {
                 let ip = line.unwrap_or(String::new());
@@ -195,16 +197,16 @@ fn main() {
             }
         }
         let filter_size = 2;
-        img.save(format!("{}/blocks.png", tmpfolder)).expect("error saving png");
-        img2.save(format!("{}/blocks2.png", tmpfolder)).expect("error saving png");
-        let mut img = image::open(format!("{}/blocks.png", tmpfolder)).ok().expect("Opening image failed");
-        let img2 = image::open(format!("{}/blocks2.png", tmpfolder)).ok().expect("Opening image failed");
+        img.save(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("error saving png");
+        img2.save(Path::new(&format!("{}/blocks2.png", tmpfolder))).expect("error saving png");
+        let mut img = image::open(Path::new(&format!("{}/blocks.png", tmpfolder))).ok().expect("Opening image failed");
+        let img2 = image::open(Path::new(&format!("{}/blocks2.png", tmpfolder))).ok().expect("Opening image failed");
     
         image::imageops::overlay(&mut img, &img2, 0, 0);
 
         img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
 
-        img.save(format!("{}/blocks.png", tmpfolder)).expect("error saving png");
+        img.save(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("error saving png");
         println!("Done");
         return();
     }
@@ -273,7 +275,7 @@ fn main() {
         let mut skiplaz2txt: bool = false;
         if Regex::new(r".xyz$").unwrap().is_match(&command.to_lowercase()) {
             println!(".xyz input file");
-            if let Ok(lines) = read_lines(&command) {
+            if let Ok(lines) = read_lines(Path::new(&command)) {
                 let mut i: u32 = 0;
                 for line in lines {
                     if  i == 2 {
@@ -303,7 +305,7 @@ fn main() {
                 return();
             }
         } else {
-            fs::copy(&command, format!("{}/xyztemp.xyz", tmpfolder)).expect("Could not copy file to tmpfolder");
+            fs::copy(Path::new(&command), Path::new(&format!("{}/xyztemp.xyz", tmpfolder))).expect("Could not copy file to tmpfolder");
         }
         println!("Done");
         println!("Knoll detection part 1");
@@ -372,7 +374,8 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
     
     let tmpfolder = format!("temp{}", thread);
 
-    let xyz_file_in = format!("{}/xyztemp.xyz", tmpfolder);
+    let path = format!("{}/xyztemp.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
     
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for line in lines {
@@ -408,7 +411,8 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
         }
     }
 
-    let xyz_file_in = format!("{}/xyz2.xyz", tmpfolder);
+    let path = format!("{}/xyz2.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
     let mut size: f64 = f64::NAN;
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
@@ -481,7 +485,8 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
     
     let mut list_alt = vec![vec![Vec::<String>::new(); (((ymax - ymin) / 3.0).ceil() + 1.0) as usize]; (((xmax - xmin) / 3.0).ceil() + 1.0) as usize];
     
-    let xyz_file_in = format!("{}/xyztemp.xyz", tmpfolder);
+    let path = format!("{}/xyztemp.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
 
     let mut rng = rand::thread_rng();
     if let Ok(lines) = read_lines(&xyz_file_in) {
@@ -505,7 +510,7 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
     let w = ((xmax - xmin).floor() / 3.0) as usize;
     let h = ((ymax - ymin).floor() / 3.0) as usize;
 
-    let f2 = File::create(&format!("{}/c2g.dxf", tmpfolder)).expect("Unable to create file");
+    let f2 = File::create(&Path::new(&format!("{}/c2g.dxf", tmpfolder))).expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
     f2.write(format!("  0
@@ -533,7 +538,7 @@ ENTITIES
   0
 ", xmin, ymin, xmax, ymax).as_bytes()).expect("Cannot write dxf file");
 
-    let f3 = File::create(&format!("{}/c3g.dxf", tmpfolder)).expect("Unable to create file");
+    let f3 = File::create(&Path::new(&format!("{}/c3g.dxf", tmpfolder))).expect("Unable to create file");
     let mut f3 = BufWriter::new(f3);
 
     f3.write(format!("  0
@@ -627,10 +632,7 @@ ENTITIES
                         if temp_max < h0 {
                             temp_max = h0;
                         }
-                        if
-                            //true || // FIXME: bug in original script
-                            temp_min > h0
-                        {
+                        if temp_min > h0 {
                             temp_min = h0;
                         }
                     }
@@ -756,7 +758,8 @@ SEQEND
 ".as_bytes()).expect("Cannot write dxf file");
     
     let c2_limit = 2.6 * 2.75;
-    let xyz_file_in = format!("{}/xyz2.xyz", tmpfolder);
+    let path = format!("{}/xyz2.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
 
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for line in lines {
@@ -842,10 +845,7 @@ SEQEND
                         if temp_max < h0 {
                             temp_max = h0;
                         }
-                        if
-                            //true || // FIXME: bug in original script
-                            temp_min > h0
-                        {
+                        if temp_min > h0 {
                             temp_min = h0;
                         }
                     }
@@ -919,7 +919,7 @@ SEQEND
     f3.write("ENDSEC
   0
 ".as_bytes()).expect("Cannot write dxf file");
-    img.save(format!("{}/c2.png", tmpfolder)).expect("could not save output png");
+    img.save(Path::new(&format!("{}/c2.png", tmpfolder))).expect("could not save output png");
     println!("Done");
     Ok(())
 }
@@ -942,7 +942,8 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
     let mut hmin: f64 = std::f64::MAX; 
     let mut hmax: f64 = std::f64::MIN;
     
-    let xyz_file_in = format!("{}/{}", tmpfolder, xyzfilein);
+    let path = format!("{}/{}", tmpfolder, xyzfilein);
+    let xyz_file_in = Path::new(&path);
     
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for line in lines {
@@ -1121,7 +1122,8 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
     }
     
     if xyzfileout != "" && xyzfileout != "null" {
-        let xyz_file_out = format!("{}/{}", tmpfolder, xyzfileout);
+        let path = format!("{}/{}", tmpfolder, xyzfileout);
+        let xyz_file_out = Path::new(&path);
         let f = File::create(&xyz_file_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
         for x in 0..w+1 {
@@ -1147,7 +1149,8 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
     let mut progprev: f64 = 0.0;
     let total: f64 = (hmax - hmin) / v;
     let mut level: f64 = (hmin / v).floor() * v;
-    let polyline_out = format!("{}/temp_polylines.txt", tmpfolder);
+    let path = format!("{}/temp_polylines.txt", tmpfolder);
+    let polyline_out = Path::new(&path);
 
     let f = File::create(&polyline_out).expect("Unable to create file");
     let mut f = BufWriter::new(f);
@@ -1395,7 +1398,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
         f.flush().expect("Cannot flush");
         level += v;
     }
-    let f = File::create(&format!("{}/{}", tmpfolder, dxffile)).expect("Unable to create file");
+    let f = File::create(&Path::new(&format!("{}/{}", tmpfolder, dxffile))).expect("Unable to create file");
     let mut f = BufWriter::new(f);
 
     f.write(format!("  0
@@ -1471,8 +1474,7 @@ EOF
 }
 
 
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where P: AsRef<Path>, {
+fn read_lines (filename: &Path) -> io::Result<io::Lines<io::BufReader<File>>> {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
@@ -1519,7 +1521,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let tmpfolder = format!("temp{}", thread);
 
-    let xyz_file_in = format!("{}/xyz2.xyz", tmpfolder);
+    let path = format!("{}/xyz2.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
     
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
@@ -1598,7 +1601,6 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     }
 
     let greenshades = conf.general_section().get("greenshades").unwrap_or("").split("|").collect::<Vec<&str>>();
-    // kayak
     let yellowheight: f64 = conf.general_section().get("yellowheight").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
     let yellowthreshold: f64 = conf.general_section().get("yellowthreshold").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
     let greenground: f64 = conf.general_section().get("greenground").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
@@ -1618,7 +1620,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let yellowfirstlast = conf.general_section().get("yellowfirstlast").unwrap_or("").parse::<u64>().unwrap_or(1);
     let vegethin: u32 = conf.general_section().get("vegethin").unwrap_or("0").parse::<u32>().unwrap_or(0);
     
-    let xyz_file_in = format!("{}/xyztemp.xyz", tmpfolder);
+    let path = format!("{}/xyztemp.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
     
     let xmin = xstart;
     let ymin = ystart;
@@ -1946,13 +1949,13 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     } else {
         imggr1 = imggr1b;
     }
-    imggr1.save(format!("{}/greens.png", tmpfolder)).expect("could not save output png");
-    imgye2.save(format!("{}/yellow.png", tmpfolder)).expect("could not save output png");
+    imggr1.save(Path::new(&format!("{}/greens.png", tmpfolder))).expect("could not save output png");
+    imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
     
-    let mut img = image::open(format!("{}/greens.png", tmpfolder)).ok().expect("Opening image failed");
-    let img2 = image::open(format!("{}/yellow.png", tmpfolder)).ok().expect("Opening image failed");
+    let mut img = image::open(Path::new(&format!("{}/greens.png", tmpfolder))).ok().expect("Opening image failed");
+    let img2 = image::open(Path::new(&format!("{}/yellow.png", tmpfolder))).ok().expect("Opening image failed");
     image::imageops::overlay(&mut img, &img2, 0, 0);
-    img.save(format!("{}/vegetation.png", tmpfolder)).expect("could not save output png");
+    img.save(Path::new(&format!("{}/vegetation.png", tmpfolder))).expect("could not save output png");
 
     let black = Rgb([0, 0, 0]);
     let blue = Rgb([29, 190, 255]);
@@ -1991,8 +1994,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
     let waterele = conf.general_section().get("waterelevation").unwrap_or("").parse::<f64>().unwrap_or(-999999.0);
-    
-    let xyz_file_in = format!("{}/xyz2.xyz", tmpfolder);
+    let path = format!("{}/xyz2.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
@@ -2013,7 +2016,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    imgwater.save(format!("{}/blueblack.png", tmpfolder)).expect("could not save output png");
+    imgwater.save(Path::new(&format!("{}/blueblack.png", tmpfolder))).expect("could not save output png");
     
     let underg = Rgba([64, 121, 0, 255]);
     let tmpfactor = (600.0 / 254.0 / scalefactor) as f32;
@@ -2082,9 +2085,9 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         }
         x += block * 6.0;
     }
-    imgug.save(format!("{}/undergrowth.png", tmpfolder)).expect("could not save output png");
+    imgug.save(Path::new(&format!("{}/undergrowth.png", tmpfolder))).expect("could not save output png");
     
-    let ugpgw = File::create(&format!("{}/undergrowth.pgw", tmpfolder)).expect("Unable to create file");
+    let ugpgw = File::create(&Path::new(&format!("{}/undergrowth.pgw", tmpfolder))).expect("Unable to create file");
     let mut ugpgw = BufWriter::new(ugpgw);
     ugpgw.write(format!("{}
 0.0
@@ -2094,7 +2097,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 {}
 ", 1.0/tmpfactor, 1.0/tmpfactor, xmin, ymax).as_bytes()).expect("Cannot write pgw file");
 
-    let vegepgw = File::create(&format!("{}/vegetation.pgw", tmpfolder)).expect("Unable to create file");
+    let vegepgw = File::create(&Path::new(&format!("{}/vegetation.pgw", tmpfolder))).expect("Unable to create file");
     let mut vegepgw = BufWriter::new(vegepgw);
     vegepgw.write(format!("1.0
 0.0
