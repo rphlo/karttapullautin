@@ -2234,7 +2234,7 @@ to the same folder as pullautin.exe \n ";
 ## renderer
     if ( $detectbuildings == 1 ) {
         print "\nDetecting buildings\n";
-        system("perl pullauta $thread blocks");
+        system("rusty-pullauta $thread blocks");
     }
 
     if ( $ARGV[1] ne 'norender' ) {
