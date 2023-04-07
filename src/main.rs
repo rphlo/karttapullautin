@@ -89,11 +89,6 @@ fn main() {
         return();
     }
 
-    if command == "blocks" {
-        println!("Not implemented");
-        return();
-    }
-
     if command == "dxfmerge" || command == "merge" {
         println!("Not implemented");
         return();
@@ -112,8 +107,105 @@ fn main() {
     if command == "makevegenew" {
         makevegenew(&thread).unwrap();
     }
-    if command == "pngmergevege" {
-        println!("Not implemented");
+    if command == "blocks" {
+        let tmpfolder = format!("temp{}", thread);
+
+        let xyz_file_in = format!("{}/xyz2.xyz", tmpfolder);
+        let mut size: f64 = f64::NAN;
+        let mut xstartxyz: f64 = f64::NAN;
+        let mut ystartxyz: f64 = f64::NAN;
+        let mut xmax: u64 = u64::MIN;
+        let mut ymax: u64 = u64::MIN;
+        if let Ok(lines) = read_lines(&xyz_file_in) {
+            for (i, line) in lines.enumerate() {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(" ");
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                if i == 0 {
+                    xstartxyz = x;
+                    ystartxyz = y;
+                } else if i == 1 {
+                    size = y - ystartxyz;
+                } else {
+                    break;
+                }
+            }
+        }
+        let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
+        
+        if let Ok(lines) = read_lines(&xyz_file_in) {
+            for line in lines {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(" ");
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                let h: f64 = r[2].parse::<f64>().unwrap();
+       
+                let xx = ((x - xstartxyz) / size).floor() as u64;
+                let yy = ((y - ystartxyz) / size).floor() as u64;
+                xyz.insert((xx, yy), h);
+       
+                if xmax < xx {
+                    xmax = xx;
+                }
+                if ymax < yy {
+                    ymax = yy;
+                }
+            }
+        }
+        let mut img = RgbImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgb([255, 255, 255]));
+        let mut img2 = RgbaImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgba([0, 0, 0, 0]));
+    
+        let black = Rgb([0, 0, 0]);
+        let white = Rgba([255, 255, 255, 255]);
+
+        let xyz_file_in = format!("{}/xyztemp.xyz", tmpfolder);
+        if let Ok(lines) = read_lines(&xyz_file_in) {
+            for line in lines {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(" ");
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                let h: f64 = r[2].parse::<f64>().unwrap();
+                let xx = ((x - xstartxyz) / size).floor() as u64;
+                let yy = ((y - ystartxyz) / size).floor() as u64;
+                if r[3] != "2" && r[3] != "9" && r[4] == "1" && r[5] == "1" && h - *xyz.get(&(xx, yy)).unwrap_or(&0.0) > 2.0 {
+                    draw_filled_rect_mut(
+                        &mut img, 
+                        Rect::at(
+                            (x - xstartxyz - 1.0) as i32,
+                            (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32
+                        ).of_size(3, 3),
+                        black
+                    );
+                } else {
+                    draw_filled_rect_mut(
+                        &mut img2, 
+                        Rect::at(
+                            (x - xstartxyz - 1.0) as i32,
+                            (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32
+                        ).of_size(3, 3),
+                        white
+                    );
+                }
+            }
+        }
+        let filter_size = 2;
+        img.save(format!("{}/blocks.png", tmpfolder)).expect("error saving png");
+        img2.save(format!("{}/blocks2.png", tmpfolder)).expect("error saving png");
+        let mut img = image::open(format!("{}/blocks.png", tmpfolder)).ok().expect("Opening image failed");
+        let img2 = image::open(format!("{}/blocks2.png", tmpfolder)).ok().expect("Opening image failed");
+    
+        image::imageops::overlay(&mut img, &img2, 0, 0);
+
+        img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
+
+        img.save(format!("{}/blocks.png", tmpfolder)).expect("error saving png");
+        println!("Done");
         return();
     }
 

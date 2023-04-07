@@ -2,7 +2,7 @@
 
 Work In Progress
 
-Currently xyz2contour, makevegenew and makecliffs steps are translated to rust, however they can already be used within the full process.
+Currently blocks, makecliffs, makevegenew and xyz2contour steps are translated to rust, however they can already be used within the full process.
 
 To use run:
 
