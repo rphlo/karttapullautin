@@ -384,10 +384,10 @@ There is no warranty. Use it at your own risk!\n";
 
 if ( $command eq '' && -e $tempfolder . '/vegetation.png' && $batch == 0 ) {
     print "\nRendering png map with depressions\n";
-    system("perl pullauta-win  render $pnorthlinesangle $pnorthlineswidth ");
+    system("pullauta render $pnorthlinesangle $pnorthlineswidth ");
     print "\nRendering png map without depressions\n";
     system(
-        "perl pullauta-win  render $pnorthlinesangle $pnorthlineswidth  nodepressions");
+        "pullauta render $pnorthlinesangle $pnorthlineswidth  nodepressions");
 
     print "\n\nAll done!\n";
     exit;
@@ -1715,13 +1715,13 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 			
 			
             if ( $ziplist ne '' ) {
-                system("perl pullauta-win  $thread temp$thread.xyz norender");
+                system("pullauta $thread temp$thread.xyz norender");
             }
             else {
-                system("perl pullauta-win  $thread temp$thread.xyz");
+                system("pullauta $thread temp$thread.xyz");
             }
             if ( $ziplist ne '' ) {
-                system("perl pullauta-win  $thread $ziplist");
+                system("pullauta $thread $ziplist");
             }
 
             #crop
@@ -2020,16 +2020,16 @@ mkdir $tempfolder;
 if ( $command =~ /\.zip/i ) {    ## rendering with mtk data
     print "Rendering  shape files\n.....\n";
 
-    #print "perl pullauta-win  $thread unzipmtk " . join( ' ', @ARGV );
-    system "perl pullauta-win  $thread unzipmtk " . join( ' ', @ARGV );
+    #print "pullauta $thread unzipmtk " . join( ' ', @ARGV );
+    system "pullauta $thread unzipmtk " . join( ' ', @ARGV );
 
     print "\nRendering png map with depressions\n";
-    system("perl pullauta-win  $thread render $pnorthlinesangle $pnorthlineswidth ");
+    system("pullauta $thread render $pnorthlinesangle $pnorthlineswidth ");
 
     print "\nRendering png map without depressions\n";
 
     system(
-"perl pullauta-win  $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions"
+"pullauta $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions"
     );
 
     print "\n\nAll done!\n";
@@ -2188,11 +2188,11 @@ to the same folder as pullautin.exe \n ";
 if(1*$Config->{_}->{skipknolldetection} != 1){
 ## detector
     print "\nKnoll detection part 2\n";
-    system("perl pullauta-win  $thread knolldetector");
+    system("pullauta $thread knolldetector");
 	}
 ## xyz_knolls
     print "\nContour generation part 1\n";
-    system("perl pullauta-win  $thread xyzknolls");
+    system("pullauta $thread xyzknolls");
     if(1*$Config->{_}->{skipknolldetection} != 1){
         ## contours 2.5
         print "\nContour generation part 2\n";
@@ -2202,9 +2202,9 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
     }
 ## smoothjoin
     print "\nContour generation part 3\n";
-    system("perl pullauta-win  $thread smoothjoin");
+    system("pullauta $thread smoothjoin");
     print "\nContour generation part 4\n";
-    system("perl pullauta-win  $thread dotknolls");
+    system("pullauta $thread dotknolls");
 ## vege.png
     if ( $vegemode == 0 ) {
         ## new vege
@@ -2215,11 +2215,11 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
         ## old vege
 ## vege.png
         print "\nVegetation generation part 1\n";
-        system("perl pullauta-win  makevege xyztemp.xyz $pvege_yellow $pvege_green ");
+        system("pullauta makevege xyztemp.xyz $pvege_yellow $pvege_green ");
 ## vege rest
         print "\nVegetation generation part 2\n";
         system(
-"perl pullauta-win  vege $lightgreenlimit $darkgreenlimit $gfactor $yfactor $wfactor $yellowlimit"
+"pullauta vege $lightgreenlimit $darkgreenlimit $gfactor $yfactor $wfactor $yellowlimit"
         );
     }
 ## cliff maker
@@ -2232,7 +2232,7 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
     system("rusty-pullauta $thread makecliffs xyztemp.xyz");
 ## cliff generalizer
     #    print "\nCliff generation part 2\n";
-    #    system("perl pullauta-win  $thread cliffgeneralize $psteepness");
+    #    system("pullauta $thread cliffgeneralize $psteepness");
 ## renderer
     if ( $detectbuildings == 1 ) {
         print "\nDetecting buildings\n";
@@ -2241,10 +2241,10 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
 
     if ( $ARGV[1] ne 'norender' ) {
         print "\nRendering png map with depressions\n";
-        system("perl pullauta-win  $thread render $pnorthlinesangle $pnorthlineswidth ");
+        system("pullauta $thread render $pnorthlinesangle $pnorthlineswidth ");
         print "\nRendering png map without depressions\n";
         system(
-"perl pullauta-win  $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions"
+"pullauta $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions"
         );
     }
     else {
@@ -9146,7 +9146,7 @@ if ( $command eq 'unzipmtk' ) {
 
             $zip->extractTree( '', "temp$thread\\" );
 
-            system("perl pullauta-win  $thread mtkshaperender");
+            system("pullauta $thread mtkshaperender");
             print " ............. done\n";
         }
         $i++;
