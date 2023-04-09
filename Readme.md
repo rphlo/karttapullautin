@@ -4,6 +4,8 @@ Work In Progress
 
 Currently blocks, makecliffs, makevegenew and xyz2contour steps are translated to rust, however they can already be used within the full process.
 
+## Linux & Mac
+
 To use run:
 
 `cargo build --release`
