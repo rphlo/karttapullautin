@@ -1603,7 +1603,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let greenshades = conf.general_section().get("greenshades").unwrap_or("").split("|").collect::<Vec<&str>>();
     let yellowheight: f64 = conf.general_section().get("yellowheight").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
-    let yellowthreshold: f64 = conf.general_section().get("yellowthreshold").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
+    let yellowthreshold: f64 = conf.general_section().get("yellowthresold").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
     let greenground: f64 = conf.general_section().get("greenground").unwrap_or("0.9").parse::<f64>().unwrap_or(0.9);
     let pointvolumefactor: f64 = conf.general_section().get("pointvolumefactor").unwrap_or("0.1").parse::<f64>().unwrap_or(0.1);
     let pointvolumeexponent: f64 = conf.general_section().get("pointvolumeexponent").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
