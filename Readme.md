@@ -30,3 +30,8 @@ cp bin/las2txt /usr/local/bin/
 Finally run the perl script as you would run the pullautin.exe, it will invoke the rust binary when posible, eg: 
 
 `perl pullauta L3323H3.laz`
+
+
+## Windows
+
+On windows, you also need to compile the rust binary and put it in your path (same location where you put las2txt.exe), after that you can use the pullauta.exe file as you where using the original pullauta.exe file.
