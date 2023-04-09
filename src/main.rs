@@ -1883,6 +1883,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
+    imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
+
     for x in 2..w as usize {
         for y in 2..h as usize {
             let mut ghit2 = 0;
@@ -1951,7 +1953,6 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         imggr1 = imggr1b;
     }
     imggr1.save(Path::new(&format!("{}/greens.png", tmpfolder))).expect("could not save output png");
-    imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
     
     let mut img = image::open(Path::new(&format!("{}/greens.png", tmpfolder))).ok().expect("Opening image failed");
     let img2 = image::open(Path::new(&format!("{}/yellow.png", tmpfolder))).ok().expect("Opening image failed");
