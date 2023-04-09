@@ -1875,7 +1875,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     &mut imgye2, 
                     Rect::at(
                         x as i32 * 3 + 2,
-                        (hy as i32 - y as i32) * 3 - 4
+                        (hy as i32 - y as i32) * 3 - 3
                     ).of_size(3, 3),
                     ye2
                 );
