@@ -231,8 +231,7 @@ fn main() {
     }
 
     fn batch_process(thread: &String) {
-        let _out = Command::new("perl")
-                    .arg("pullauta")
+        let _out = Command::new("pullauta")
                     .arg("startthread")
                     .arg(thread)
                     .output();
