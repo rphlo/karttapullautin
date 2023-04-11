@@ -8244,8 +8244,8 @@ if ( $command eq 'render' ) {
     $y0      = 1 * $tfw[5];
     $resvege = 1 * $tfw[0];
 
-    $img = newFromPng GD::Image( $tempfolder . 'vegetation.png' );
-    $imgug = newFromPng GD::Image( $tempfolder . 'undergrowth.png' );
+    $img = newFromPng GD::Image( $tempfolder . 'vegetation.png', 1 );
+    $imgug = newFromPng GD::Image( $tempfolder . 'undergrowth.png', 1 );
 	
     ( $w, $h ) = $img->getBounds();
 
@@ -8256,7 +8256,7 @@ if ( $command eq 'render' ) {
       ( 250 / cos($angle) );
     $eastoff = -$eastoff / 254 * 600;
 
-    $img2 = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
+    $img2 = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1 );
 
     $white  = $img2->colorAllocate( 255, 255, 255 );
     $brown  = $img2->colorAllocate( 166, 85,  43 );
@@ -8748,8 +8748,8 @@ EOF";
     if ( -e $tempfolder . 'blocks.png' ) {
 
         #$blocks = new GD::Image( $w * 600 / 254, $h * 600 / 254 );
-        $blocks = newFromPng GD::Image( $tempfolder . 'blocks.png' );
-        $blockpurple = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
+        $blocks = newFromPng GD::Image( $tempfolder . 'blocks.png', 1 );
+        $blockpurple = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1 );
 
 # $bpurple  = $blockpurple->colorAllocate( 0, 0, 120 );
 #      $blockpurple->filledRectangle( 0,0, $w * 600 / 254+1, $h * 600 / 254+1, bpurple );
@@ -8782,7 +8782,7 @@ EOF";
         $img2->copy( $blockpurple, 2, 0, 0, 0, $w * 600 / 254/$scalefactor, $h * 600 / 254/$scalefactor );
         $img2->copy( $blockpurple, 2, 2, 0, 0, $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
 
-        $blockpurple = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
+        $blockpurple = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1 );
 
         $bpurple = $blockpurple->colorAllocate( 255, 110, 255 );
         $blockpurple->filledRectangle(
@@ -8808,11 +8808,11 @@ EOF";
 
     if ( -e $tempfolder . 'blueblack.png' ) {
 
-        $blueb = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
+        $blueb = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1 );
 
         $bbwhite = $blueb->colorAllocate( 255, 255, 255 );
         $bbblue  = $blueb->colorAllocate( 0,   0,   200 );
-        $imgbb = newFromPng GD::Image( $tempfolder . 'blueblack.png' );
+        $imgbb = newFromPng GD::Image( $tempfolder . 'blueblack.png', 1 );
 		
         $blueb->copyResized(
             $imgbb, 0, 0, 0, 0,
@@ -9062,8 +9062,8 @@ $cliffcolor{'cliff4'}=$black;
 
     if ( -e $tempfolder . 'high.png' ) {
 
-        $imgtemp = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
-        $high = newFromPng GD::Image( $tempfolder . 'high.png' );
+        $imgtemp = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1 );
+        $high = newFromPng GD::Image( $tempfolder . 'high.png', 1 );
         $imgtemp->copy( $high, 0, 0, 0, 0, $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
 
         $northblue = $high->colorAllocate( 0, 0, 200 );
