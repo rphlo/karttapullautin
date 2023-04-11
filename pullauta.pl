@@ -1599,11 +1599,7 @@ $ymax
 }
 
 if ( $command eq '' && $batch == 1 && $proc > 1 ) {
-    for ( $i = 1 ; $i < $proc + 1 ; $i++ ) {
-
-        # start independent shell window
-        system("start pullauta startthread $i");
-    }
+    system("rusty-pullauta");
     exit;
 }
 
