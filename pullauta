@@ -1620,7 +1620,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
     mkdir $batchoutfolder;
 
     unlink "ziplist$thread.txt";
-    system( 'ls -1 ' . $lazfolder . '*.zip /b > ziplist' . $thread . '.txt' );
+    system( 'ls -1 ' . $lazfolder . '*.zip > ziplist' . $thread . '.txt' );
 
     open( SISAAN, "<ziplist" . $thread . ".txt" );
     @ziplist = <SISAAN>;
