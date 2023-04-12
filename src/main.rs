@@ -9,7 +9,7 @@ use std::fs::File;
 use std::fs;
 use std::io::{self, BufRead};
 use image::{RgbImage, RgbaImage, Rgb, Rgba};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
 use std::collections::HashMap;
@@ -231,12 +231,23 @@ fn main() {
     }
 
     fn batch_process(thread: &String) {
-        let _out = Command::new("pullauta")
-                    .arg("startthread")
-                    .arg(thread)
-                    .output();
+        if cfg!(target_os = "windows") {
+            Command::new("pullauta.exe")
+                .arg("startthread")
+                .arg(thread)
+                .stdout(Stdio::inherit())
+                .output()
+                .expect("Failed to run pullauta thread");
+        } else {
+            Command::new("perl")
+                .arg("pullauta")
+                .arg("startthread")
+                .arg(thread)
+                .stdout(Stdio::inherit())
+                .output()
+                .expect("Failed to run pullauta thread");
+        }
         // let _thread_number = thread.parse::<u64>().unwrap_or(0);
-        // println!("Not implemented further");
         return();
     }
 
