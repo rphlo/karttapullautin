@@ -1075,7 +1075,7 @@ if ( $command eq 'dxfmerge'||  $command eq 'merge' ) {
 
     use File::stat;
 
-    system( 'dir ' . $batchoutfolderwin . '/*.dxf /b > dxflist.txt' );
+    system( 'ls -1 ' . $batchoutfolderwin . '/*.dxf > dxflist.txt' );
 
     open( SISAAN, "<dxflist.txt" );
     @dxflist = <SISAAN>;
@@ -1312,7 +1312,7 @@ if ( $command eq 'pngmerge' || $command eq 'pngmergedepr' ) {
     use GD;
     use File::stat;
 
-    system( 'dir ' . $batchoutfolderwin . '/*.png /b > pnglist.txt' );
+    system( 'ls -1 ' . $batchoutfolderwin . '/*.png > pnglist.txt' );
 
     open( SISAAN, "<pnglist.txt" );
     @pnglist = <SISAAN>;
@@ -1468,7 +1468,7 @@ if ( $command eq 'pngmergevege' ) {
     use GD;
     use File::stat;
 
-    system( 'dir ' . $batchoutfolderwin . '\*_vege.png /b > pnglist.txt' );
+    system( 'ls -1 ' . $batchoutfolderwin . '\*_vege.png > pnglist.txt' );
 
     open( SISAAN, "<pnglist.txt" );
     @pnglist = <SISAAN>;
