@@ -1873,79 +1873,15 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                 print OUT @tfw;
                 close OUT;
                 ## dxf files
-
-                open( SISAAN, "<temp$thread/out2.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_contours.dxf' );
-                print OUT $out;
-                close OUT;
-
+                system("rusty-pullauta polylinedxfcrop temp$thread/out2.dxf " . $batchoutfolderwin . "/". $laz . "_contours.dxf $minx $miny $maxx $maxy");
                 ## out2.dxf done
-
-                open( SISAAN, "<temp$thread/c2g.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_c2g.dxf' );
-                print OUT $out;
-                close OUT;
-
-                open( SISAAN, "<temp$thread/c3g.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_c3g.dxf' );
-                print OUT $out;
-                close OUT;
-
-				
-                open( SISAAN, "<temp$thread/contours03.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                        ">"
-                      . $batchoutfolderwin . "/"
-                      . $laz
-                      . '_contours03.dxf' );
-                print OUT $out;
-                close OUT;
-
-                open( SISAAN, "<temp$thread/detected.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_detected.dxf' );
-                print OUT $out;
-                close OUT;
+                system("rusty-pullauta polylinedxfcrop temp$thread/c2g.dxf " . $batchoutfolderwin . "/". $laz . "_c2g.dxf $minx $miny $maxx $maxy");
+                system("rusty-pullauta polylinedxfcrop temp$thread/c3g.dxf " . $batchoutfolderwin . "/". $laz . "_c3g.dxf $minx $miny $maxx $maxy");
+                system("rusty-pullauta polylinedxfcrop temp$thread/contours03.dxf " . $batchoutfolderwin . "/". $laz . "_contours03.dxf $minx $miny $maxx $maxy");
+                system("rusty-pullauta polylinedxfcrop temp$thread/detected.dxf " . $batchoutfolderwin . "/". $laz . "_detected.dxf $minx $miny $maxx $maxy");
 
 				if(-e "temp$thread/formlines.dxf"){
-				 open( SISAAN, "<temp$thread/formlines.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_formlines.dxf' );
-                print OUT $out;
-                close OUT;
+                    system("rusty-pullauta polylinedxfcrop temp$thread/formlines.dxf " . $batchoutfolderwin . "/". $laz . "_formlines.dxf $minx $miny $maxx $maxy");
 				}
 				
                 ## dotknolls.dxf
@@ -1985,20 +1921,9 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                 ## dotknolls.dxf done
             }
 
-			
-				if($basemapcontours>0){
-                open( SISAAN, "<temp$thread/basemap.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-				 &polylinedxfcrop;
-	            open( OUT,
-                        ">"
-                      . $batchoutfolderwin . "/"
-                      . $laz
-                      . '_basemap.dxf' );
-                print OUT $out;
-                close OUT;			
-				}
+			if ( $basemapcontours > 0 ){
+                system("rusty-pullauta polylinedxfcrop temp$thread/basemap.dxf " . $batchoutfolderwin . "/". $laz . "_basemap.dxf $minx $miny $maxx $maxy");	
+			}
 			
             if ( $savetempfolders == 1 ) {
                 system "mkdir \"temp_" . $laz . "_dir\"";
@@ -10887,7 +10812,6 @@ sub polylinedxfcrop() {
                 $out .= $poly;
             }
         }
-
     }
 
     if ( $out =~ /EOF/ ) {

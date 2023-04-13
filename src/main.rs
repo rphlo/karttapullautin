@@ -69,8 +69,14 @@ fn main() {
         println!("USAGE:\npullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee readme.txt for more details");
     }
 
-    if command == "groundfix" {
-        println!("Not implemented");
+    if command == "polylinedxfcrop" {
+        let dxffilein = Path::new(&args[0]);
+        let dxffileout = Path::new(&args[1]);
+        let minx = args[2].parse::<f64>().unwrap();
+        let miny = args[3].parse::<f64>().unwrap();
+        let maxx = args[4].parse::<f64>().unwrap();
+        let maxy = args[5].parse::<f64>().unwrap();
+        polylinedxfcrop(&dxffilein, &dxffileout, minx, miny, maxx, maxy).unwrap();
         return();
     }
 
@@ -765,6 +771,7 @@ SEQEND
 
     f2.write("ENDSEC
   0
+EOF
 ".as_bytes()).expect("Cannot write dxf file");
     
     let c2_limit = 2.6 * 2.75;
@@ -928,6 +935,7 @@ SEQEND
     }
     f3.write("ENDSEC
   0
+EOF
 ".as_bytes()).expect("Cannot write dxf file");
     img.save(Path::new(&format!("{}/c2.png", tmpfolder))).expect("could not save output png");
     println!("Done");
@@ -2120,5 +2128,92 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 ", xmin, ymax).as_bytes()).expect("Cannot write pgw file");
 
     println!("Done");
+    Ok(())
+}
+
+fn polylinedxfcrop(input: &Path, output: &Path, minx: f64, miny: f64, maxx: f64, maxy: f64)  -> Result<(), Box<dyn Error>> {
+    let data = fs::read_to_string(input)
+            .expect("Should have been able to read the file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+    let dxfhead = data[0];
+    let mut out = String::new();
+    out.push_str(&dxfhead);
+    for (j, rec) in data.iter().enumerate() {
+        let mut poly = String::new();
+        let mut pre = "";
+        let mut prex = 0.0;
+        let mut prey = 0.0;
+        let mut pointcount = 0;
+        if j > 0 {
+            if let Some((head, rec2)) = rec.split_once("VERTEX") {
+                let r: Vec<&str> = rec2.split("VERTEX").collect();
+                poly.push_str(&format!("POLYLINE{}", head));
+                for apu in r.iter() {
+                    let (apu2, _notused) = apu.split_once("SEQEND").unwrap_or((apu, ""));
+                    let val: Vec<&str> = apu2.split("\n").collect();
+                    let mut xline = 0;
+                    let mut yline = 0;
+                    for (i, v) in val.iter().enumerate() {
+                        let v2 = v.trim_end();
+                        if v2 == " 10" {
+                            xline = i + 1;
+                        }
+                        if v2 == " 20" {
+                            yline = i + 1;
+                        }
+                    }
+                    
+                    if val[xline].parse::<f64>().unwrap_or(0.0) >= minx
+                    && val[xline].parse::<f64>().unwrap_or(0.0) <= maxx
+                    && val[yline].parse::<f64>().unwrap_or(0.0) >= miny
+                    && val[yline].parse::<f64>().unwrap_or(0.0) <= maxy {
+                        if pre != "" && pointcount == 0 && (prex < minx || prey < miny) {
+                            poly.push_str(&format!("VERTEX{}", pre));
+                            pointcount += 1;
+                        }
+                        poly.push_str(&format!("VERTEX{}", apu));
+                        pointcount += 1;
+                        
+                    } else {
+                        if pointcount > 1 {
+                            if val[xline].parse::<f64>().unwrap() < minx ||
+                            val[yline].parse::<f64>().unwrap() < miny {
+                                poly.push_str(&format!("VERTEX{}", apu));
+                            }
+                            if !poly.contains("SEQEND") {
+                                poly.push_str("SEQEND
+0
+");
+                            }
+                            out.push_str(&poly);
+                            poly = format!("POLYLINE{}", head);
+                            pointcount = 0;
+                        }
+                    }
+                    pre = apu2.clone();
+                    prex = val[xline].parse::<f64>().unwrap_or(0.0);
+                    prey = val[xline].parse::<f64>().unwrap_or(0.0);
+                }
+                if !poly.contains("SEQEND") {
+                    poly.push_str("SEQEND
+  0
+");
+                }
+                if pointcount > 1 {
+                    out.push_str(&poly);
+                }
+            }
+        }
+    }
+
+    if !out.contains("EOF") {
+        out.push_str("ENDSEC
+  0
+EOF
+");
+    }
+    let fp = File::create(output).expect("Unable to create file");
+    let mut fp = BufWriter::new(fp);
+    fp.write(out.as_bytes()).expect("Unable to write file");
     Ok(())
 }
