@@ -80,6 +80,17 @@ fn main() {
         return();
     }
 
+    if command == "pointdxfcrop" {
+        let dxffilein = Path::new(&args[0]);
+        let dxffileout = Path::new(&args[1]);
+        let minx = args[2].parse::<f64>().unwrap();
+        let miny = args[3].parse::<f64>().unwrap();
+        let maxx = args[4].parse::<f64>().unwrap();
+        let maxy = args[5].parse::<f64>().unwrap();
+        pointdxfcrop(&dxffilein, &dxffileout, minx, miny, maxx, maxy).unwrap();
+        return();
+    }
+
     if command == "profile" {
         println!("Not implemented");
         return();
@@ -2212,6 +2223,35 @@ fn polylinedxfcrop(input: &Path, output: &Path, minx: f64, miny: f64, maxx: f64,
 EOF
 ");
     }
+    let fp = File::create(output).expect("Unable to create file");
+    let mut fp = BufWriter::new(fp);
+    fp.write(out.as_bytes()).expect("Unable to write file");
+    Ok(())
+}
+
+fn pointdxfcrop(input: &Path, output: &Path, minx: f64, miny: f64, maxx: f64, maxy: f64)  -> Result<(), Box<dyn Error>> {
+    let data = fs::read_to_string(input)
+            .expect("Should have been able to read the file");
+    let mut data: Vec<&str> = data.split("POINT").collect();
+    let dxfhead = data[0];
+    let mut out = String::new();
+    out.push_str(&dxfhead);
+    let (d2, ending) = data[data.len() - 1].split_once("ENDSEC").unwrap_or((data[data.len() - 1], ""));
+    let last_idx= data.len() - 1;
+    let end = format!("ENDSEC{}", ending);
+    data[last_idx] = d2;
+    for (j, rec) in data.iter().enumerate() {
+        if j > 0 {
+            let val: Vec<&str> = rec.split("\n").collect();
+            if val[4].parse::<f64>().unwrap_or(0.0) >= minx
+            && val[4].parse::<f64>().unwrap_or(0.0) <= maxx
+            && val[6].parse::<f64>().unwrap_or(0.0) >= miny
+            && val[6].parse::<f64>().unwrap_or(0.0) <= maxy {
+                out.push_str(&format!("POINT{}", rec));
+            }
+        }
+    }
+    out.push_str(&end);
     let fp = File::create(output).expect("Unable to create file");
     let mut fp = BufWriter::new(fp);
     fp.write(out.as_bytes()).expect("Unable to write file");
