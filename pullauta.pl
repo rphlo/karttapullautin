@@ -1888,41 +1888,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                     system("rusty-pullauta polylinedxfcrop temp$thread/formlines.dxf " . $batchoutfolderwin . "/". $laz . "_formlines.dxf $minx $miny $maxx $maxy");
 				}
 				
-                ## dotknolls.dxf
-                open( SISAAN, "<temp$thread/dotknolls.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                $out = '';
-
-                $d = join( '', @d );
-
-                @d = split( /POINT/, $d );
-                $out .= $d[0];
-                ( $d[$#d], $end ) = split( /ENDSEC/, $d[$#d], 20 );
-                $end = 'ENDSEC' . $end;
-                $j   = 0;
-                foreach $rec (@d) {
-                    $j++;
-                    if ( $j > 1 ) {
-                        @temp = split( /\n/, $rec );
-
-                        if (   $temp[4] >= $minx
-                            && $temp[4] <= $maxx
-                            && $temp[6] >= $miny
-                            && $temp[6] <= $maxy )
-                        {
-                            $out .= 'POINT' . $rec;
-
-                        }
-                    }
-                }
-                $out .= $end;
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_dotknolls.dxf' );
-                print OUT $out;
-                close OUT;
-                ## dotknolls.dxf done
+                system("rusty-pullauta pointdxfcrop temp$thread/dotknolls.dxf " . $batchoutfolderwin . "/". $laz . "_dotknolls.dxf $minx $miny $maxx $maxy");
             }
 
 			if ( $basemapcontours > 0 ){
