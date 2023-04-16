@@ -1,8 +1,14 @@
 # Rusty Kartta Pullautin
 
-Work In Progress
+Rusty-Pullauta is a application that is designed to generate highly accurate maps out of LIDAR data input files. Built using the Rust programming language, Rusty-Pullauta is an efficient fork of the Kartta-pullautin Windows software, that takes advantage of Rust's performance to deliver faster and copy conform results on Linux, Mac and Windows.
 
-Currently blocks, makecliffs, makevegenew and xyz2contour steps are translated to rust, however they can already be used within the full process.
+With Rusty-Pullauta, users can expect to achieve up to 10 times faster results compared to the previous software. This is achieved through the use of Rust's ability to compile to efficient, low-level code.
+
+Rusty-Pullauta supports a wide range of LIDAR data input file formats, including LAS, LAZ, and XYZ. The software also includes advanced algorithms for filtering, classification, and feature extraction, ensuring that users can generate highly accurate maps with ease.
+
+In addition to its performance and accuracy, With its powerful features and fast results, Rusty-Pullauta is a must-have tool for anyone working with LIDAR data to generate orienteering maps.
+
+### Warning: this app is in active development phase, currently few steps are still executed with the old perl script, however the full process can already be used to generate maps.
 
 ## Linux & Mac
 
