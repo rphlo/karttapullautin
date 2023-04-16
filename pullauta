@@ -6754,7 +6754,7 @@ if ( $command eq 'xyzknolls' ) {
         $dist{$l} = $min;
     }
 
-##
+    ## kayak
     $l = 0;
     foreach $rec (@pins) {
         $l++;

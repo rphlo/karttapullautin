@@ -1665,8 +1665,22 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
             dist.insert(l, min);
         }
     }
+
     if let Ok(lines) = read_lines(&pins_file_in) {
         for (l, line) in lines.enumerate() {
+
+            let ip = line.unwrap_or(String::new());
+            let r = ip.split(",").collect::<Vec<&str>>();
+            let x = r[0].parse::<f64>().unwrap();
+            let y = r[1].parse::<f64>().unwrap();
+            let ele = r[2].parse::<f64>().unwrap();
+            let xx = r[3].parse::<f64>().unwrap();
+            let yy = r[4].parse::<f64>().unwrap();
+            let ele2 = r[5].parse::<f64>().unwrap();
+            let xlist = r[6];
+            let ylist = r[7];
+        }
+    }
     Ok(())
 }
 
