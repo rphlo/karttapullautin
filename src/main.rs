@@ -1761,7 +1761,7 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
                         }
                         x0 = x1;
                         y0 = y1;
-                    }q
+                    }
                     if hit % 2 == 1 {
                         let tmp =  *xyz2.get(&(ii as u64, jj as u64)).unwrap_or(&0.0) + move1;
                         xyz2.insert((ii as u64, jj as u64), tmp);
