@@ -1631,7 +1631,6 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
             let steepness = high - low;
             if steepness < 1.25 {
                 let tmp = (1.25 - steepness) * (val - low - high) / (count as f64 - 2.0) / 1.25 + steepness * (*xyz2.get(&(i as u64, j as u64)).unwrap_or(&0.0)) / 1.25;
-                println!("> {} {} {} {} {} {}", tmp, steepness, high, low, val, count);
                 xyz2.insert((i as u64, j as u64), tmp);
             }
         }
