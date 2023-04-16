@@ -6754,13 +6754,9 @@ if ( $command eq 'xyzknolls' ) {
         $dist{$l} = $min;
     }
 
-    ## kayak
     $l = 0;
     foreach $rec (@pins) {
         $l++;
-
-        # print "$l / $#pins\n";
-
         ( $x, $y, $ele, $xx, $yy, $ele2, $xlist, $ylist ) = split( /\,/, $rec );
         $x = floor( ( $x - $xstart ) / $size );
         $y = floor( ( $y - $ystart ) / $size );
@@ -6871,7 +6867,6 @@ if ( $command eq 'xyzknolls' ) {
         if ( $sivu < 1 )  { $sivu = 1; }
         if ( $sivu > 12 ) { $sivu = 12; }
 
-        #print "sivu $sivu\n";
         for ( $ii = $xx - $sivu ; $ii < $xx + $sivu + 1 ; $ii++ ) {
             for ( $jj = $yy - $sivu ; $jj < $yy + $sivu + 1 ; $jj++ ) {
                 $tmp =

@@ -124,6 +124,10 @@ fn main() {
     if command == "makevegenew" {
         makevegenew(&thread).unwrap();
     }
+    if command == "xyzknolls" {
+        xyzknolls(&thread).unwrap();
+    }
+
     if command == "blocks" {
         let tmpfolder = format!("temp{}", thread);
 
@@ -1555,7 +1559,7 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let tmpfolder = format!("temp{}", thread);
 
-    let path = format!("{}/xyz2.xyz", tmpfolder);
+    let path = format!("{}/xyz_03.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
     
     let mut xstart: f64 = 0.0;
@@ -1607,8 +1611,8 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
 
     for i in 2..(xmax as usize - 1) {
         for j in 2..(ymax as usize - 1) {
-            let mut low = f64::MIN;
-            let mut high = f64::MAX;
+            let mut low = f64::MAX;
+            let mut high = f64::MIN;
             let mut val = 0.0;
             let mut count = 0;
             for ii in (i-2)..(i+3) {
@@ -1623,11 +1627,12 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
                     count += 1;
                     val += tmp;
                 }
-                let steepness = high -low;
-                if steepness < 1.25 {
-                    let tmp = (1.25 - steepness) * (val - low - high) / (count as f64 - 2.0) / 1.25 + steepness * (*xyz2.get(&(i as u64, j as u64)).unwrap_or(&0.0)) / 1.25;
-                    xyz2.insert((i as u64, j as u64), tmp);
-                }
+            }
+            let steepness = high - low;
+            if steepness < 1.25 {
+                let tmp = (1.25 - steepness) * (val - low - high) / (count as f64 - 2.0) / 1.25 + steepness * (*xyz2.get(&(i as u64, j as u64)).unwrap_or(&0.0)) / 1.25;
+                println!("> {} {} {} {} {} {}", tmp, steepness, high, low, val, count);
+                xyz2.insert((i as u64, j as u64), tmp);
             }
         }
     }
@@ -1644,20 +1649,28 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
             let r = ip.split(",").collect::<Vec<&str>>();
             let xx = r[3].parse::<f64>().unwrap();
             let yy = r[4].parse::<f64>().unwrap();
+
+            let xxx = ((xx - xstart) / size).floor();
+            let yyy = ((yy - ystart) / size).floor();
+
             if let Ok(lines2) = read_lines(&pins_file_in) {
                 for (k, line2) in lines2.enumerate() {
                     let ip2 = line2.unwrap_or(String::new());
                     let r2 = ip2.split(",").collect::<Vec<&str>>();
                     let xx2 = r2[3].parse::<f64>().unwrap();
                     let yy2 = r2[4].parse::<f64>().unwrap();
+
+                    let xxx2 = ((xx2 - xstart) / size).floor();
+                    let yyy2 = ((yy2 - ystart) / size).floor();
+
                     if k != l {
-                        let mut disx = (xx2 - xx).abs();
-                        let disy = (yy2 - yy).abs();
-                        if disy > disx {
-                            disx = disy;
+                        let mut dis = (xxx2 - xxx).abs();
+                        let disy = (yyy2 - yyy).abs();
+                        if disy > dis {
+                            dis = disy;
                         }
-                        if disx < min {
-                            min = disx;
+                        if dis < min {
+                            min = dis;
                         }
                     }
                 }
@@ -1668,17 +1681,143 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
 
     if let Ok(lines) = read_lines(&pins_file_in) {
         for (l, line) in lines.enumerate() {
-
             let ip = line.unwrap_or(String::new());
             let r = ip.split(",").collect::<Vec<&str>>();
-            let x = r[0].parse::<f64>().unwrap();
-            let y = r[1].parse::<f64>().unwrap();
             let ele = r[2].parse::<f64>().unwrap();
             let xx = r[3].parse::<f64>().unwrap();
             let yy = r[4].parse::<f64>().unwrap();
             let ele2 = r[5].parse::<f64>().unwrap();
             let xlist = r[6];
             let ylist = r[7];
+            let mut x: Vec<f64> = xlist.split(" ").map(|s| s.parse::<f64>().unwrap()).collect();
+            let mut y: Vec<f64> = ylist.split(" ").map(|s| s.parse::<f64>().unwrap()).collect();
+            x.push(x[0]);
+            y.push(y[0]);
+
+            let elenew = ((ele - 0.09) / interval + 1.0).floor() * interval;
+            let mut move1 = elenew - ele + 0.15;
+            let mut move2 = move1 * 0.4;
+            if move1 > 0.66 * interval {
+                move2 = move1 * 0.6;
+            }
+            if move1 < 0.25 * interval {
+                move2 = 0.0;
+                move1 = move1 + 0.3;
+            }
+            move1 += 0.5;
+            if ele2 + move1 > ((ele - 0.09) / interval + 2.0).floor() * interval {
+                move1 -= 0.4;
+            }
+            if elenew - ele > 1.5 * scalefactor {
+                if x.len() > 21 {
+                    for k in 0..x.len() {
+                        x[k] = xx + (x[k] - xx) * 0.8;
+                        y[k] = yy + (y[k] - yy) * 0.8;
+                    }
+                }
+            }
+            let mut touched: HashMap<String, bool> = HashMap::new();
+            let mut minx = u64::MAX;
+            let mut miny = u64::MAX;
+            let mut maxx = u64::MIN;
+            let mut maxy = u64::MIN;
+            for k in 0..x.len() {
+                x[k] = ((x[k] - xstart) / size + 0.5).floor();
+                y[k] = ((y[k] - ystart) / size + 0.5).floor();
+                let xk = x[k] as u64;
+                let yk = y[k] as u64;
+                if xk > maxx {
+                    maxx = xk;
+                }
+                if yk > maxy {
+                    maxy = yk;
+                }
+                if xk < minx {
+                    minx = xk;
+                }
+                if yk < miny {
+                    miny = yk;
+                }
+            }
+
+            let xx = ((xx - xstart) / size).floor();
+            let yy = ((yy - ystart) / size).floor();
+
+            let mut x0 = 0.0;
+            let mut y0 = 0.0;
+
+            for ii in minx as usize..(maxx as usize + 1) {
+                for jj in miny as usize..(maxy as usize + 1) {
+                    let mut hit = 0;
+                    let xtest = ii as f64;
+                    let ytest = jj as f64;
+                    for n in 0..x.len() {
+                        let x1 = x[n];
+                        let y1 = y[n];
+                        if n > 1
+                        && ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0))
+                        && xtest < (x1 - x0) * (ytest - y0) / (y1 - y0) + x0 {
+                            hit += 1;
+                        }
+                        x0 = x1;
+                        y0 = y1;
+                    }q
+                    if hit % 2 == 1 {
+                        let tmp =  *xyz2.get(&(ii as u64, jj as u64)).unwrap_or(&0.0) + move1;
+                        xyz2.insert((ii as u64, jj as u64), tmp);
+                        let coords = format!("{}_{}", ii, jj);
+                        touched.insert(coords, true);
+                    }
+                }
+            }
+            let mut range = *dist.get(&l).unwrap_or(&0.0) * 0.8 - 1.0;
+            if range < 1.0 {
+                range = 1.0;
+            }
+            if range > 12.0 {
+                range = 12.0;
+            }
+            for iii in 0..((range * 2.0 + 1.0) as usize) {
+                for jjj in 0..((range * 2.0 + 1.0) as usize) {
+                    let ii: f64 = xx - range + iii as f64;
+                    let jj: f64 = yy - range + jjj as f64;
+                    if ii > 0.0 && ii < xmax as f64 + 1.0 && jj > 0.0 && jj < ymax as f64 + 1.0 {
+                        let coords = format!("{}_{}", ii, jj);
+                        if !*touched.get(&coords).unwrap_or(&false) {
+                            let tmp = *xyz2.get(&(ii.floor() as u64, jj.floor() as u64)).unwrap_or(&0.0) + (range - (xx - ii as f64).abs()) / range * (range - (yy - jj as f64).abs()) / range * move2;
+                            xyz2.insert((ii.floor() as u64, jj.floor() as u64), tmp);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    let f2 = File::create(&Path::new(&format!("{}/xyz_knolls.xyz", tmpfolder))).expect("Unable to create file");
+    let mut f2 = BufWriter::new(f2);
+
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let mut r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut h = *xyz2.get(&(((x - xstart)/size).floor() as u64, ((y - ystart)/size).floor() as u64)).unwrap_or(&0.0);
+            let tmp = (h / interval + 0.5).floor() * interval;
+            if (tmp - h).abs() < 0.02 {
+                if h - tmp < 0.0 {
+                    h = tmp - 0.02;
+                } else {
+                    h = tmp + 0.02;
+                }
+            }
+            let new_val = format!("{}", h);
+            r[2] = &new_val;
+            let out = r.join(" ");
+            f2.write(&out.as_bytes()).expect("cannot write to file");
+            f2.write("\n".as_bytes()).expect("cannot write to file");
         }
     }
     Ok(())
