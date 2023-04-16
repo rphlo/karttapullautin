@@ -2084,7 +2084,7 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
 	}
 ## xyz_knolls
     print "\nContour generation part 1\n";
-    system("pullauta $thread xyzknolls");
+    system("rusty-pullauta $thread xyzknolls");
     if(1*$Config->{_}->{skipknolldetection} != 1){
         ## contours 2.5
         print "\nContour generation part 2\n";
