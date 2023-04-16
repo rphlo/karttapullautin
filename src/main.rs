@@ -1546,6 +1546,130 @@ fn check_obj_in (obj: &mut Vec<String>, curves: &mut HashMap<String, String>, x1
     }
 }
 
+fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
+    println!("Running xyzknolls");
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+
+    let interval = 2.5 * scalefactor;
+
+    let tmpfolder = format!("temp{}", thread);
+
+    let path = format!("{}/xyz2.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
+    
+    let mut xstart: f64 = 0.0;
+    let mut ystart: f64 = 0.0;
+    let mut size: f64 = 0.0;
+
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for (i, line) in lines.enumerate() {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            if i == 0 {
+                xstart = x;
+                ystart = y;
+            } else if i == 1 {
+                size = y - ystart;
+            } else {
+                break;
+            }
+        }
+    }
+    let mut xmax: u64 = 0;
+    let mut ymax: u64 = 0;
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
+    let mut xyz2: HashMap<(u64, u64), f64> = HashMap::new();
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            let h: f64 = r[2].parse::<f64>().unwrap();
+
+            let xx = ((x - xstart) / size).floor() as u64;
+            let yy = ((y - ystart) / size).floor() as u64;
+            xyz.insert((xx, yy), h);
+            xyz2.insert((xx, yy), h);
+            if xmax < xx {
+                xmax = xx;
+            }
+            if ymax < yy {
+                ymax = yy;
+            }
+        }
+    }
+
+    for i in 2..(xmax as usize - 1) {
+        for j in 2..(ymax as usize - 1) {
+            let mut low = f64::MIN;
+            let mut high = f64::MAX;
+            let mut val = 0.0;
+            let mut count = 0;
+            for ii in (i-2)..(i+3) {
+                for jj in (j-2)..(j+3) {
+                    let tmp = *xyz.get(&(ii as u64, jj as u64)).unwrap_or(&0.0);
+                    if tmp < low {
+                        low = tmp;
+                    }
+                    if tmp > high {
+                        high = tmp;
+                    }
+                    count += 1;
+                    val += tmp;
+                }
+                let steepness = high -low;
+                if steepness < 1.25 {
+                    let tmp = (1.25 - steepness) * (val - low - high) / (count as f64 - 2.0) / 1.25 + steepness * (*xyz2.get(&(i as u64, j as u64)).unwrap_or(&0.0)) / 1.25;
+                    xyz2.insert((i as u64, j as u64), tmp);
+                }
+            }
+        }
+    }
+
+
+    let path = format!("{}/pins.txt", tmpfolder);
+    let pins_file_in = Path::new(&path);
+
+    let mut dist: HashMap<usize, f64> = HashMap::new();
+    if let Ok(lines) = read_lines(&pins_file_in) {
+        for (l, line) in lines.enumerate() {
+            let mut min = f64::MAX;
+            let ip = line.unwrap_or(String::new());
+            let r = ip.split(",").collect::<Vec<&str>>();
+            let xx = r[3].parse::<f64>().unwrap();
+            let yy = r[4].parse::<f64>().unwrap();
+            if let Ok(lines2) = read_lines(&pins_file_in) {
+                for (k, line2) in lines2.enumerate() {
+                    let ip2 = line2.unwrap_or(String::new());
+                    let r2 = ip2.split(",").collect::<Vec<&str>>();
+                    let xx2 = r2[3].parse::<f64>().unwrap();
+                    let yy2 = r2[4].parse::<f64>().unwrap();
+                    if k != l {
+                        let mut disx = (xx2 - xx).abs();
+                        let disy = (yy2 - yy).abs();
+                        if disy > disx {
+                            disx = disy;
+                        }
+                        if disx < min {
+                            min = disx;
+                        }
+                    }
+                }
+            }
+            dist.insert(l, min);
+        }
+    }
+    if let Ok(lines) = read_lines(&pins_file_in) {
+        for (l, line) in lines.enumerate() {
+    Ok(())
+}
+
 fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Running makevege");
 
@@ -1576,9 +1700,6 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let mut xmax: f64 = 0.0;
-    let mut ymax: f64 = 0.0;
-
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let block: f64 = conf.general_section().get("greendetectsize").unwrap_or("3").parse::<f64>().unwrap_or(3.0);
     
@@ -1592,18 +1713,16 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
             let h: f64 = r[2].parse::<f64>().unwrap();
-            xyz.insert((((x - xstart) / size).floor() as u64,((y - ystart) / size).floor() as u64), h);
-            if xmax < ((x - xstart) / size).floor() {
-                xmax = ((x - xstart) / size).floor();
-            }
-            if ymax < ((y - ystart) / size).floor() {
-                ymax = ((y - ystart) / size).floor();
-            }
 
-            if top.contains_key(&(((x - xstart) / block).floor() as u64,((y - ystart) / block).floor() as u64))
-                && h > *top.get(&(((x - xstart) / block).floor() as u64,((y - ystart) / block).floor() as u64)).unwrap()
+            let xx = ((x - xstart) / size).floor() as u64;
+            let yy = ((y - ystart) / size).floor() as u64;
+            xyz.insert((xx, yy), h);       
+            let xxx = ((x - xstart) / block).floor() as u64;
+            let yyy = ((y - ystart) / block).floor() as u64;
+            if top.contains_key(&(xxx, yyy))
+                && h > *top.get(&(xxx, yyy)).unwrap()
             {
-                top.insert((((x - xstart) / block).floor() as u64,((y - ystart) / block).floor() as u64), h);
+                top.insert((xxx, yyy), h);
             }
         }
     }

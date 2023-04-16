@@ -2060,7 +2060,7 @@ to the same folder as pullautin.exe \n ";
 ## 2m grid & controus 0.3
     print "\nKnoll detection part 1\n";
     system(
-"rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
+        "rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
     );
  
 
@@ -2134,9 +2134,7 @@ to the same folder as pullautin.exe \n ";
         print "\nRendering png map with depressions\n";
         system("perl pullauta $thread render $pnorthlinesangle $pnorthlineswidth ");
         print "\nRendering png map without depressions\n";
-        system(
-"perl pullauta $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions"
-        );
+        system("perl pullauta $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions");
     }
     else {
         print "Skipped rendering";
