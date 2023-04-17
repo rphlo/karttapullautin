@@ -441,7 +441,6 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
             }
         }
     }
-
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
     let mut size: f64 = f64::NAN;
@@ -466,6 +465,7 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
             }
         }
     }
+
     let mut xyz = vec![vec![f64::NAN; ((ymax - ystart) / size).ceil() as usize + 1]; ((xmax - xstart) / size).ceil() as usize + 1];
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for line in lines {
@@ -489,6 +489,7 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
             }
         }
     }
+
     let mut steepness = vec![vec![f64::NAN; symax+1]; sxmax+1];
     for i in 3..sxmax-4 {
         for j in 3..symax-4 {
@@ -514,7 +515,7 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
     xmin = (xmin / 3.0 ).floor() * 3.0;
     ymin = (ymin / 3.0 ).floor() * 3.0;
     
-    let mut list_alt = vec![vec![Vec::<String>::new(); (((ymax - ymin) / 3.0).ceil() + 1.0) as usize]; (((xmax - xmin) / 3.0).ceil() + 1.0) as usize];
+    let mut list_alt = vec![vec![Vec::<(f64, f64, f64)>::new(); (((ymax - ymin) / 3.0).ceil() + 1.0) as usize]; (((xmax - xmin) / 3.0).ceil() + 1.0) as usize];
     
     let path = format!("{}/xyztemp.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
@@ -530,9 +531,8 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
                 let y: f64 = r[1].parse::<f64>().unwrap();
                 let h: f64 = r[2].parse::<f64>().unwrap();
                 if r[3] == "2" {
-                    let val_tmp = format!("{:.1} {:.1} {:.2}", x, y, h);
                     list_alt[((x - xmin).floor() / 3.0) as usize][((y - ymin ).floor() / 3.0) as usize].push(
-                        val_tmp
+                        (x, y, h)
                     );
                 }
             }
@@ -600,7 +600,7 @@ ENTITIES
     for x in 0..w+1 {
         for y in 0..h+1 {
             if list_alt[x][y].len() != 0 {
-                let mut t = Vec::<&String>::new();
+                let mut t = Vec::<(f64, f64, f64)>::new();
                 if x >= 1 {
                     if y >= 1 {
                         t.extend(&list_alt[x - 1][y - 1]);
@@ -626,7 +626,7 @@ ENTITIES
                         t.extend(&list_alt[x + 1][y + 1] );
                     }
                 }
-                let mut d = Vec::<&String>::new();
+                let mut d = Vec::<(f64, f64, f64)>::new();
                 d.extend(&list_alt[x][y]);
 
                 if d.len() > 31 {
@@ -656,16 +656,12 @@ ENTITIES
                 let mut temp_max: f64 = f64::MIN;
                 let mut temp_min: f64 = f64::MAX;
                 for rec in t.iter() {
-                    if t.len() > 0 {
-                        let parts = rec.split(" ");
-                        let r = parts.collect::<Vec<&str>>();
-                        let h0: f64 = r[2].parse::<f64>().unwrap();
-                        if temp_max < h0 {
-                            temp_max = h0;
-                        }
-                        if temp_min > h0 {
-                            temp_min = h0;
-                        }
+                    let h0 = rec.2;
+                    if temp_max < h0 {
+                        temp_max = h0;
+                    }
+                    if temp_min > h0 {
+                        temp_min = h0;
                     }
                 }
                 if temp_max - temp_min < c1_limit * 0.999 { 
@@ -673,86 +669,45 @@ ENTITIES
                 }
 
                 for rec in d.iter() {
-                    if d.len() > 0 {
-                        let parts = rec.split(" ");
-                        let r = parts.collect::<Vec<&str>>();
-                        let x0: f64 = r[0].parse::<f64>().unwrap();
-                        let y0: f64 = r[1].parse::<f64>().unwrap();
-                        let h0: f64 = r[2].parse::<f64>().unwrap();
+                    let x0 = rec.0;
+                    let y0 = rec.1;
+                    let h0 = rec.2;
 
-                        let cliff_length = 1.47;
-                        let mut steep = steepness[((x0 - xstart) / size + 0.5).floor() as usize][((y0 - ystart) / size + 0.5).floor() as usize] - flat_place;
-                        if steep < 0.0 { steep = 0.0;}
-                        if steep > 17.0 { steep = 17.0;}
-                        let bonus = (c2_limit-c1_limit)*(1.0-(no_small_ciffs-steep)/no_small_ciffs);
-                        let limit = c1_limit + bonus;
-                        let mut bonus = c2_limit * steep_factor * (steep - no_small_ciffs);
-                        if bonus < 0.0 {
-                            bonus = 0.0;
-                        }
-                        let limit2 = c2_limit + bonus;
-                        for rec2 in t.iter() {
-                            let partst = rec2.split(" ");
-                            let rt = partst.collect::<Vec<&str>>();
-                            let xt: f64 = rt[0].parse::<f64>().unwrap();
-                            let yt: f64 = rt[1].parse::<f64>().unwrap();
-                            let ht: f64 = rt[2].parse::<f64>().unwrap();
-                            let temp = h0 - ht;
-                            let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
-                            if dist > 0.0 {
-                                if steep < no_small_ciffs && temp > limit && temp > (limit + (dist - limit) * 0.85) {
-                                    let p = img.get_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32);
-                                    if p[0] == 255 {
-                                        img.put_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32, Rgb([0, 0, 0]));
-                                        f2.write("POLYLINE
+                    let cliff_length = 1.47;
+                    let mut steep = steepness[((x0 - xstart) / size + 0.5).floor() as usize][((y0 - ystart) / size + 0.5).floor() as usize] - flat_place;
+                    if steep < 0.0 { steep = 0.0;}
+                    if steep > 17.0 { steep = 17.0;}
+                    let bonus = (c2_limit-c1_limit)*(1.0-(no_small_ciffs-steep)/no_small_ciffs);
+                    let limit = c1_limit + bonus;
+                    let mut bonus = c2_limit * steep_factor * (steep - no_small_ciffs);
+                    if bonus < 0.0 {
+                        bonus = 0.0;
+                    }
+                    let limit2 = c2_limit + bonus;
+                    for rec2 in t.iter() {
+                        let xt = rec2.0;
+                        let yt = rec2.1;
+                        let ht = rec2.2;
+
+                        let temp = h0 - ht;
+                        let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
+                        if dist > 0.0 {
+                            if steep < no_small_ciffs && temp > limit && temp > (limit + (dist - limit) * 0.85) {
+                                let p = img.get_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32);
+                                if p[0] == 255 {
+                                    img.put_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32, Rgb([0, 0, 0]));
+                                    f2.write("POLYLINE
  66
 1
   8
 cliff2
   0
 ".as_bytes()).expect("Cannot write dxf file");
-                                        f2.write(
-                                            format!(
-                                                "VERTEX
-  8
-cliff2
- 10
-{}
- 20
-{}
-  0
-VERTEX
-  8
-cliff2
- 10
-{}
- 20
-{}
-  0
-SEQEND
-  0
-",
-                                                (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
-                                                (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
-                                                (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
-                                                (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
-                                            ).as_bytes()
-                                        ).expect("Cannot write dxf file");
-                                    }
-                                }
-                                if temp > limit2 && (temp > limit2 + (dist - limit2) * 0.85) {
-                                    f3.write("POLYLINE
- 66
-1
-  8
-cliff3
-  0
-".as_bytes()).expect("Cannot write dxf file");
-                                    f3.write(
+                                    f2.write(
                                         format!(
                                             "VERTEX
   8
-cliff3
+cliff2
  10
 {}
  20
@@ -760,7 +715,7 @@ cliff3
   0
 VERTEX
   8
-cliff3
+cliff2
  10
 {}
  20
@@ -777,6 +732,42 @@ SEQEND
                                     ).expect("Cannot write dxf file");
                                 }
                             }
+                            if temp > limit2 && (temp > limit2 + (dist - limit2) * 0.85) {
+                                f3.write("POLYLINE
+ 66
+1
+  8
+cliff3
+  0
+".as_bytes()).expect("Cannot write dxf file");
+                                f3.write(
+                                    format!(
+                                        "VERTEX
+  8
+cliff3
+ 10
+{}
+ 20
+{}
+  0
+VERTEX
+  8
+cliff3
+ 10
+{}
+ 20
+{}
+  0
+SEQEND
+  0
+",
+                                        (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
+                                        (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
+                                        (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
+                                        (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
+                                    ).as_bytes()
+                                ).expect("Cannot write dxf file");
+                            }
                         }
                     }
                 }
@@ -788,7 +779,6 @@ SEQEND
   0
 EOF
 ".as_bytes()).expect("Cannot write dxf file");
-    
     let c2_limit = 2.6 * 2.75;
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
@@ -802,9 +792,8 @@ EOF
                 let x: f64 = r[0].parse::<f64>().unwrap();
                 let y: f64 = r[1].parse::<f64>().unwrap();
                 let h: f64 = r[2].parse::<f64>().unwrap();
-                let val_tmp = format!("{:.1} {:.1} {:.2}", x, y, h);
                 list_alt[((x - xmin).floor() / 3.0) as usize][((y - ymin ).floor() / 3.0) as usize].push(
-                    val_tmp
+                    (x, y, h)
                 );
             }
         }
@@ -813,7 +802,7 @@ EOF
     for x in 0..w+1 {
         for y in 0..h+1 {
             if list_alt[x][y].len() != 0 {
-                let mut t = Vec::<&String>::new();
+                let mut t = Vec::<(f64, f64, f64)>::new();
                 if x >= 1 {
                     if y >= 1 {
                         t.extend(&list_alt[x - 1][y - 1]);
@@ -839,7 +828,7 @@ EOF
                         t.extend(&list_alt[x + 1][y + 1] );
                     }
                 }
-                let mut d = Vec::<&String>::new();
+                let mut d = Vec::<(f64, f64, f64)>::new();
                 d.extend(&list_alt[x][y]);
 
                 if d.len() > 31 {
@@ -870,16 +859,12 @@ EOF
                 let mut temp_max: f64 = f64::MIN;
                 let mut temp_min: f64 = f64::MAX;
                 for rec in t.iter() {
-                    if t.len() > 0 {
-                        let parts = rec.split(" ");
-                        let r = parts.collect::<Vec<&str>>();
-                        let h0: f64 = r[2].parse::<f64>().unwrap();
-                        if temp_max < h0 {
-                            temp_max = h0;
-                        }
-                        if temp_min > h0 {
-                            temp_min = h0;
-                        }
+                    let h0 = rec.2;
+                    if temp_max < h0 {
+                        temp_max = h0;
+                    }
+                    if temp_min > h0 {
+                        temp_min = h0;
                     }
                 }
 
@@ -888,34 +873,29 @@ EOF
                 }
 
                 for rec in d.iter() {
-                    if d.len() > 0 {
-                        let parts = rec.split(" ");
-                        let r = parts.collect::<Vec<&str>>();
-                        let x0: f64 = r[0].parse::<f64>().unwrap();
-                        let y0: f64 = r[1].parse::<f64>().unwrap();
-                        let h0: f64 = r[2].parse::<f64>().unwrap();
-                        let cliff_length = 1.47;
-                        let limit = c2_limit;
-                        for rec2 in t.iter() {
-                            let partst = rec2.split(" ");
-                            let rt = partst.collect::<Vec<&str>>();
-                            let xt: f64 = rt[0].parse::<f64>().unwrap();
-                            let yt: f64 = rt[1].parse::<f64>().unwrap();
-                            let ht: f64 = rt[2].parse::<f64>().unwrap();
-                            let temp = h0 - ht;
-                            let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
-                            if dist > 0.0 {
-                                if temp > limit && temp > (limit + (dist -limit) * 0.85) {
-                                    f3.write("POLYLINE
+                    let x0 = rec.0;
+                    let y0 = rec.1;
+                    let h0 = rec.2;
+                    let cliff_length = 1.47;
+                    let limit = c2_limit;
+                    for rec2 in t.iter() {
+                        let xt = rec2.0;
+                        let yt = rec2.1;
+                        let ht = rec2.2;
+                        let temp = h0 - ht;
+                        let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
+                        if dist > 0.0 {
+                            if temp > limit && temp > (limit + (dist -limit) * 0.85) {
+                                f3.write("POLYLINE
  66
 1
   8
 cliff4
   0
 ".as_bytes()).expect("Cannot write dxf file");
-                                    f3.write(
-                                        format!(
-                                            "VERTEX
+                                f3.write(
+                                    format!(
+                                        "VERTEX
   8
 cliff4
  10
@@ -934,13 +914,12 @@ cliff4
 SEQEND
   0
 ",
-                                            (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
-                                            (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
-                                            (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
-                                            (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
-                                        ).as_bytes()
-                                    ).expect("Cannot write dxf file");
-                                }
+                                        (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
+                                        (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
+                                        (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
+                                        (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
+                                    ).as_bytes()
+                                ).expect("Cannot write dxf file");
                             }
                         }
                     }
@@ -948,6 +927,7 @@ SEQEND
             }
         }
     }
+
     f3.write("ENDSEC
   0
 EOF
