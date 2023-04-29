@@ -375,8 +375,8 @@ fn main() {
 fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
     println!("Running makecliffs");
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0").parse::<bool>().unwrap_or(false);
-    
+    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
+
     let c1_limit: f64 = conf.general_section().get("cliff1").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     let c2_limit: f64 = conf.general_section().get("cliff2").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     // let c3_limit: f64 = conf.general_section().get("cliff3").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
@@ -908,7 +908,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
     println!("Running xyz2contours {} {} {} {} {} {}", thread, cinterval, xyzfilein, xyzfileout, dxffile, ground);
 
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0").parse::<bool>().unwrap_or(false);
+    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
     
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     let water_class = conf.general_section().get("waterclass").unwrap_or("9");
