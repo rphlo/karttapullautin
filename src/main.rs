@@ -375,7 +375,8 @@ fn main() {
 fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
     println!("Running makecliffs");
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
-
+    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0").parse::<bool>().unwrap_or(false);
+    
     let c1_limit: f64 = conf.general_section().get("cliff1").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     let c2_limit: f64 = conf.general_section().get("cliff2").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     // let c3_limit: f64 = conf.general_section().get("cliff3").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
@@ -660,7 +661,7 @@ ENTITIES
                     if temp_max < h0 {
                         temp_max = h0;
                     }
-                    if temp_min > h0 {
+                    if temp_min > h0 || jarkkos_bug {
                         temp_min = h0;
                     }
                 }
@@ -838,47 +839,6 @@ EOF
                 let mut d = Vec::<(f64, f64, f64)>::new();
                 d.extend(&list_alt[x][y]);
 
-                if d.len() > 31 {
-                    let b = ((d.len() - 1) as f64 / 30.0).floor() as usize;
-                    let mut i: usize = 0;
-                    while i < d.len() {
-                        let mut e = i + b;
-                        if e > d.len() {
-                            e = d.len();
-                        }
-                        let _: Vec<_> = d.drain(i..e).collect();
-                        i += 1;
-                    }
-                }
-                if t.len() > 301 {
-                    let b = ((t.len() - 1) as f64 / 300.0).floor() as usize;
-                    let mut i: usize = 0;
-                    while i < t.len() {
-                        let mut e = i + b;
-                        if e > t.len() {
-                            e = t.len();
-                        }
-                        let _: Vec<_> = t.drain(i..e).collect();
-                        i += 1;
-                    }
-                }
-
-                let mut temp_max: f64 = f64::MIN;
-                let mut temp_min: f64 = f64::MAX;
-                for rec in t.iter() {
-                    let h0 = rec.2;
-                    if temp_max < h0 {
-                        temp_max = h0;
-                    }
-                    if temp_min > h0 {
-                        temp_min = h0;
-                    }
-                }
-
-                if temp_max - temp_min < c2_limit * 0.999 { 
-                    d.clear();
-                }
-
                 for rec in d.iter() {
                     let x0 = rec.0;
                     let y0 = rec.1;
@@ -948,6 +908,8 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
     println!("Running xyz2contours {} {} {} {} {} {}", thread, cinterval, xyzfilein, xyzfileout, dxffile, ground);
 
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0").parse::<bool>().unwrap_or(false);
+    
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     let water_class = conf.general_section().get("waterclass").unwrap_or("9");
 
@@ -1130,7 +1092,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             let mut ele = avg_alt[x][y];
             let temp: f64 = (ele / cinterval + 0.5).floor() * cinterval;
             if (ele - temp).abs() < 0.02 {
-                if ele - temp < 0.0 {
+                if ele - temp < 0.0 || (jarkkos_bug && -temp < 0.0) {
                     ele = temp - 0.02;
                 }
                 else {
