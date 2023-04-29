@@ -675,6 +675,9 @@ ENTITIES
 
                     let cliff_length = 1.47;
                     let mut steep = steepness[((x0 - xstart) / size + 0.5).floor() as usize][((y0 - ystart) / size + 0.5).floor() as usize] - flat_place;
+                    if steep.is_nan() {
+                        steep=-flat_place;
+                    }
                     if steep < 0.0 { steep = 0.0;}
                     if steep > 17.0 { steep = 17.0;}
                     let bonus = (c2_limit-c1_limit)*(1.0-(no_small_ciffs-steep)/no_small_ciffs);
@@ -693,19 +696,20 @@ ENTITIES
                         let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
                         if dist > 0.0 {
                             if steep < no_small_ciffs && temp > limit && temp > (limit + (dist - limit) * 0.85) {
-                                let p = img.get_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32);
-                                if p[0] == 255 {
-                                    img.put_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32, Rgb([0, 0, 0]));
-                                    f2.write("POLYLINE
+                                if (((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32) < img.width() && (((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32) < img.height() {
+                                    let p = img.get_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32);
+                                    if p[0] == 255 {
+                                        img.put_pixel(((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32, ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32, Rgb([0, 0, 0]));
+                                        f2.write("POLYLINE
  66
 1
   8
 cliff2
   0
 ".as_bytes()).expect("Cannot write dxf file");
-                                    f2.write(
-                                        format!(
-                                            "VERTEX
+                                        f2.write(
+                                            format!(
+                                                "VERTEX
   8
 cliff2
  10
@@ -724,15 +728,17 @@ cliff2
 SEQEND
   0
 ",
-                                            (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
-                                            (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
-                                            (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
-                                            (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
-                                        ).as_bytes()
-                                    ).expect("Cannot write dxf file");
+                                                (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
+                                                (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
+                                                (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
+                                                (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
+                                            ).as_bytes()
+                                        ).expect("Cannot write dxf file");
+                                    } 
                                 }
                             }
-                            if temp > limit2 && (temp > limit2 + (dist - limit2) * 0.85) {
+                            
+                            if temp > limit2 && temp > (limit2 + (dist - limit2) * 0.85) {
                                 f3.write("POLYLINE
  66
 1
@@ -782,7 +788,8 @@ EOF
     let c2_limit = 2.6 * 2.75;
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
-
+    let mut list_alt = vec![vec![Vec::<(f64, f64, f64)>::new(); (((ymax - ymin) / 3.0).ceil() + 1.0) as usize]; (((xmax - xmin) / 3.0).ceil() + 1.0) as usize];
+    
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for line in lines {
             if cliff_thin > rng.gen() {
