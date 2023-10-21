@@ -1,6 +1,7 @@
 # Rusty Kartta Pullautin
 
 ===========================================
+
 This is a fork of the orignal from https://github.com/rphlo/rusty-pullauta with the intention to explor if one could set parameters to run only part of the script in batchmode, e.g. only ask pullautin to do new vegetaton, but in batch mode.
 ===========================================
 
