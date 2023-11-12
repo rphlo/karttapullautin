@@ -1,5 +1,12 @@
 # Rusty Kartta Pullautin
 
+===========================================
+
+This is a fork of the orignal from https://github.com/rphlo/rusty-pullauta with the intention to explor if one could set parameters to run only part of the script in batchmode, e.g. only ask pullautin to do new vegetaton, but in batch mode.
+===========================================
+
+# Rusty Kartta Pullautin
+
 Rusty-Pullauta is a application that is designed to generate highly accurate maps out of LIDAR data input files. Built using the Rust programming language, Rusty-Pullauta is an efficient fork of the Kartta-pullautin Windows software, that takes advantage of Rust's performance to deliver faster and copy conform results on Linux, Mac and Windows.
 
 With Rusty-Pullauta, users can expect to achieve up to 10 times faster results compared to the previous software. This is achieved through the use of Rust's ability to compile to efficient, low-level code.
