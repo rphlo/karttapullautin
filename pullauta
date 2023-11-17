@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 ### Karttapullautin (c) Jarkko Ryyppo. All Rights Reserved.###
 
@@ -1075,7 +1075,7 @@ if ( $command eq 'dxfmerge'||  $command eq 'merge' ) {
 
     use File::stat;
 
-    system( 'dir ' . $batchoutfolderwin . '/*.dxf /b > dxflist.txt' );
+    system( 'ls -1 ' . $batchoutfolderwin . '/*.dxf > dxflist.txt' );
 
     open( SISAAN, "<dxflist.txt" );
     @dxflist = <SISAAN>;
@@ -1312,7 +1312,7 @@ if ( $command eq 'pngmerge' || $command eq 'pngmergedepr' ) {
     use GD;
     use File::stat;
 
-    system( 'dir ' . $batchoutfolderwin . '/*.png /b > pnglist.txt' );
+    system( 'ls -1 ' . $batchoutfolderwin . '/*.png > pnglist.txt' );
 
     open( SISAAN, "<pnglist.txt" );
     @pnglist = <SISAAN>;
@@ -1468,7 +1468,7 @@ if ( $command eq 'pngmergevege' ) {
     use GD;
     use File::stat;
 
-    system( 'dir ' . $batchoutfolderwin . '\*_vege.png /b > pnglist.txt' );
+    system( 'ls -1 ' . $batchoutfolderwin . '\*_vege.png > pnglist.txt' );
 
     open( SISAAN, "<pnglist.txt" );
     @pnglist = <SISAAN>;
@@ -1620,7 +1620,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
     mkdir $batchoutfolder;
 
     unlink "ziplist$thread.txt";
-    system( 'ls -1 ' . $lazfolder . '*.zip /b > ziplist' . $thread . '.txt' );
+    system( 'ls -1 ' . $lazfolder . '*.zip > ziplist' . $thread . '.txt' );
 
     open( SISAAN, "<ziplist" . $thread . ".txt" );
     @ziplist = <SISAAN>;
@@ -1817,44 +1817,47 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
             ## copy files form temp folder
             if ( $savetempfiles == 1 ) {
 
-			 $myImage = newFromPng GD::Image("temp$thread/undergrowth.png");
+			    $myImage = newFromPng GD::Image( "temp$thread/undergrowth.png", 1 );
 
-            $im = new GD::Image(
-                ( $maxx - $minx ) * 600 / 254/$scalefactor  + 2,
-                ( $maxy - $miny ) * 600 / 254/$scalefactor  + 2
-            );
-    $white = $im->colorAllocate( 255, 255, 255 );
+                $im = new GD::Image(
+                    ( $maxx - $minx ) * 600 / 254/$scalefactor  + 2,
+                    ( $maxy - $miny ) * 600 / 254/$scalefactor  + 2,
+                    1
+                );
+                $white = $im->colorAllocate( 255, 255, 255 );
 
-    $im->filledRectangle( 0, 0, ( $maxx - $minx ) * 600 / 254/$scalefactor  + 3,
-                ( $maxy - $miny ) * 600 / 254/$scalefactor  + 3, $white );
-            $im->copy(
-                $myImage,
-                -$dx * 600 / 254/$scalefactor ,
-                -$dy * 600 / 254/$scalefactor ,
-                0, 0, $width, $height
-            );
+                $im->filledRectangle( 
+                    0,
+                    0,
+                    ( $maxx - $minx ) * 600 / 254/$scalefactor  + 3,
+                    ( $maxy - $miny ) * 600 / 254/$scalefactor  + 3, $white
+                );
+                $im->copy(
+                    $myImage,
+                    -$dx * 600 / 254/$scalefactor ,
+                    -$dy * 600 / 254/$scalefactor ,
+                    0, 0, $width, $height
+                );
 
-             open( OUT,">" . $batchoutfolderwin . "/" . $laz . '_undergrowth.png' );
-            binmode OUT;
+                open( OUT,">" . $batchoutfolderwin . "/" . $laz . '_undergrowth.png' );
+                binmode OUT;
 
-            # Convert the image to PNG and print it on standard output
-            print OUT $im->png;
-            close OUT;
+                # Convert the image to PNG and print it on standard output
+                print OUT $im->png;
+                close OUT;
 
+                
+                open( OUT,">" . $batchoutfolderwin . "/" . $laz . '_undergrowth.pgw' );
+                print OUT @tfw;
+                close OUT;
 			
-			open( OUT,">" . $batchoutfolderwin . "/" . $laz . '_undergrowth.pgw' );
-            print OUT @tfw;
-            close OUT;
-			
-                $myImage = newFromPng GD::Image("temp$thread/vegetation.png");
+                $myImage = newFromPng GD::Image("temp$thread/vegetation.png", 1 );
                 ( $width, $height ) = $myImage->getBounds();
-                $im =
-                  new GD::Image( ( $maxx - $minx ) + 1, ( $maxy - $miny ) + 1 );
+                $im = new GD::Image( ( $maxx - $minx ) + 1, ( $maxy - $miny ) + 1, 1 );
 
                 $im->copy( $myImage, -$dx, -$dy, 0, 0, $width, $height );
 
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_vege.png' );
+                open( OUT, ">" . $batchoutfolderwin . "/" . $laz . '_vege.png' );
                 binmode OUT;
                 print OUT $im->png;
                 close OUT;
@@ -1868,142 +1871,32 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                 $tfw[4] .= "\n";
                 $tfw[5] .= "\n";
 
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_vege.pgw' );
+                open( OUT, ">" . $batchoutfolderwin . "/" . $laz . '_vege.pgw' );
                 print OUT @tfw;
                 close OUT;
                 ## dxf files
-
-                open( SISAAN, "<temp$thread/out2.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_contours.dxf' );
-                print OUT $out;
-                close OUT;
-
+                system("rusty-pullauta polylinedxfcrop temp$thread/out2.dxf " . $batchoutfolderwin . "/". $laz . "_contours.dxf $minx $miny $maxx $maxy");
                 ## out2.dxf done
-
-                open( SISAAN, "<temp$thread/c2g.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_c2g.dxf' );
-                print OUT $out;
-                close OUT;
-
-                open( SISAAN, "<temp$thread/c3g.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_c3g.dxf' );
-                print OUT $out;
-                close OUT;
-
-				
-                open( SISAAN, "<temp$thread/contours03.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                        ">"
-                      . $batchoutfolderwin . "/"
-                      . $laz
-                      . '_contours03.dxf' );
-                print OUT $out;
-                close OUT;
-
-                open( SISAAN, "<temp$thread/detected.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_detected.dxf' );
-                print OUT $out;
-                close OUT;
+                system("rusty-pullauta polylinedxfcrop temp$thread/c2g.dxf " . $batchoutfolderwin . "/". $laz . "_c2g.dxf $minx $miny $maxx $maxy");
+                system("rusty-pullauta polylinedxfcrop temp$thread/c3g.dxf " . $batchoutfolderwin . "/". $laz . "_c3g.dxf $minx $miny $maxx $maxy");
+                system("rusty-pullauta polylinedxfcrop temp$thread/contours03.dxf " . $batchoutfolderwin . "/". $laz . "_contours03.dxf $minx $miny $maxx $maxy");
+                system("rusty-pullauta polylinedxfcrop temp$thread/detected.dxf " . $batchoutfolderwin . "/". $laz . "_detected.dxf $minx $miny $maxx $maxy");
 
 				if(-e "temp$thread/formlines.dxf"){
-				 open( SISAAN, "<temp$thread/formlines.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                &polylinedxfcrop;
-
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_formlines.dxf' );
-                print OUT $out;
-                close OUT;
+                    system("rusty-pullauta polylinedxfcrop temp$thread/formlines.dxf " . $batchoutfolderwin . "/". $laz . "_formlines.dxf $minx $miny $maxx $maxy");
 				}
 				
                 ## dotknolls.dxf
-                open( SISAAN, "<temp$thread/dotknolls.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-
-                $out = '';
-
-                $d = join( '', @d );
-
-                @d = split( /POINT/, $d );
-                $out .= $d[0];
-                ( $d[$#d], $end ) = split( /ENDSEC/, $d[$#d], 20 );
-                $end = 'ENDSEC' . $end;
-                $j   = 0;
-                foreach $rec (@d) {
-                    $j++;
-                    if ( $j > 1 ) {
-                        @temp = split( /\n/, $rec );
-
-                        if (   $temp[4] >= $minx
-                            && $temp[4] <= $maxx
-                            && $temp[6] >= $miny
-                            && $temp[6] <= $maxy )
-                        {
-                            $out .= 'POINT' . $rec;
-
-                        }
-                    }
-                }
-                $out .= $end;
-                open( OUT,
-                    ">" . $batchoutfolderwin . "/" . $laz . '_dotknolls.dxf' );
-                print OUT $out;
-                close OUT;
-                ## dotknolls.dxf done
+                system("rusty-pullauta pointdxfcrop temp$thread/dotknolls.dxf " . $batchoutfolderwin . "/". $laz . "_dotknolls.dxf $minx $miny $maxx $maxy");
             }
 
-			
-				if($basemapcontours>0){
-                open( SISAAN, "<temp$thread/basemap.dxf" );
-                @d = <SISAAN>;
-                close SISAAN;
-				 &polylinedxfcrop;
-	            open( OUT,
-                        ">"
-                      . $batchoutfolderwin . "/"
-                      . $laz
-                      . '_basemap.dxf' );
-                print OUT $out;
-                close OUT;			
-				}
+			if ( $basemapcontours > 0 ){
+                system("rusty-pullauta polylinedxfcrop temp$thread/basemap.dxf " . $batchoutfolderwin . "/". $laz . "_basemap.dxf $minx $miny $maxx $maxy");	
+			}
 			
             if ( $savetempfolders == 1 ) {
                 system "mkdir \"temp_" . $laz . "_dir\"";
-                system "cp temp$thread/\*\.\* \"temp_" . $laz
-                  . "_dir/\"";
+                system "cp temp$thread/\*\.\* \"temp_" . $laz . "_dir/\"";
             }
 
         }
@@ -2167,7 +2060,7 @@ to the same folder as pullautin.exe \n ";
 ## 2m grid & controus 0.3
     print "\nKnoll detection part 1\n";
     system(
-"rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
+        "rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
     );
  
 
@@ -2190,7 +2083,7 @@ to the same folder as pullautin.exe \n ";
 	}
     ## xyz_knolls
     print "\nContour generation part 1\n";
-    system("perl pullauta $thread xyzknolls");
+    system("rusty-pullauta $thread xyzknolls");
     if(1*$Config->{_}->{skipknolldetection} != 1){
     ## contours 2.5
         print "\nContour generation part 2\n";
@@ -2207,7 +2100,7 @@ to the same folder as pullautin.exe \n ";
     if ( $vegemode == 0 ) {
         ## new vege
         print "\nVegetation generation\n";
-        system("perl pullauta $thread makevegenew");
+        system("rusty-pullauta $thread makevegenew");
     }
     else {
         ## old vege
@@ -2234,16 +2127,14 @@ to the same folder as pullautin.exe \n ";
 ## renderer
     if ( $detectbuildings == 1 ) {
         print "\nDetecting buildings\n";
-        system("perl pullauta $thread blocks");
+        system("rusty-pullauta $thread blocks");
     }
 
     if ( $ARGV[1] ne 'norender' ) {
         print "\nRendering png map with depressions\n";
         system("perl pullauta $thread render $pnorthlinesangle $pnorthlineswidth ");
         print "\nRendering png map without depressions\n";
-        system(
-"perl pullauta $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions"
-        );
+        system("perl pullauta $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions");
     }
     else {
         print "Skipped rendering";
@@ -6139,7 +6030,7 @@ ENTITIES
 ################
 
     for ( $l = 0 ; $l < $j + 1 ; $l++ ) {
-        if ( $l % ( floor( $j / 6 ) ) == 0 ) { print "."; }
+        # if ( $l % ( floor( $j / 6 ) ) == 0 ) { print "."; } # Commented since can cause bug
         $skip = 0;
 
         if ( $elex[$l] ne '' ) {
@@ -6863,13 +6754,9 @@ if ( $command eq 'xyzknolls' ) {
         $dist{$l} = $min;
     }
 
-##
     $l = 0;
     foreach $rec (@pins) {
         $l++;
-
-        # print "$l / $#pins\n";
-
         ( $x, $y, $ele, $xx, $yy, $ele2, $xlist, $ylist ) = split( /\,/, $rec );
         $x = floor( ( $x - $xstart ) / $size );
         $y = floor( ( $y - $ystart ) / $size );
@@ -6980,7 +6867,6 @@ if ( $command eq 'xyzknolls' ) {
         if ( $sivu < 1 )  { $sivu = 1; }
         if ( $sivu > 12 ) { $sivu = 12; }
 
-        #print "sivu $sivu\n";
         for ( $ii = $xx - $sivu ; $ii < $xx + $sivu + 1 ; $ii++ ) {
             for ( $jj = $yy - $sivu ; $jj < $yy + $sivu + 1 ; $jj++ ) {
                 $tmp =
@@ -8226,8 +8112,8 @@ if ( $command eq 'render' ) {
     $y0      = 1 * $tfw[5];
     $resvege = 1 * $tfw[0];
 
-    $img = newFromPng GD::Image( $tempfolder . 'vegetation.png' );
-    $imgug = newFromPng GD::Image( $tempfolder . 'undergrowth.png' );
+    $img = newFromPng GD::Image( $tempfolder . 'vegetation.png', 1 );
+    $imgug = newFromPng GD::Image( $tempfolder . 'undergrowth.png', 1 );
 	
     ( $w, $h ) = $img->getBounds();
 
@@ -8238,7 +8124,7 @@ if ( $command eq 'render' ) {
       ( 250 / cos($angle) );
     $eastoff = -$eastoff / 254 * 600;
 
-    $img2 = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
+    $img2 = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1);
 
     $white  = $img2->colorAllocate( 255, 255, 255 );
     $brown  = $img2->colorAllocate( 166, 85,  43 );
@@ -8730,8 +8616,8 @@ EOF";
     if ( -e $tempfolder . 'blocks.png' ) {
 
         #$blocks = new GD::Image( $w * 600 / 254, $h * 600 / 254 );
-        $blocks = newFromPng GD::Image( $tempfolder . 'blocks.png' );
-        $blockpurple = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
+        $blocks = newFromPng GD::Image( $tempfolder . 'blocks.png', 1 );
+        $blockpurple = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1);
 
 # $bpurple  = $blockpurple->colorAllocate( 0, 0, 120 );
 #      $blockpurple->filledRectangle( 0,0, $w * 600 / 254+1, $h * 600 / 254+1, bpurple );
@@ -8764,7 +8650,7 @@ EOF";
         $img2->copy( $blockpurple, 2, 0, 0, 0, $w * 600 / 254/$scalefactor, $h * 600 / 254/$scalefactor );
         $img2->copy( $blockpurple, 2, 2, 0, 0, $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
 
-        $blockpurple = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
+        $blockpurple = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1);
 
         $bpurple = $blockpurple->colorAllocate( 255, 110, 255 );
         $blockpurple->filledRectangle(
@@ -8790,11 +8676,11 @@ EOF";
 
     if ( -e $tempfolder . 'blueblack.png' ) {
 
-        $blueb = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
+        $blueb = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1 );
 
         $bbwhite = $blueb->colorAllocate( 255, 255, 255 );
         $bbblue  = $blueb->colorAllocate( 0,   0,   200 );
-        $imgbb = newFromPng GD::Image( $tempfolder . 'blueblack.png' );
+        $imgbb = newFromPng GD::Image( $tempfolder . 'blueblack.png', 1 );
 		
         $blueb->copyResized(
             $imgbb, 0, 0, 0, 0,
@@ -9044,8 +8930,8 @@ $cliffcolor{'cliff4'}=$black;
 
     if ( -e $tempfolder . 'high.png' ) {
 
-        $imgtemp = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
-        $high = newFromPng GD::Image( $tempfolder . 'high.png' );
+        $imgtemp = new GD::Image( $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor, 1 );
+        $high = newFromPng GD::Image( $tempfolder . 'high.png', 1 );
         $imgtemp->copy( $high, 0, 0, 0, 0, $w * 600 / 254/$scalefactor, $h * 600 / 254 /$scalefactor);
 
         $northblue = $high->colorAllocate( 0, 0, 200 );
@@ -10887,7 +10773,6 @@ sub polylinedxfcrop() {
                 $out .= $poly;
             }
         }
-
     }
 
     if ( $out =~ /EOF/ ) {
