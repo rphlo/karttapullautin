@@ -3633,45 +3633,38 @@ $firstandlastreturnasground=1;
 
 			$r[2]=$r[2]-$zoffset;
             if ( $r[0] > $xmin && $r[1] > $ymin ) {
-			
-									if($r[5] ==1){
-						    $firsthit[ floor( ( $r[0] - $xmin ) / $block +0.5)
-                                  ][ floor( ( $r[1] - $ymin ) / $block +0.5) ] += 1;
-					
-						}
-						
-			
-									$a=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) ];
-						$b=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1][ floor( ( $r[1] - $ymin ) / $size) ];
-						$c=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) +1];
-						$d=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1 ][ floor( ( $r[1] - $ymin ) / $size) +1];
+                if($r[5] == 1){
+                    $firsthit[ floor( ( $r[0] - $xmin ) / $block +0.5) ][ floor( ( $r[1] - $ymin ) / $block +0.5) ] += 1
+                }
+    
+                $a=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) ];
+                $b=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1][ floor( ( $r[1] - $ymin ) / $size) ];
+                $c=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) +1];
+                $d=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1 ][ floor( ( $r[1] - $ymin ) / $size) +1];
 
-						$distx=($r[0] - $xmin ) / $size -floor( ( $r[0] - $xmin ) / $size );
-						$disty=( $r[1] - $ymin ) / $size -floor( ( $r[1] - $ymin ) / $size);
-						
-						$ab=$a*(1-$distx)+$b*$distx;
-						$cd=$c*(1-$distx)+$d*$distx;
-						
-						$thelele=$ab*(1-$disty)+$cd*$disty;
+                $distx=($r[0] - $xmin ) / $size -floor( ( $r[0] - $xmin ) / $size );
+                $disty=( $r[1] - $ymin ) / $size -floor( ( $r[1] - $ymin ) / $size);
+                
+                $ab=$a*(1-$distx)+$b*$distx;
+                $cd=$c*(1-$distx)+$d*$distx;
+                
+                $thelele=$ab*(1-$disty)+$cd*$disty;
 ## undergrowth	
-				    if (   $r[0] > $xmin && $r[1] > $ymin)   {
-               if (  1.2 >= $r[2] - $thelele ) {
-                    
-				   if($r[3] == 2){
-                        $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
-					}else{
-					   if (  0.25 < $r[2] - $thelele ) {
-						 $ug[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
-						 }else{
-						  $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
-						 }
-					}				   
-				  
-					
-			   }else{
-			     $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 0.05;
-			   }
-	}
+				if (  $r[0] > $xmin && $r[1] > $ymin)   {
+                    if (  1.2 >= $r[2] - $thelele ) {
+                        if($r[3] == 2){
+                            $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
+                        }else{
+                            if (  0.25 < $r[2] - $thelele ) {
+                                $ug[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
+                            } else {
+                                $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
+                            }
+                        }				   
+                    } else {
+                        $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 0.05;
+                    }
+                }
 ##					
                 if (   $r[3] == 2
                     || $greenground >= $r[2] - $thelele )

@@ -1884,7 +1884,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
-            if vegethin == 0 || i as u32 + 1 % vegethin == 0 {
+            if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
                 let ip = line.unwrap_or(String::new());
                 let parts = ip.split(" ");
                 let r = parts.collect::<Vec<&str>>();
@@ -1944,7 +1944,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut highit: HashMap<(u64, u64), u64> = HashMap::new();
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
-            if vegethin == 0 || i as u32 + 1 % vegethin == 0 {
+            if vegethin == 0 || ((i  + 1) as u32) % vegethin == 0 {
                 let ip = line.unwrap_or(String::new());
                 let parts = ip.split(" ");
                 let r = parts.collect::<Vec<&str>>();
@@ -1952,7 +1952,6 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 let y: f64 = r[1].parse::<f64>().unwrap();
                 let h: f64 = r[2].parse::<f64>().unwrap() - zoffset;
                 if x > xmin && y > ymin {
-                    
                     if r[5] == "1" {
                         let xx = ((x - xmin) / block + 0.5).floor() as u64;
                         let yy = ((y - ymin) / block + 0.5).floor() as u64;
@@ -2272,21 +2271,23 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let underg = Rgba([64, 121, 0, 255]);
     let tmpfactor = (600.0 / 254.0 / scalefactor) as f32;
 
-    let ww = w * block;
-    let hh = h * block;
+    let bf32 = block as f32;
+    let hf32 = h as f32;
+    let ww = w as f32 * bf32;
+    let hh = hf32 * bf32;
 
-    let mut x = 0.0;
+    let mut x = 0.0 as f32;
     loop {
         if x >= ww {
             break;
         }
-        let mut y = 0.0;
+        let mut y = 0.0 as f32;
         loop {
             if y >= hh {
                 break;
             }
-            let xx = (x/block/6.0).floor() as u64;
-            let yy = (y/block/6.0).floor() as u64;
+            let xx = (x / bf32 / 6.0).floor() as u64;
+            let yy = (y / bf32 / 6.0).floor() as u64;
             let foo = *ug.get(&(xx, yy)).unwrap_or(&0) as f64 / (
                 *ug.get(&(xx, yy)).unwrap_or(&0) as f64 +
                 *ugg.get(&(xx, yy)).unwrap_or(&0) as f64 +
@@ -2295,46 +2296,46 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             if foo > uglimit {
                 draw_line_segment_mut(
                     &mut imgug, 
-                    (tmpfactor*(x+block*3.0) as f32, tmpfactor*(h*block-y-block*3.0) as f32), 
-                    (tmpfactor*(x+block*3.0) as f32, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    (tmpfactor * (x + bf32 * 3.0), tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
+                    (tmpfactor * (x + bf32 * 3.0), tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
                     underg
                 );
                 draw_line_segment_mut(
                     &mut imgug, 
-                    (tmpfactor*(x+block*3.0) as f32 + 1.0, tmpfactor*(h*block-y-block*3.0) as f32), 
-                    (tmpfactor*(x+block*3.0) as f32 + 1.0, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    (tmpfactor * (x + bf32 * 3.0) + 1.0, tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
+                    (tmpfactor * (x + bf32 * 3.0) + 1.0, tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
                     underg
                 );
                 draw_line_segment_mut(
                     &mut imgug, 
-                    (tmpfactor*(x-block*3.0) as f32, tmpfactor*(h*block-y-block*3.0) as f32), 
-                    (tmpfactor*(x-block*3.0) as f32, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    (tmpfactor * (x - bf32 * 3.0), tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
+                    (tmpfactor * (x - bf32 * 3.0), tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
                     underg
                 );
                 draw_line_segment_mut(
                     &mut imgug, 
-                    (tmpfactor*(x-block*3.0) as f32 + 1.0, tmpfactor*(h*block-y-block*3.0) as f32), 
-                    (tmpfactor*(x-block*3.0) as f32 + 1.0, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    (tmpfactor * (x - bf32 * 3.0) + 1.0, tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)),
+                    (tmpfactor * (x - bf32 * 3.0) + 1.0, tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)),
                     underg
                 );
             }
             if foo > uglimit2 {
                 draw_line_segment_mut(
                     &mut imgug, 
-                    (tmpfactor*x as f32, tmpfactor*(h*block-y-block*3.0) as f32), 
-                    (tmpfactor*x as f32, tmpfactor*(h*block-y+block*3.0) as f32), 
+                    (tmpfactor * x, tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
+                    (tmpfactor * x, tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
                     underg
                 );
                 draw_line_segment_mut(
                     &mut imgug, 
-                    (tmpfactor * x as f32 + 1.0, tmpfactor as f32*(h*block-y-block*3.0) as f32), 
-                    (tmpfactor * x as f32 + 1.0, tmpfactor as f32*(h*block-y+block*3.0) as f32), 
+                    (tmpfactor * x + 1.0, tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
+                    (tmpfactor * x + 1.0, tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
                     underg
                 );
             }
-            y += block * 6.0;
+            y += bf32 * 6.0;
         }
-        x += block * 6.0;
+        x += bf32 * 6.0;
     }
     imgug.save(Path::new(&format!("{}/undergrowth.png", tmpfolder))).expect("could not save output png");
     

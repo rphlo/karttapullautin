@@ -4144,22 +4144,28 @@ $imggr1->filledRectangle($block/2+$x * $block-$addition,-$block/2+( $h - $y ) * 
 	for($y=0;$y<$h*$block;$y=$y+$block*6){
 	if($ug[$x/$block/6][$y/$block/6]/($ug[$x/$block/6][$y/$block/6]+$ugg[$x/$block/6][$y/$block/6]+0.01) >$uglimit){
 
-	 $imgug->line($tmpfacor*($x+$block*3),$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x+$block*3),$tmpfacor*($h*$block-$y+$block*3), $underg);
-	 $imgug->line($tmpfacor*($x+$block*3)+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x+$block*3)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);
+	 $imgug->line($tmpfacor*($x+$block*3),$tmpfacor*($h*$block-$y-$block*3),
+                  $tmpfacor*($x+$block*3),$tmpfacor*($h*$block-$y+$block*3), $underg);
+	 $imgug->line($tmpfacor*($x+$block*3)+1,$tmpfacor*($h*$block-$y-$block*3),
+                  $tmpfacor*($x+$block*3)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);
 	 
-	 $imgug->line($tmpfacor*($x-$block*3),$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x-$block*3),$tmpfacor*($h*$block-$y+$block*3), $underg);
-	 $imgug->line($tmpfacor*($x-$block*3)+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x-$block*3)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);
+	 $imgug->line($tmpfacor*($x-$block*3),$tmpfacor*($h*$block-$y-$block*3),
+                  $tmpfacor*($x-$block*3),$tmpfacor*($h*$block-$y+$block*3), $underg);
+	 $imgug->line($tmpfacor*($x-$block*3)+1,$tmpfacor*($h*$block-$y-$block*3),
+                  $tmpfacor*($x-$block*3)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);
 				
-	 }
-	 	if($ug[$x/$block/6][$y/$block/6]/($ug[$x/$block/6][$y/$block/6]+$ugg[$x/$block/6][$y/$block/6]+0.01) >$uglimit2){
+	}
+	if($ug[$x/$block/6][$y/$block/6]/($ug[$x/$block/6][$y/$block/6]+$ugg[$x/$block/6][$y/$block/6]+0.01) >$uglimit2){
 
-	 $imgug->line($tmpfacor*$x,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x),$tmpfacor*($h*$block-$y+$block*3), $underg);
-	 $imgug->line($tmpfacor*$x+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);				
-	 }
+	 $imgug->line($tmpfacor*$x,  $tmpfacor*($h*$block-$y-$block*3),
+                  $tmpfacor*($x),$tmpfacor*($h*$block-$y+$block*3), $underg);
+	 $imgug->line($tmpfacor*$x+1,  $tmpfacor*($h*$block-$y-$block*3),
+                  $tmpfacor*($x)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);				
+	}
 	}
 	}
 	$imgug->transparent($uqwhite);
-	 $underg  = $imggr1->colorAllocate( 64, 121, 0 );
+	$underg  = $imggr1->colorAllocate( 64, 121, 0 );
 #$imggr1->copy( $imgug, 0, 0, 0, 0, $w * $block, $h * $block );
 	## undegrowth
 	
