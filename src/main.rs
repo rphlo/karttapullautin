@@ -1937,7 +1937,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     }
 
     let mut firsthit: HashMap<(u64, u64), u64> = HashMap::new();
-    let mut ugg: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut ugg: HashMap<(u64, u64), f64> = HashMap::new();
     let mut ug: HashMap<(u64, u64), u64> = HashMap::new();
     let mut ghit: HashMap<(u64, u64), u64> = HashMap::new();
     let mut greenhit: HashMap<(u64, u64), f64> = HashMap::new();
@@ -1975,16 +1975,15 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     let ab = a * (1.0 - distx) + b * distx;
                     let cd = c * (1.0 - distx) + d * distx;
                     let thelele = ab * (1.0 - disty) + cd * disty;
-
                     let xx = ((x - xmin) / block / 6.0 + 0.5).floor() as u64;
-                    let yy = ((y - ymin) / block / 6.0 + 0.5).floor() as u64;
+                    let yy = (((y - ymin) / block / 6.0).floor() + 0.5).floor() as u64;
                     let hh = h - thelele;
                     if hh <= 1.2 {
                         if r[3] == "2" {
                             if ugg.contains_key(&(xx, yy)) {
-                                *ugg.get_mut(&(xx, yy)).unwrap() += 1;
+                                *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
                             } else {
-                                ugg.insert((xx, yy), 1);
+                                ugg.insert((xx, yy), 1.0);
                             }
                         } else {
                             if hh > 0.25 {
@@ -1995,17 +1994,17 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                                 }
                             } else {
                                 if ugg.contains_key(&(xx, yy)) {
-                                    *ugg.get_mut(&(xx, yy)).unwrap() += 1;
+                                    *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
                                 } else {
-                                    ugg.insert((xx, yy), 1);
+                                    ugg.insert((xx, yy), 1.0);
                                 }
                             }
                         }
                     } else {
                         if ugg.contains_key(&(xx, yy)) {
-                            *ugg.get_mut(&(xx, yy)).unwrap() += 1;
+                            *ugg.get_mut(&(xx, yy)).unwrap() += 0.05;
                         } else {
-                            ugg.insert((xx, yy), 1);
+                            ugg.insert((xx, yy), 0.05);
                         }
                     }
 
@@ -2290,7 +2289,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             let yy = (y / bf32 / 6.0).floor() as u64;
             let foo = *ug.get(&(xx, yy)).unwrap_or(&0) as f64 / (
                 *ug.get(&(xx, yy)).unwrap_or(&0) as f64 +
-                *ugg.get(&(xx, yy)).unwrap_or(&0) as f64 +
+                *ugg.get(&(xx, yy)).unwrap_or(&0.0) as f64 +
                 0.01
             );
             if foo > uglimit {
