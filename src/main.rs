@@ -2421,7 +2421,7 @@ fn polylinedxfcrop(input: &Path, output: &Path, minx: f64, miny: f64, maxx: f64,
                             pointcount = 0;
                         }
                     }
-                    pre = apu2.clone();
+                    pre = apu2;
                     prex = val[xline].parse::<f64>().unwrap_or(0.0);
                     prey = val[xline].parse::<f64>().unwrap_or(0.0);
                 }
