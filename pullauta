@@ -355,9 +355,9 @@ if ( $lazfolder ne '' ) {
     $lazfolder = $lazfolder . "/";
 }
 
-$vegemode = 0;$Config->{_}->{vegemode};
+$vegemode = $Config->{_}->{vegemode};
 
-$vegeonly = 0;$Config->{_}->{vegeonly};
+$vegeonly = $Config->{_}->{vegeonly};
 
 $proc     = $Config->{_}->{processes};
 
@@ -2063,12 +2063,17 @@ to the same folder as pullautin.exe \n ";
     print "..... done.";
     undef @d;
 ## 2m grid & controus 0.3
-    print "\nKnoll detection part 1\n";
-    system(
-      "rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
-     );
- 
 
+    print "\nKnoll detection part 1\n";
+    if ( $vegeonly == 0 ) {
+        system(
+        "rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
+        );
+    } else {
+        system(
+        "rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz null ground"
+        );
+    }
     ## copy xyz2.xyz
     open( SISAAN, "<" . $tempfolder . "/xyz_03.xyz" );
     open( ULOS,   ">" . $tempfolder . "/xyz2.xyz" );
@@ -2077,33 +2082,34 @@ to the same folder as pullautin.exe \n ";
     }
     close ULOS;
     close SISAAN;
-if ( $vegeonly == 0 ) {
-	if($basemapcontours > 0){
-        print "\nBasemap contours\n";
-        system("rusty-pullauta $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
-    } 
-    if(1*$Config->{_}->{skipknolldetection} != 1){
-        ## detector
-        print "\nKnoll detection part 2\n";
-        system("perl pullauta $thread knolldetector");
-	}
 
-       ## xyz_knolls
-    print "\nContour generation part 1\n";
-    system("rusty-pullauta $thread xyzknolls");
-    if(1*$Config->{_}->{skipknolldetection} != 1){
-    ## contours 2.5
-        print "\nContour generation part 2\n";
-        system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
-    }else {
-        system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
-    }
+    if ( $vegeonly == 0 ) {
+        if($basemapcontours > 0){
+            print "\nBasemap contours\n";
+            system("rusty-pullauta $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
+        } 
+        if(1*$Config->{_}->{skipknolldetection} != 1){
+            ## detector
+            print "\nKnoll detection part 2\n";
+            system("perl pullauta $thread knolldetector");
+        }
 
-    ## smoothjoin
-    print "\nContour generation part 3\n";
-    system("perl pullauta $thread smoothjoin");
-    print "\nContour generation part 4\n";
-    system("perl pullauta $thread dotknolls");
+        ## xyz_knolls
+        print "\nContour generation part 1\n";
+        system("rusty-pullauta $thread xyzknolls");
+        if(1*$Config->{_}->{skipknolldetection} != 1){
+        ## contours 2.5
+            print "\nContour generation part 2\n";
+            system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
+        }else {
+            system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
+        }
+
+        ## smoothjoin
+        print "\nContour generation part 3\n";
+        system("perl pullauta $thread smoothjoin");
+        print "\nContour generation part 4\n";
+        system("perl pullauta $thread dotknolls");
     }
 ## vege.png
     if ( $vegemode == 0 ) {
@@ -3645,45 +3651,38 @@ $firstandlastreturnasground=1;
 
 			$r[2]=$r[2]-$zoffset;
             if ( $r[0] > $xmin && $r[1] > $ymin ) {
-			
-									if($r[5] ==1){
-						    $firsthit[ floor( ( $r[0] - $xmin ) / $block +0.5)
-                                  ][ floor( ( $r[1] - $ymin ) / $block +0.5) ] += 1;
-					
-						}
-						
-			
-									$a=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) ];
-						$b=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1][ floor( ( $r[1] - $ymin ) / $size) ];
-						$c=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) +1];
-						$d=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1 ][ floor( ( $r[1] - $ymin ) / $size) +1];
+                if($r[5] == 1){
+                    $firsthit[ floor( ( $r[0] - $xmin ) / $block +0.5) ][ floor( ( $r[1] - $ymin ) / $block +0.5) ] += 1
+                }
+    
+                $a=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) ];
+                $b=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1][ floor( ( $r[1] - $ymin ) / $size) ];
+                $c=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) +1];
+                $d=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1 ][ floor( ( $r[1] - $ymin ) / $size) +1];
 
-						$distx=($r[0] - $xmin ) / $size -floor( ( $r[0] - $xmin ) / $size );
-						$disty=( $r[1] - $ymin ) / $size -floor( ( $r[1] - $ymin ) / $size);
-						
-						$ab=$a*(1-$distx)+$b*$distx;
-						$cd=$c*(1-$distx)+$d*$distx;
-						
-						$thelele=$ab*(1-$disty)+$cd*$disty;
+                $distx=($r[0] - $xmin ) / $size -floor( ( $r[0] - $xmin ) / $size );
+                $disty=( $r[1] - $ymin ) / $size -floor( ( $r[1] - $ymin ) / $size);
+                
+                $ab=$a*(1-$distx)+$b*$distx;
+                $cd=$c*(1-$distx)+$d*$distx;
+                
+                $thelele=$ab*(1-$disty)+$cd*$disty;
 ## undergrowth	
-				    if (   $r[0] > $xmin && $r[1] > $ymin)   {
-               if (  1.2 >= $r[2] - $thelele ) {
-                    
-				   if($r[3] == 2){
-                        $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
-					}else{
-					   if (  0.25 < $r[2] - $thelele ) {
-						 $ug[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
-						 }else{
-						  $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
-						 }
-					}				   
-				  
-					
-			   }else{
-			     $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 0.05;
-			   }
-	}
+				if (  $r[0] > $xmin && $r[1] > $ymin)   {
+                    if (  1.2 >= $r[2] - $thelele ) {
+                        if($r[3] == 2){
+                            $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
+                        }else{
+                            if (  0.25 < $r[2] - $thelele ) {
+                                $ug[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
+                            } else {
+                                $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 1;
+                            }
+                        }				   
+                    } else {
+                        $ugg[ floor( ( $r[0] - $xmin ) / $block/6 +.5) ] [ floor( ( $r[1] - $ymin ) / $block/6 ) +.5] += 0.05;
+                    }
+                }
 ##					
                 if (   $r[3] == 2
                     || $greenground >= $r[2] - $thelele )
@@ -4150,23 +4149,20 @@ $imggr1->filledRectangle($block/2+$x * $block-$addition,-$block/2+( $h - $y ) * 
     $underg  = $imgug->colorAllocate( 64, 121, 0 );
 	$tmpfacor= 600 / 254 /$scalefactor;
 	for($x=0;$x<$w*$block;$x=$x+$block*6){
-	for($y=0;$y<$h*$block;$y=$y+$block*6){
-	if($ug[$x/$block/6][$y/$block/6]/($ug[$x/$block/6][$y/$block/6]+$ugg[$x/$block/6][$y/$block/6]+0.01) >$uglimit){
-
-	 $imgug->line($tmpfacor*($x+$block*3),$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x+$block*3),$tmpfacor*($h*$block-$y+$block*3), $underg);
-	 $imgug->line($tmpfacor*($x+$block*3)+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x+$block*3)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);
-	 
-	 $imgug->line($tmpfacor*($x-$block*3),$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x-$block*3),$tmpfacor*($h*$block-$y+$block*3), $underg);
-	 $imgug->line($tmpfacor*($x-$block*3)+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x-$block*3)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);
-				
-	 }
-	 	if($ug[$x/$block/6][$y/$block/6]/($ug[$x/$block/6][$y/$block/6]+$ugg[$x/$block/6][$y/$block/6]+0.01) >$uglimit2){
-
-	 $imgug->line($tmpfacor*$x,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x),$tmpfacor*($h*$block-$y+$block*3), $underg);
-	 $imgug->line($tmpfacor*$x+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);				
-	 }
-	}
-	}
+        for($y=0;$y<$h*$block;$y=$y+$block*6){
+            if($ug[$x/$block/6][$y/$block/6]/($ug[$x/$block/6][$y/$block/6]+$ugg[$x/$block/6][$y/$block/6]+0.01) >$uglimit){
+                $imgug->line($tmpfacor*($x+$block*3),$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x+$block*3),$tmpfacor*($h*$block-$y+$block*3), $underg);
+                $imgug->line($tmpfacor*($x+$block*3)+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x+$block*3)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);
+                
+                $imgug->line($tmpfacor*($x-$block*3),$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x-$block*3),$tmpfacor*($h*$block-$y+$block*3), $underg);
+                $imgug->line($tmpfacor*($x-$block*3)+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x-$block*3)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);
+            }
+            if($ug[$x/$block/6][$y/$block/6]/($ug[$x/$block/6][$y/$block/6]+$ugg[$x/$block/6][$y/$block/6]+0.01) >$uglimit2){
+                $imgug->line($tmpfacor*$x,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x),$tmpfacor*($h*$block-$y+$block*3), $underg);
+                $imgug->line($tmpfacor*$x+1,$tmpfacor*($h*$block-$y-$block*3),$tmpfacor*($x)+1,$tmpfacor*($h*$block-$y+$block*3), $underg);				
+            }
+        }
+    }
 	$imgug->transparent($uqwhite);
 	 $underg  = $imggr1->colorAllocate( 64, 121, 0 );
 #$imggr1->copy( $imgug, 0, 0, 0, 0, $w * $block, $h * $block );
