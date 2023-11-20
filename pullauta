@@ -356,9 +356,9 @@ if ( $lazfolder ne '' ) {
 }
 
 $vegemode = $Config->{_}->{vegemode};
-
+$vegemode = 1 * $vegemode;
 $vegeonly = $Config->{_}->{vegeonly};
-
+$vegeonly = 1 * $vegeonly;
 $proc     = $Config->{_}->{processes};
 
 $command = $ARGV[0];
