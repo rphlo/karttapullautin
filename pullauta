@@ -29,6 +29,9 @@ else {
 # vegetation mode. New mode =0, old original (pre 20130613) mode =1 
 vegemode=0
 
+# vegetation only in batch mode, original behaviour with contours = 0, only run vegetation in batch = 1
+vegeonly=1
+
 ### New vegetation mapping mode parameters (vegemode 0)##
 # Experimental undergrowth parameters. Smaller figures will give more undergrowth stripes
 # normal undergrowth 
@@ -352,8 +355,10 @@ if ( $lazfolder ne '' ) {
     $lazfolder = $lazfolder . "/";
 }
 
-$vegemode = 0;$Config->{_}->{vegemode};
-#$vegemode = 1 * $vegemode;
+$vegemode = $Config->{_}->{vegemode};
+
+$vegeonly = $Config->{_}->{vegeonly};
+
 $proc     = $Config->{_}->{processes};
 
 $command = $ARGV[0];
@@ -2058,12 +2063,17 @@ to the same folder as pullautin.exe \n ";
     print "..... done.";
     undef @d;
 ## 2m grid & controus 0.3
-    print "\nKnoll detection part 1\n";
-    system(
-        "rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
-    );
- 
 
+    print "\nKnoll detection part 1\n";
+    if ( $vegeonly == 0 ) {
+        system(
+        "rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
+        );
+    } else {
+        system(
+        "rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz null ground"
+        );
+    }
     ## copy xyz2.xyz
     open( SISAAN, "<" . $tempfolder . "/xyz_03.xyz" );
     open( ULOS,   ">" . $tempfolder . "/xyz2.xyz" );
@@ -2072,30 +2082,35 @@ to the same folder as pullautin.exe \n ";
     }
     close ULOS;
     close SISAAN;
-	if($basemapcontours > 0){
-        print "\nBasemap contours\n";
-        system("rusty-pullauta $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
-    } 
-    if(1*$Config->{_}->{skipknolldetection} != 1){
-        ## detector
-        print "\nKnoll detection part 2\n";
-        system("perl pullauta $thread knolldetector");
-	}
-    ## xyz_knolls
-    print "\nContour generation part 1\n";
-    system("rusty-pullauta $thread xyzknolls");
-    if(1*$Config->{_}->{skipknolldetection} != 1){
-    ## contours 2.5
-        print "\nContour generation part 2\n";
-        system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
-    }else {
-        system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
+
+    if ( $vegeonly == 0 ) {
+        if($basemapcontours > 0){
+            print "\nBasemap contours\n";
+            system("rusty-pullauta $thread xyz2contours ".($basemapcontours)." xyz2.xyz null basemap.dxf");
+        } 
+        if(1*$Config->{_}->{skipknolldetection} != 1){
+            ## detector
+            print "\nKnoll detection part 2\n";
+            system("perl pullauta $thread knolldetector");
+        }
+
+        ## xyz_knolls
+        print "\nContour generation part 1\n";
+        system("rusty-pullauta $thread xyzknolls");
+        if(1*$Config->{_}->{skipknolldetection} != 1){
+        ## contours 2.5
+            print "\nContour generation part 2\n";
+            system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
+        }else {
+            system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
+        }
+
+        ## smoothjoin
+        print "\nContour generation part 3\n";
+        system("perl pullauta $thread smoothjoin");
+        print "\nContour generation part 4\n";
+        system("perl pullauta $thread dotknolls");
     }
-## smoothjoin
-    print "\nContour generation part 3\n";
-    system("perl pullauta $thread smoothjoin");
-    print "\nContour generation part 4\n";
-    system("perl pullauta $thread dotknolls");
 ## vege.png
     if ( $vegemode == 0 ) {
         ## new vege
@@ -2113,6 +2128,7 @@ to the same folder as pullautin.exe \n ";
 "perl pullauta vege $lightgreenlimit $darkgreenlimit $gfactor $yfactor $wfactor $yellowlimit"
         );
     }
+if ( $vegeonly == 0 ) {
 ## cliff maker
     print "\nCliff generation \n";
 
@@ -2124,6 +2140,7 @@ to the same folder as pullautin.exe \n ";
 ## cliff generalizer
     #    print "\nCliff generation part 2\n";
     #    system("perl pullauta $thread cliffgeneralize $psteepness");
+}
 ## renderer
     if ( $detectbuildings == 1 ) {
         print "\nDetecting buildings\n";
@@ -2139,6 +2156,7 @@ to the same folder as pullautin.exe \n ";
     else {
         print "Skipped rendering";
     }
+
 
     print "\n\nAll done!\n";
     exit;

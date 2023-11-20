@@ -1124,243 +1124,224 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             }
         }
     }
+    if dxffile != "" && dxffile != "null" {
+        let v = cinterval;
 
-    let v = cinterval;
+        let mut progress: f64 = 0.0;
+        let mut progprev: f64 = 0.0;
+        let total: f64 = (hmax - hmin) / v;
+        let mut level: f64 = (hmin / v).floor() * v;
+        let path = format!("{}/temp_polylines.txt", tmpfolder);
+        let polyline_out = Path::new(&path);
 
-    let mut progress: f64 = 0.0;
-    let mut progprev: f64 = 0.0;
-    let total: f64 = (hmax - hmin) / v;
-    let mut level: f64 = (hmin / v).floor() * v;
-    let path = format!("{}/temp_polylines.txt", tmpfolder);
-    let polyline_out = Path::new(&path);
+        let f = File::create(&polyline_out).expect("Unable to create file");
+        let mut f = BufWriter::new(f);
+        f.write(b"").expect("Unable to create file");
 
-    let f = File::create(&polyline_out).expect("Unable to create file");
-    let mut f = BufWriter::new(f);
-    f.write(b"").expect("Unable to create file");
-
-    loop {
-        if level >= hmax {
-            break
-        }
-        progress += 1.0;
-        if (progress / total * 18.0).floor() > progprev {
-            progprev = (progress / total * 18.0).floor();
-            println!("Generating temp polylines: {}%", (progress / total * 100.0).floor() as u32);
-        }
-        let mut obj = Vec::<String>::new();
-        let mut curves: HashMap<String, String> = HashMap::new();
-        
-        for i in 1..((xmax - xmin).ceil() / 2.0 / scalefactor) as usize {
-            for j in 2..((ymax - ymin).ceil() / 2.0 / scalefactor) as usize {
-                let mut a = avg_alt[i][j];
-                let mut b = avg_alt[i][j + 1];
-                let mut c = avg_alt[i + 1][j];
-                let mut d = avg_alt[i + 1][j + 1];
-                
-                if (a < level && b < level && c < level && d < level)
-                || (a > level && b > level && c > level && d > level) {
-                    // skip
-                } else {
-                    let temp: f64 = (a / v + 0.5).floor() * v;
-                    if  (a - temp).abs() < 0.05 {
-                        if a - temp < 0.0 {
-                            a = temp - 0.05;
-                        } else {
-                            a = temp + 0.05;
-                        }
-                    }
-
-                    let temp: f64 = (b / v + 0.5).floor() * v;
-                    if  (b - temp).abs() < 0.05 {
-                        if b - temp < 0.0 {
-                            b = temp - 0.05;
-                        } else {
-                            b = temp + 0.05;
-                        }
-                    }
-
-                    let temp: f64 = (c / v + 0.5).floor() * v;
-                    if  (c - temp).abs() < 0.05 {
-                        if c - temp < 0.0 {
-                            c = temp - 0.05;
-                        } else {
-                            c = temp + 0.05;
-                        }
-                    }
-
-                    let temp: f64 = (d / v + 0.5).floor() * v;
-                    if  (d - temp).abs() < 0.05 {
-                        if d - temp < 0.0 {
-                            d = temp - 0.05;
-                        } else {
-                            d = temp + 0.05;
-                        }
-                    }
-
-                    if a < b {
-                        if level < b && level > a {
-                            let x1: f64 = i as f64;
-                            let y1: f64 = j as f64 + (level - a) / (b - a);
-                            if level > c {
-                                let x2: f64 = i as f64 + (b - level) / (b - c);
-                                let y2: f64 = j as f64 + (level - c) / (b - c);
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                            } else if level < c {
-                                let x2: f64 = i as f64 + (level - a) / (c - a);
-                                let y2: f64 = j as f64;
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+        loop {
+            if level >= hmax {
+                break
+            }
+            progress += 1.0;
+            if (progress / total * 18.0).floor() > progprev {
+                progprev = (progress / total * 18.0).floor();
+                println!("Generating temp polylines: {}%", (progress / total * 100.0).floor() as u32);
+            }
+            let mut obj = Vec::<String>::new();
+            let mut curves: HashMap<String, String> = HashMap::new();
+            
+            for i in 1..((xmax - xmin).ceil() / 2.0 / scalefactor) as usize {
+                for j in 2..((ymax - ymin).ceil() / 2.0 / scalefactor) as usize {
+                    let mut a = avg_alt[i][j];
+                    let mut b = avg_alt[i][j + 1];
+                    let mut c = avg_alt[i + 1][j];
+                    let mut d = avg_alt[i + 1][j + 1];
+                    
+                    if (a < level && b < level && c < level && d < level)
+                    || (a > level && b > level && c > level && d > level) {
+                        // skip
+                    } else {
+                        let temp: f64 = (a / v + 0.5).floor() * v;
+                        if  (a - temp).abs() < 0.05 {
+                            if a - temp < 0.0 {
+                                a = temp - 0.05;
+                            } else {
+                                a = temp + 0.05;
                             }
                         }
-                    } else if b < a {
-                        if level < a && level > b {
-                            let x1: f64 = i as f64;
-                            let y1: f64 = j as f64 + (a - level) / (a - b);
-                            if level < c {
-                                let x2: f64 = i as f64 + (level - b) / (c - b);
-                                let y2: f64 = j as f64 + (c - level) / (c - b);
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                            } else if level > c {
-                                let x2: f64 = i as f64 + (a - level) / (a - c);
-                                let y2: f64 = j as f64;
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                            }
-                        }
-                    }
 
-                    if a < c {
-                        if level < c && level > a {
-                            let x1: f64 = i as f64 + (level - a) / (c - a);
-                            let y1: f64 = j as f64;
-                            if level > b {
-                                let x2: f64 = i as f64 + (level - b) / (c - b);
-                                let y2: f64 = j as f64 + (c - level) / (c - b);
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                        let temp: f64 = (b / v + 0.5).floor() * v;
+                        if  (b - temp).abs() < 0.05 {
+                            if b - temp < 0.0 {
+                                b = temp - 0.05;
+                            } else {
+                                b = temp + 0.05;
                             }
                         }
-                    } else if a > c {
-                        if level < a && level > c {
-                            let x1: f64 = i as f64 + (a - level) / (a - c);
-                            let y1: f64 = j as f64;
-                            if level < b {
-                                let x2: f64 = i as f64 + (b - level) / (b - c);
-                                let y2: f64 = j as f64 + (level - c) / (b - c);
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                            }
-                        }
-                    }
 
-                    if c < d {
-                        if level < d && level > c {
-                            let x1: f64 = i as f64 + 1.0;
-                            let y1: f64 = j as f64 + (level - c) / (d - c);
-                            if level < b {
-                                let x2: f64 = i as f64 + (b - level) / (b - c);
-                                let y2: f64 = j as f64 + (level - c) / (b - c);
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                            } else if level > b {
-                                let x2: f64 = i as f64 + (level - b) / (d - b);
-                                let y2: f64 = j as f64 + 1.0;
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                        let temp: f64 = (c / v + 0.5).floor() * v;
+                        if  (c - temp).abs() < 0.05 {
+                            if c - temp < 0.0 {
+                                c = temp - 0.05;
+                            } else {
+                                c = temp + 0.05;
                             }
                         }
-                    } else if c > d {
-                        if level < c && level > d {
-                            let x1: f64 = i as f64 + 1.0;
-                            let y1: f64 = j as f64 + (c - level) / (c - d);
-                            if level > b {
-                                let x2: f64 = i as f64 + (level - b) / (c - b);
-                                let y2: f64 = j as f64 + (c - level) / (c - b);
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                            } else if level < b {
-                                let x2: f64 = i as f64 + (b - level) / (b - d);
-                                let y2: f64 = j as f64 + 1.0;
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                            }
-                        }
-                    }
 
-                    if d < b {
-                        if level < b && level > d {
-                            let x1: f64 = i as f64 + (b - level) / (b - d);
-                            let y1: f64 = j as f64 + 1.0;
-                            if level > c {
-                                let x2: f64 = i as f64 + (b - level) / (b - c);
-                                let y2: f64 = j as f64 + (level - c) / (b - c);
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                        let temp: f64 = (d / v + 0.5).floor() * v;
+                        if  (d - temp).abs() < 0.05 {
+                            if d - temp < 0.0 {
+                                d = temp - 0.05;
+                            } else {
+                                d = temp + 0.05;
                             }
                         }
-                    } else if b < d {
-                        if level < d && level > b {
-                            let x1: f64 = i as f64 + (level - b) / (d - b);
-                            let y1: f64 = j as f64 + 1.0;
-                            if level < c {
-                                let x2: f64 = i as f64 + (level - b) / (c - b);
-                                let y2: f64 = j as f64 + (c - level) / (c - b);
-                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+
+                        if a < b {
+                            if level < b && level > a {
+                                let x1: f64 = i as f64;
+                                let y1: f64 = j as f64 + (level - a) / (b - a);
+                                if level > c {
+                                    let x2: f64 = i as f64 + (b - level) / (b - c);
+                                    let y2: f64 = j as f64 + (level - c) / (b - c);
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                } else if level < c {
+                                    let x2: f64 = i as f64 + (level - a) / (c - a);
+                                    let y2: f64 = j as f64;
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                }
+                            }
+                        } else if b < a {
+                            if level < a && level > b {
+                                let x1: f64 = i as f64;
+                                let y1: f64 = j as f64 + (a - level) / (a - b);
+                                if level < c {
+                                    let x2: f64 = i as f64 + (level - b) / (c - b);
+                                    let y2: f64 = j as f64 + (c - level) / (c - b);
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                } else if level > c {
+                                    let x2: f64 = i as f64 + (a - level) / (a - c);
+                                    let y2: f64 = j as f64;
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                }
+                            }
+                        }
+
+                        if a < c {
+                            if level < c && level > a {
+                                let x1: f64 = i as f64 + (level - a) / (c - a);
+                                let y1: f64 = j as f64;
+                                if level > b {
+                                    let x2: f64 = i as f64 + (level - b) / (c - b);
+                                    let y2: f64 = j as f64 + (c - level) / (c - b);
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                }
+                            }
+                        } else if a > c {
+                            if level < a && level > c {
+                                let x1: f64 = i as f64 + (a - level) / (a - c);
+                                let y1: f64 = j as f64;
+                                if level < b {
+                                    let x2: f64 = i as f64 + (b - level) / (b - c);
+                                    let y2: f64 = j as f64 + (level - c) / (b - c);
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                }
+                            }
+                        }
+
+                        if c < d {
+                            if level < d && level > c {
+                                let x1: f64 = i as f64 + 1.0;
+                                let y1: f64 = j as f64 + (level - c) / (d - c);
+                                if level < b {
+                                    let x2: f64 = i as f64 + (b - level) / (b - c);
+                                    let y2: f64 = j as f64 + (level - c) / (b - c);
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                } else if level > b {
+                                    let x2: f64 = i as f64 + (level - b) / (d - b);
+                                    let y2: f64 = j as f64 + 1.0;
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                }
+                            }
+                        } else if c > d {
+                            if level < c && level > d {
+                                let x1: f64 = i as f64 + 1.0;
+                                let y1: f64 = j as f64 + (c - level) / (c - d);
+                                if level > b {
+                                    let x2: f64 = i as f64 + (level - b) / (c - b);
+                                    let y2: f64 = j as f64 + (c - level) / (c - b);
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                } else if level < b {
+                                    let x2: f64 = i as f64 + (b - level) / (b - d);
+                                    let y2: f64 = j as f64 + 1.0;
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                }
+                            }
+                        }
+
+                        if d < b {
+                            if level < b && level > d {
+                                let x1: f64 = i as f64 + (b - level) / (b - d);
+                                let y1: f64 = j as f64 + 1.0;
+                                if level > c {
+                                    let x2: f64 = i as f64 + (b - level) / (b - c);
+                                    let y2: f64 = j as f64 + (level - c) / (b - c);
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                }
+                            }
+                        } else if b < d {
+                            if level < d && level > b {
+                                let x1: f64 = i as f64 + (level - b) / (d - b);
+                                let y1: f64 = j as f64 + 1.0;
+                                if level < c {
+                                    let x2: f64 = i as f64 + (level - b) / (c - b);
+                                    let y2: f64 = j as f64 + (c - level) / (c - b);
+                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        let f = OpenOptions::new().append(true).open(&polyline_out).expect("Unable to create file");
-        let mut f = BufWriter::new(f);
+            let f = OpenOptions::new().append(true).open(&polyline_out).expect("Unable to create file");
+            let mut f = BufWriter::new(f);
 
-        for k in obj.iter() {
-            if curves.contains_key(k) {
-                let separator = "_".to_string();
-                let parts = k.split(&separator);
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
-                let mut res = format!("{}_{}", x, y);
+            for k in obj.iter() {
+                if curves.contains_key(k) {
+                    let separator = "_".to_string();
+                    let parts = k.split(&separator);
+                    let r = parts.collect::<Vec<&str>>();
+                    let x: f64 = r[0].parse::<f64>().unwrap();
+                    let y: f64 = r[1].parse::<f64>().unwrap();
+                    f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
+                    let mut res = format!("{}_{}", x, y);
 
-                let parts = curves.get(&k.clone()).unwrap().split(&separator);
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
-                curves.remove(&k.clone());
-                
-                let mut head = format!("{}_{}", x, y);
-                if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
-                    curves.remove(&format!("{}_1", head));
-                }
-                if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res {
-                    curves.remove(&format!("{}_2", head));
-                }
-                loop {
-                    if curves.contains_key(&format!("{}_1", head))
-                    && curves.get(&format!("{}_1", head)).unwrap() != &res {
-                        res = head.clone();
-
-                        let parts = curves.get(&format!("{}_1", head)).unwrap().split(&separator);
-                        let r = parts.collect::<Vec<&str>>();
-                        let x: f64 = r[0].parse::<f64>().unwrap();
-                        let y: f64 = r[1].parse::<f64>().unwrap();
-                        f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
+                    let parts = curves.get(&k.clone()).unwrap().split(&separator);
+                    let r = parts.collect::<Vec<&str>>();
+                    let x: f64 = r[0].parse::<f64>().unwrap();
+                    let y: f64 = r[1].parse::<f64>().unwrap();
+                    f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
+                    curves.remove(&k.clone());
+                    
+                    let mut head = format!("{}_{}", x, y);
+                    if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
                         curves.remove(&format!("{}_1", head));
-
-                        head = format!("{}_{}", x, y);
-                        if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
-                            curves.remove(&format!("{}_1", head));
-                        }
-                        if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res {
-                            curves.remove(&format!("{}_2", head));
-                        }
-                    } else {
-                        if curves.contains_key(&format!("{}_2", head))
-                        && curves.get(&format!("{}_2", head)).unwrap() != &res {
+                    }
+                    if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res {
+                        curves.remove(&format!("{}_2", head));
+                    }
+                    loop {
+                        if curves.contains_key(&format!("{}_1", head))
+                        && curves.get(&format!("{}_1", head)).unwrap() != &res {
                             res = head.clone();
 
-                            let parts = curves.get(&format!("{}_2", head)).unwrap().split(&separator);
+                            let parts = curves.get(&format!("{}_1", head)).unwrap().split(&separator);
                             let r = parts.collect::<Vec<&str>>();
                             let x: f64 = r[0].parse::<f64>().unwrap();
                             let y: f64 = r[1].parse::<f64>().unwrap();
                             f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
-                            curves.remove(&format!("{}_2", head));
+                            curves.remove(&format!("{}_1", head));
 
                             head = format!("{}_{}", x, y);
                             if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
@@ -1370,20 +1351,39 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
                                 curves.remove(&format!("{}_2", head));
                             }
                         } else {
-                            f.write("\n".as_bytes()).expect("Cannot write to output file");
-                            break
+                            if curves.contains_key(&format!("{}_2", head))
+                            && curves.get(&format!("{}_2", head)).unwrap() != &res {
+                                res = head.clone();
+
+                                let parts = curves.get(&format!("{}_2", head)).unwrap().split(&separator);
+                                let r = parts.collect::<Vec<&str>>();
+                                let x: f64 = r[0].parse::<f64>().unwrap();
+                                let y: f64 = r[1].parse::<f64>().unwrap();
+                                f.write(format!("{},{};", x, y).as_bytes()).expect("Cannot write to output file");
+                                curves.remove(&format!("{}_2", head));
+
+                                head = format!("{}_{}", x, y);
+                                if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
+                                    curves.remove(&format!("{}_1", head));
+                                }
+                                if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res {
+                                    curves.remove(&format!("{}_2", head));
+                                }
+                            } else {
+                                f.write("\n".as_bytes()).expect("Cannot write to output file");
+                                break
+                            }
                         }
                     }
                 }
             }
+            f.flush().expect("Cannot flush");
+            level += v;
         }
-        f.flush().expect("Cannot flush");
-        level += v;
-    }
-    let f = File::create(&Path::new(&format!("{}/{}", tmpfolder, dxffile))).expect("Unable to create file");
-    let mut f = BufWriter::new(f);
+        let f = File::create(&Path::new(&format!("{}/{}", tmpfolder, dxffile))).expect("Unable to create file");
+        let mut f = BufWriter::new(f);
 
-    f.write(format!("  0
+        f.write(format!("  0
 SECTION
   2
 HEADER
@@ -1408,30 +1408,30 @@ ENTITIES
   0
 ", xmin, ymin, xmax, ymax).as_bytes()).expect("Cannot write dxf file");
 
-    if let Ok(lines) = read_lines(&polyline_out) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let parts = ip.split(";");
-            let r = parts.collect::<Vec<&str>>();   
-            f.write("POLYLINE
+        if let Ok(lines) = read_lines(&polyline_out) {
+            for line in lines {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(";");
+                let r = parts.collect::<Vec<&str>>();   
+                f.write("POLYLINE
  66
 1
   8
 cont
   0
 ".as_bytes()).expect("Cannot write dxf file");
-            for (i, d) in r.iter().enumerate() {
-                if d != &"" {
-                    let ii = i + 1;
-                    let ldata = r.len() - 2;
-                    if ii > 5 && ii < ldata - 5 && ldata > 12 && ii % 2 == 0 {
-                        continue;
-                    }
-                    let xy_raw = d.split(",");
-                    let xy = xy_raw.collect::<Vec<&str>>();
-                    let x: f64 = xy[0].parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
-                    let y: f64 = xy[1].parse::<f64>().unwrap() * 2.0 * scalefactor + ymin;
-                    f.write(format!("VERTEX
+                for (i, d) in r.iter().enumerate() {
+                    if d != &"" {
+                        let ii = i + 1;
+                        let ldata = r.len() - 2;
+                        if ii > 5 && ii < ldata - 5 && ldata > 12 && ii % 2 == 0 {
+                            continue;
+                        }
+                        let xy_raw = d.split(",");
+                        let xy = xy_raw.collect::<Vec<&str>>();
+                        let x: f64 = xy[0].parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
+                        let y: f64 = xy[1].parse::<f64>().unwrap() * 2.0 * scalefactor + ymin;
+                        f.write(format!("VERTEX
   8
 cont
  10
@@ -1440,17 +1440,18 @@ cont
 {}
   0
 ", x, y).as_bytes()).expect("Cannot write dxf file");
+                    }
                 }
-            }
-            f.write("SEQEND
+                f.write("SEQEND
   0
 ".as_bytes()).expect("Cannot write dxf file");
-        }
-        f.write("ENDSEC
+            }
+            f.write("ENDSEC
   0
 EOF
 ".as_bytes()).expect("Cannot write dxf file");
-        println!("Done");
+            println!("Done");
+        }
     }
     Ok(())
 }
