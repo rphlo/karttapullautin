@@ -8,7 +8,7 @@ Rusty-Pullauta supports a wide range of LIDAR data input file formats, including
 
 In addition to its performance and accuracy, With its powerful features and fast results, Rusty-Pullauta is a must-have tool for anyone working with LIDAR data to generate orienteering maps.
 
-### Warning: this app is in active development phase, currently few steps are still executed with the old perl script, however the full process can already be used to generate maps.
+### Warning: The original perl script hasnt been completly ported to rust and few steps are still executed with the old perl script, however you will be able to use this program to to generate maps from start to finish.
 
 ## Usage
 
