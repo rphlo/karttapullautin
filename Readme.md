@@ -12,7 +12,8 @@ In addition to its performance and accuracy, With its powerful features and fast
 
 ## Usage
 
-You can download latest binary for rust-pullauta for your platform from the latest tags.
+You can download latest binary for rust-pullauta for your platform from the latest tags.  
+https://github.com/rphlo/rusty-pullauta/releases/latest
 
 ## Linux & Mac
 
