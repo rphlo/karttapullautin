@@ -30,7 +30,7 @@ else {
 vegemode=0
 
 # vegetation only in batch mode, original behaviour with contours = 0, only run vegetation in batch = 1
-vegeonly=1
+vegeonly=0
 
 ### New vegetation mapping mode parameters (vegemode 0)##
 # Experimental undergrowth parameters. Smaller figures will give more undergrowth stripes
