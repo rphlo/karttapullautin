@@ -37,6 +37,8 @@ e.g. `cp rusty-pullauta /usr/local/bin/`
 You can finnaly run perl script with the path to your .LAZ or .XYZ file as argument:  
 `perl pullauta L3323H3.laz`
 
+For more advanced usage read the `readme.txt` file.
+
 ## Development
 
 Make your changes, if you modify the rust script you must run:
