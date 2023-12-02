@@ -2111,37 +2111,28 @@ to the same folder as pullautin.exe \n ";
         print "\nContour generation part 4\n";
         system("perl pullauta $thread dotknolls");
     }
-## vege.png
+    ## vege.png
     if ( $vegemode == 0 ) {
         ## new vege
         print "\nVegetation generation\n";
         system("rusty-pullauta $thread makevegenew");
-    }
-    else {
+    } else {
         ## old vege
-## vege.png
+        ## vege.png
         print "\nVegetation generation part 1\n";
         system("perl pullauta makevege xyztemp.xyz $pvege_yellow $pvege_green ");
-## vege rest
+        ## vege rest
         print "\nVegetation generation part 2\n";
         system(
-"perl pullauta vege $lightgreenlimit $darkgreenlimit $gfactor $yfactor $wfactor $yellowlimit"
+            "perl pullauta vege $lightgreenlimit $darkgreenlimit $gfactor $yfactor $wfactor $yellowlimit"
         );
     }
-if ( $vegeonly == 0 ) {
-## cliff maker
-    print "\nCliff generation \n";
-
-    if ( $pcliff3 > 0 && $pcliff2 > 0 ) {
-        print "Old cliff3 parameter found, using cliff3 instead of cliff2...\n";
-        $pcliff2 = $pcliff3;
+    if ( $vegeonly == 0 ) {
+        ## cliff maker
+        print "\nCliff generation \n";
+        system("rusty-pullauta $thread makecliffs");
     }
-    system("rusty-pullauta $thread makecliffs");
-## cliff generalizer
-    #    print "\nCliff generation part 2\n";
-    #    system("perl pullauta $thread cliffgeneralize $psteepness");
-}
-## renderer
+    ## renderer
     if ( $detectbuildings == 1 ) {
         print "\nDetecting buildings\n";
         system("rusty-pullauta $thread blocks");
@@ -2156,7 +2147,6 @@ if ( $vegeonly == 0 ) {
     else {
         print "Skipped rendering";
     }
-
 
     print "\n\nAll done!\n";
     exit;

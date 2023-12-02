@@ -21,9 +21,7 @@ use imageproc::filter::median_filter;
 
 fn main() {
     let mut thread: String = String::new();
-    if Path::new("pullauta.ini").exists() {
-        // nothing
-    } else {
+    if !Path::new("pullauta.ini").exists() {
         // TODO: create the ini file
     }
 
@@ -49,8 +47,6 @@ fn main() {
         println!("This is rusty karttapulatin... There is no warranty. Use it at your own risk!\n");
     }
     
-    // println!("Hello thread {}, command {}!", thread, command);
-
     let batch: bool = conf.general_section().get("batch").unwrap() == "1";
 
     let tmpfolder = format!("temp{}", thread);
@@ -58,15 +54,56 @@ fn main() {
 
     if command == "" && Path::new(&format!("{}/vegetation.png", tmpfolder)).exists() && !batch {
         println!("Rendering png map with depressions");
-        // TODO: run `pullauta render $pnorthlinesangle $pnorthlineswidth`
+        // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, false);
         println!("Rendering png map without depressions");
-        // TODO: run `pullauta render $pnorthlinesangle $pnorthlineswidth  nodepressions`
+        // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, true);
         println!("\nAll done!");
         return();
     }
 
     if command == "" && !batch {
         println!("USAGE:\npullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee readme.txt for more details");
+        return();
+    }
+
+    if command == "groundfix" {
+        println!("Not implemented");
+        return();
+    }
+
+    if command == "profile" {
+        println!("Not implemented");
+        return();
+    }
+    
+    if command == "ground" {
+        println!("Not implemented");
+        return();
+    }
+
+    if command == "ground2" {
+        println!("Not implemented");
+        return();
+    }
+
+    if command == "blocks" {
+        blocks(&thread).unwrap();
+        return();
+    }
+
+    if command == "dxfmerge" || command == "merge" {
+        println!("Not implemented");
+        return();
+    }
+
+    if command == "pngmerge" || command == "pngmergedepr" {
+        println!("Not implemented");
+        return();
+    }
+
+    if command == "pngmergevege" {
+        println!("Not implemented");
+        return();
     }
 
     if command == "polylinedxfcrop" {
@@ -91,145 +128,12 @@ fn main() {
         return();
     }
 
-    if command == "profile" {
-        println!("Not implemented");
-        return();
-    }
-    
-    if command == "ground" {
-        println!("Not implemented");
-        return();
-    }
-
-    if command == "ground2" {
-        println!("Not implemented");
-        return();
-    }
-
-    if command == "dxfmerge" || command == "merge" {
-        println!("Not implemented");
-        return();
-    }
-
-    if command == "pngmerge" || command == "pngmergedepr" {
-        println!("Not implemented");
-        return();
-    }
-
-    if command == "pngmergevege" {
-        println!("Not implemented");
-        return();
-    }
-
     if command == "makevegenew" {
         makevegenew(&thread).unwrap();
     }
+
     if command == "xyzknolls" {
         xyzknolls(&thread).unwrap();
-    }
-
-    if command == "blocks" {
-        let tmpfolder = format!("temp{}", thread);
-
-        let path = format!("{}/xyz2.xyz", tmpfolder);
-        let xyz_file_in = Path::new(&path);
-        let mut size: f64 = f64::NAN;
-        let mut xstartxyz: f64 = f64::NAN;
-        let mut ystartxyz: f64 = f64::NAN;
-        let mut xmax: u64 = u64::MIN;
-        let mut ymax: u64 = u64::MIN;
-        if let Ok(lines) = read_lines(&xyz_file_in) {
-            for (i, line) in lines.enumerate() {
-                let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                if i == 0 {
-                    xstartxyz = x;
-                    ystartxyz = y;
-                } else if i == 1 {
-                    size = y - ystartxyz;
-                } else {
-                    break;
-                }
-            }
-        }
-        let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
-        
-        if let Ok(lines) = read_lines(&xyz_file_in) {
-            for line in lines {
-                let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap();
-       
-                let xx = ((x - xstartxyz) / size).floor() as u64;
-                let yy = ((y - ystartxyz) / size).floor() as u64;
-                xyz.insert((xx, yy), h);
-       
-                if xmax < xx {
-                    xmax = xx;
-                }
-                if ymax < yy {
-                    ymax = yy;
-                }
-            }
-        }
-        let mut img = RgbImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgb([255, 255, 255]));
-        let mut img2 = RgbaImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgba([0, 0, 0, 0]));
-    
-        let black = Rgb([0, 0, 0]);
-        let white = Rgba([255, 255, 255, 255]);
-
-        let path = format!("{}/xyztemp.xyz", tmpfolder);
-        let xyz_file_in = Path::new(&path);
-        if let Ok(lines) = read_lines(&xyz_file_in) {
-            for line in lines {
-                let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap();
-                let xx = ((x - xstartxyz) / size).floor() as u64;
-                let yy = ((y - ystartxyz) / size).floor() as u64;
-                if r[3] != "2" && r[3] != "9" && r[4] == "1" && r[5] == "1" && h - *xyz.get(&(xx, yy)).unwrap_or(&0.0) > 2.0 {
-                    draw_filled_rect_mut(
-                        &mut img, 
-                        Rect::at(
-                            (x - xstartxyz - 1.0) as i32,
-                            (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32
-                        ).of_size(3, 3),
-                        black
-                    );
-                } else {
-                    draw_filled_rect_mut(
-                        &mut img2, 
-                        Rect::at(
-                            (x - xstartxyz - 1.0) as i32,
-                            (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32
-                        ).of_size(3, 3),
-                        white
-                    );
-                }
-            }
-        }
-        let filter_size = 2;
-        img.save(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("error saving png");
-        img2.save(Path::new(&format!("{}/blocks2.png", tmpfolder))).expect("error saving png");
-        let mut img = image::open(Path::new(&format!("{}/blocks.png", tmpfolder))).ok().expect("Opening image failed");
-        let img2 = image::open(Path::new(&format!("{}/blocks2.png", tmpfolder))).ok().expect("Opening image failed");
-    
-        image::imageops::overlay(&mut img, &img2, 0, 0);
-
-        img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
-
-        img.save(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("error saving png");
-        println!("Done");
-        return();
     }
 
     if command == "xyz2contours" {
@@ -252,6 +156,7 @@ fn main() {
     }
 
     fn batch_process(thread: &String) {
+        // TODO: thread function in rust instead of PERL call
         if cfg!(target_os = "windows") {
             Command::new("pullauta.exe")
                 .arg("startthread")
@@ -268,7 +173,6 @@ fn main() {
                 .output()
                 .expect("Failed to run pullauta thread");
         }
-        // let _thread_number = thread.parse::<u64>().unwrap_or(0);
         return();
     }
 
@@ -300,8 +204,20 @@ fn main() {
         batch_process(&thread)
     }
 
-    if accepted_files_re.is_match(&command) {
+    let zip_files_re = Regex::new(r"\.zip$").unwrap();
+    if zip_files_re.is_match(&command.to_lowercase())  {
+        println!("Not implemented");
+        return();
+    }
+
+    if accepted_files_re.is_match(&command.to_lowercase()) {
         println!("Preparing input file");
+
+        const vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
+        if vegemode {
+            println!("vegemode=1 not implemented in rusty-pullauta");
+            return()
+        }
 
         let mut skiplaz2txt: bool = false;
         if Regex::new(r".xyz$").unwrap().is_match(&command.to_lowercase()) {
@@ -330,9 +246,10 @@ fn main() {
                     .expect("las2txt command failed to start");
             if out.status.success() {
                 println!("Not implemented further");
+                // TODO: run laz2txt and perform pre-processing
                 return();
             } else {
-                println!("Can't find las2txt. It is needed if input file is not xyz file with xyzc data. Make sure it is in path or copy it to the same folder as pullautin");
+                println!("Can not find las2txt binary. It is needed if input file is not xyz file with xyzc data. Make sure it is in $PATH");
                 return();
             }
         } else {
@@ -341,34 +258,75 @@ fn main() {
         println!("Done");
         println!("Knoll detection part 1");
         let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-        xyz2contours(&thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "contours03.dxf", true).expect("countour generation failed");
-        /*
+        const vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
+
+        if !vegeonly {
+            xyz2contours(&thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "contours03.dxf", true).expect("countour generation failed");
+        } else {
+            xyz2contours(&thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "null", true).expect("countour generation failed"); 
+        }
+
         fs::copy(format!("{}/xyz_03.xyz", tmpfolder), format!("{}/xyz2.xyz", tmpfolder)).expect("Could not copy file");
         
-        let basemapcontours: f64 = conf.general_section().get("basemapinterval").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+        if !vegeonly {
+            let basemapcontours: f64 = conf.general_section().get("basemapinterval").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+            if basemapcontours != 0.0 {
+                println!("Basemap contours");
+                xyz2contours(&thread, basemapcontours, "xyz2.xyz", "", "basemap.dxf", false).expect("countour generation failed");
+            }
+            let skipknolldetection = conf.general_section().get("skipknolldetection").unwrap_or("0") == "1";
+            if !skipknolldetection {
+                println!("Knoll detection part 2");
+                println!("Not implemented further");
+                return();
+                // TODO: knolldetector(&thread);
+            }
+            println!("Contour generation part 1");
+            xyzknolls(&thread);
+            if !skipknolldetection {
+                // contours 2.5
+                println!("Contour generation part 2");
+                xyz2contours(&thread, 2.5 * scalefactor, "xyz_knolls.xyz", "null", "out.dxf", false);
+            } else {
+                xyz2contours(&thread, 2.5 * scalefactor, "xyztemp.xyz", "null", "out.dxf", true);
+            }
+            println!("Contour generation part 3");
+            println!("Not implemented further");
+            return();
+            println!("Contour generation part 3");
+            // TODO: smoothjoin(&thread);
+            println!("Contour generation part 4");
+            // TODO: dotknolls(&thread);
+        }
 
-        if basemapcontours != 0.0 {
-            println!("Basemap contours");
-            xyz2contours(&thread, basemapcontours, "xyz2.xyz", "", "basemap.dxf", false).expect("countour generation failed");
+        println!("Vegetation generation");
+        makevegenew(&thread);
+
+        if !vegeonly {
+            println!("Cliff generation");
+            makecliffs(&thread);
         }
-        
-        if conf.general_section().get("skipknolldetection").unwrap_or("0") == "1" {
-            println!("Knoll detection part 2");
-            // TODO: Run `pulauta knolldetector`
+        let detectbuildings: bool = conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
+        if detectbuildings {
+            println!("Detecting buildings");
+            blocks(&thread);
         }
-    
-        println!("Contour generation part 1");
-        // TODO: Run `pulauta xyzknolls`
-    
-        if conf.general_section().get("skipknolldetection").unwrap_or("0") == "1" {
-            // contours 2.5
-            println!("Contour generation part 2");
-            xyz2contours(&thread, 2.5 * scalefactor, "xyz_knolls.xyz", "", "out.dxf", false).expect("countour generation failed");
+        let norender: bool = false;
+        if args.len() > 1 {
+            norender = args[1].clone() == "norender";
+        }
+        if !norender {
+            println!("Not implemented further");
+            return();
+            println!("Rendering png map with depressions");
+            // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, false);
+            println!("Rendering png map without depressions");
+            // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, true);
         } else {
-            xyz2contours(&thread, basemapcontours, "xyztemp.xyz", "", "out.dxf", true).expect("countour generation failed");
+            println!("Skipped rendering");
         }
-        */
-        println!("Not implemented further");
+        println!("\n\nAll done!");
+        return();
     }
 }
 
@@ -379,7 +337,6 @@ fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
 
     let c1_limit: f64 = conf.general_section().get("cliff1").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     let c2_limit: f64 = conf.general_section().get("cliff2").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-    // let c3_limit: f64 = conf.general_section().get("cliff3").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     
     let cliff_thin: f64 = conf.general_section().get("cliffthin").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     
@@ -904,6 +861,110 @@ EOF
     Ok(())
 }
 
+fn blocks(thread: &String) -> Result<(), Box<dyn Error>>  {
+    println!("Running blocks {}", thread);
+    let tmpfolder = format!("temp{}", thread);
+    let path = format!("{}/xyz2.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
+    let mut size: f64 = f64::NAN;
+    let mut xstartxyz: f64 = f64::NAN;
+    let mut ystartxyz: f64 = f64::NAN;
+    let mut xmax: u64 = u64::MIN;
+    let mut ymax: u64 = u64::MIN;
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for (i, line) in lines.enumerate() {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            if i == 0 {
+                xstartxyz = x;
+                ystartxyz = y;
+            } else if i == 1 {
+                size = y - ystartxyz;
+            } else {
+                break;
+            }
+        }
+    }
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
+
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            let h: f64 = r[2].parse::<f64>().unwrap();
+
+            let xx = ((x - xstartxyz) / size).floor() as u64;
+            let yy = ((y - ystartxyz) / size).floor() as u64;
+            xyz.insert((xx, yy), h);
+
+            if xmax < xx {
+                xmax = xx;
+            }
+            if ymax < yy {
+                ymax = yy;
+            }
+        }
+    }
+    let mut img = RgbImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgb([255, 255, 255]));
+    let mut img2 = RgbaImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgba([0, 0, 0, 0]));
+
+    let black = Rgb([0, 0, 0]);
+    let white = Rgba([255, 255, 255, 255]);
+
+    let path = format!("{}/xyztemp.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            let h: f64 = r[2].parse::<f64>().unwrap();
+            let xx = ((x - xstartxyz) / size).floor() as u64;
+            let yy = ((y - ystartxyz) / size).floor() as u64;
+            if r[3] != "2" && r[3] != "9" && r[4] == "1" && r[5] == "1" && h - *xyz.get(&(xx, yy)).unwrap_or(&0.0) > 2.0 {
+                draw_filled_rect_mut(
+                    &mut img, 
+                    Rect::at(
+                        (x - xstartxyz - 1.0) as i32,
+                        (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32
+                    ).of_size(3, 3),
+                    black
+                );
+            } else {
+                draw_filled_rect_mut(
+                    &mut img2, 
+                    Rect::at(
+                        (x - xstartxyz - 1.0) as i32,
+                        (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32
+                    ).of_size(3, 3),
+                    white
+                );
+            }
+        }
+    }
+    let filter_size = 2;
+    img.save(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("error saving png");
+    img2.save(Path::new(&format!("{}/blocks2.png", tmpfolder))).expect("error saving png");
+    let mut img = image::open(Path::new(&format!("{}/blocks.png", tmpfolder))).ok().expect("Opening image failed");
+    let img2 = image::open(Path::new(&format!("{}/blocks2.png", tmpfolder))).ok().expect("Opening image failed");
+
+    image::imageops::overlay(&mut img, &img2, 0, 0);
+
+    img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
+
+    img.save(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("error saving png");
+    println!("Done");
+    Ok(())
+}
+
 fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &str, dxffile: &str, ground: bool) -> Result<(), Box<dyn Error>> {
     println!("Running xyz2contours {} {} {} {} {} {}", thread, cinterval, xyzfilein, xyzfileout, dxffile, ground);
 
@@ -998,7 +1059,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
         for y in 0..h+1 {
             if avg_alt[x][y].is_nan() {
                 // interpolate altitude of pixel
-                // Todo: optimize to first clasify area then assign values
+                // TODO: optimize to first clasify area then assign values
                 let mut i1 = x;
                 let mut i2 = x;
                 let mut j1 = y;
