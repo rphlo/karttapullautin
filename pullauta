@@ -7034,7 +7034,6 @@ ENTITIES
                     @val = split( /\n/, $v );
                     $temp1 .= ( 1 * $val[$xline] ) . '|';
                     $temp2 .= ( 1 * $val[$yline] ) . '|';
-
                 }
             }
 
@@ -7043,6 +7042,8 @@ ENTITIES
             chop($temp2);
             @x = split( /\|/, $temp1 );
             @y = split( /\|/, $temp2 );
+            
+            # kayak
 
             $head = $x[0] . 'x' . $y[0];
             $tail = $x[$#x] . 'x' . $y[$#x];

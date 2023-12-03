@@ -213,7 +213,7 @@ fn main() {
     if accepted_files_re.is_match(&command.to_lowercase()) {
         println!("Preparing input file");
 
-        const vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
+        let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
         if vegemode {
             println!("vegemode=1 not implemented in rusty-pullauta");
             return()
@@ -245,9 +245,80 @@ fn main() {
                     .output()
                     .expect("las2txt command failed to start");
             if out.status.success() {
-                println!("Not implemented further");
-                // TODO: run laz2txt and perform pre-processing
-                return();
+                let mut thinfactor: f64 = conf.general_section().get("thinfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+                if thinfactor == 0.0 {
+                    thinfactor = 1.0;
+                }
+                if thinfactor != 1.0 {
+                    println!("Using thinning factor {}", thinfactor); 
+                }
+
+                let mut xfactor: f64 = conf.general_section().get("coordxfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+                let mut yfactor: f64 = conf.general_section().get("coordyfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+                let mut zfactor: f64 = conf.general_section().get("coordzfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+                let zoff: f64 = conf.general_section().get("zoffset").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+                if xfactor == 0.0 {
+                    xfactor = 1.0;
+                }
+                if yfactor == 0.0 {
+                    yfactor = 1.0;
+                }
+                if zfactor == 0.0 {
+                    zfactor = 1.0;
+                }
+
+                if xfactor == 1.0 && yfactor == 1.0 && zfactor == 1.0 && zoff == 0.0 {
+                    let _result = Command::new("las2txt")
+                        .arg("-i")
+                        .arg(command)
+                        .arg("-parse")
+                        .arg("xyzcnri")
+                        .arg("-keep_random_fraction")
+                        .arg(format!("{}", thinfactor))
+                        .arg("-o")
+                        .arg(format!("{}/xyztemp.xyz", tmpfolder))
+                        .output();
+                } else {
+                    let _result = Command::new("las2txt")
+                    .arg("-i")
+                    .arg(command)
+                    .arg("-parse")
+                    .arg("xyzcnri")
+                    .arg("-keep_random_fraction")
+                    .arg(format!("{}", thinfactor))
+                    .arg("-o")
+                    .arg(format!("{}/xyztemp1.xyz", tmpfolder))
+                    .output();
+
+                    println!("Scaling xyz...");
+
+                    let path_in = format!("{}/xyztemp1.xyz", tmpfolder);
+                    let xyz_file_in = Path::new(&path_in);
+
+                    let path_out = format!("{}/xyztemp.xyz", tmpfolder);
+                    let xyz_file_out = File::create(&path_out).expect("Unable to create file");
+                    let mut xyz_file_out = BufWriter::new(xyz_file_out);
+                    
+                    if let Ok(lines) = read_lines(&xyz_file_in) {
+                        for line in lines {
+                            let ip = line.unwrap_or(String::new());
+                            let parts = ip.split(" ");
+                            let r = parts.collect::<Vec<&str>>();
+                            let x: f64 = r[0].parse::<f64>().unwrap();
+                            let y: f64 = r[1].parse::<f64>().unwrap();
+                            let z: f64 = r[2].parse::<f64>().unwrap();
+                            let (_xyz, rest) = r.split_at(3);
+                            xyz_file_out.write(format!(
+                                "{} {} {} {}\n",
+                                x * xfactor,
+                                y * yfactor,
+                                z * zfactor + zoff,
+                                rest.join(" ")
+                            ).as_bytes()).expect("Cannot write xyz file");
+                        }
+                    }
+                    fs::remove_file(path_in).unwrap();
+                }
             } else {
                 println!("Can not find las2txt binary. It is needed if input file is not xyz file with xyzc data. Make sure it is in $PATH");
                 return();
@@ -258,7 +329,7 @@ fn main() {
         println!("Done");
         println!("Knoll detection part 1");
         let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-        const vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
+        let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
 
         if !vegeonly {
             xyz2contours(&thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "contours03.dxf", true).expect("countour generation failed");
@@ -277,47 +348,44 @@ fn main() {
             let skipknolldetection = conf.general_section().get("skipknolldetection").unwrap_or("0") == "1";
             if !skipknolldetection {
                 println!("Knoll detection part 2");
-                println!("Not implemented further");
-                return();
+                println!("Step not implemented");
                 // TODO: knolldetector(&thread);
             }
             println!("Contour generation part 1");
-            xyzknolls(&thread);
+            xyzknolls(&thread).unwrap();
             if !skipknolldetection {
                 // contours 2.5
                 println!("Contour generation part 2");
-                xyz2contours(&thread, 2.5 * scalefactor, "xyz_knolls.xyz", "null", "out.dxf", false);
+                xyz2contours(&thread, 2.5 * scalefactor, "xyz_knolls.xyz", "null", "out.dxf", false).unwrap();
             } else {
-                xyz2contours(&thread, 2.5 * scalefactor, "xyztemp.xyz", "null", "out.dxf", true);
+                xyz2contours(&thread, 2.5 * scalefactor, "xyztemp.xyz", "null", "out.dxf", true).unwrap();
             }
             println!("Contour generation part 3");
-            println!("Not implemented further");
-            return();
-            println!("Contour generation part 3");
-            // TODO: smoothjoin(&thread);
+            smoothjoin(&thread).unwrap();
+            println!("\nNot implemented further...\n");
             println!("Contour generation part 4");
             // TODO: dotknolls(&thread);
+            return();
         }
 
         println!("Vegetation generation");
-        makevegenew(&thread);
+        makevegenew(&thread).unwrap();
 
         if !vegeonly {
             println!("Cliff generation");
-            makecliffs(&thread);
+            makecliffs(&thread).unwrap();
         }
         let detectbuildings: bool = conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
         if detectbuildings {
             println!("Detecting buildings");
-            blocks(&thread);
+            blocks(&thread).unwrap();
         }
-        let norender: bool = false;
+        let mut norender: bool = false;
         if args.len() > 1 {
             norender = args[1].clone() == "norender";
         }
         if !norender {
             println!("Not implemented further");
-            return();
             println!("Rendering png map with depressions");
             // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, false);
             println!("Rendering png map without depressions");
@@ -328,6 +396,139 @@ fn main() {
         println!("\n\nAll done!");
         return();
     }
+}
+
+fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
+    let tmpfolder = format!("temp{}", thread);
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let interval = 2.5 * scalefactor;
+    let path = format!("{}/xyz_knolls.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
+    let mut size: f64 = f64::NAN;
+    let mut xstart: f64 = f64::NAN;
+    let mut ystart: f64 = f64::NAN;
+
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for (i, line) in lines.enumerate() {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            if i == 0 {
+                xstart = x;
+                ystart = y;
+            } else if i == 1 {
+                size = y - ystart;
+            } else {
+                break;
+            }
+        }
+    }
+
+    let mut xmax: u64 = u64::MIN;
+    let mut ymax: u64 = u64::MIN;
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            let h: f64 = r[2].parse::<f64>().unwrap();
+
+            let xx = ((x - xstart) / size).floor() as u64;
+            let yy = ((y - ystart) / size).floor() as u64;
+
+            xyz.insert((xx, yy), h);
+
+            if xmax < xx {
+                xmax = xx;
+            }
+            if ymax < yy {
+                ymax = yy;
+            }
+        }
+    }
+    
+    let mut steepness = vec![vec![f64::NAN; (ymax+1) as usize]; (xmax+1) as usize];
+    for i in 1..xmax {
+        for j in 1..ymax {
+            let mut low: f64 = f64::MAX;
+            let mut high: f64 = f64::MIN;
+            for ii in i-1..i+2 {
+                for jj in j-1..j+2 {
+                    let tmp = *xyz.get(&(ii as u64, jj as u64)).unwrap_or(&0.0);
+                    if tmp < low { 
+                        low = tmp;
+                    }
+                    if tmp > high {
+                        high = tmp;
+                    }
+                }
+            }
+            steepness[i as usize][j as usize] = high - low;
+        }
+    }
+    let input_filename = &format!("{}/out.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input)
+            .expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+    let mut dxfheadtmp = data[0];
+    dxfheadtmp = dxfheadtmp.split("ENDSEC\n").collect::<Vec<&str>>()[0];
+    dxfheadtmp = dxfheadtmp.split("HEADER").collect::<Vec<&str>>()[1];
+    let dxfhead = &format!("HEADER{}ENDSEC", dxfheadtmp);
+    let mut out = String::new();
+    out.push_str("  0
+SECTION
+  2
+");
+   out.push_str(&dxfhead);
+   out.push_str("
+  0
+SECTION
+  2
+ENTITIES
+  0
+");
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split("\n").collect::<Vec<&str>>();
+            for (i, v) in val.iter().enumerate() {
+                if v == &" 10" {
+                    xline = i + 1;
+                }
+                if v == &" 20" {
+                    yline = i + 1;
+                }
+            }
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.split("\n").collect::<Vec<&str>>();
+                    println!("{}", xline);
+                    println!("{}", val.join("\n"));
+                    x.push(val[xline].parse::<f64>().unwrap());
+                    y.push(val[yline].parse::<f64>().unwrap());
+                }
+            }
+            //kayak
+        }
+    }
+    let output_filename = &format!("{}/out2.dxf", tmpfolder);
+    let output = Path::new(output_filename);
+    let fp = File::create(output).expect("Unable to create file");
+    let mut fp = BufWriter::new(fp);
+    fp.write(out.as_bytes()).expect("Unable to write file");
+    Ok(())
 }
 
 fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
