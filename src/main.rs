@@ -132,6 +132,10 @@ fn main() {
         makevegenew(&thread).unwrap();
     }
 
+    if command == "smoothjoin" {
+        smoothjoin(&thread).unwrap();
+    }
+
     if command == "xyzknolls" {
         xyzknolls(&thread).unwrap();
     }
@@ -494,6 +498,17 @@ SECTION
 ENTITIES
   0
 ");
+
+    let mut heads1: HashMap::<String, usize> = HashMap::new();
+    let mut heads2: HashMap::<String, usize> = HashMap::new();
+    let mut heads = Vec::<String>::new();
+    let mut tails = Vec::<String>::new();
+    let mut el_x = Vec::<Vec::<f64>>::new();
+    let mut el_y = Vec::<Vec::<f64>>::new();
+    el_x.push(vec![]);
+    el_y.push(vec![]);
+    heads.push(String::from("-"));
+    tails.push(String::from("-"));
     for (j, rec) in data.iter().enumerate() {
         let mut x = Vec::<f64>::new();
         let mut y = Vec::<f64>::new();
@@ -514,13 +529,168 @@ ENTITIES
             for (i, v) in r.iter().enumerate() {
                 if i > 0 {
                     let val = v.split("\n").collect::<Vec<&str>>();
-                    println!("{}", xline);
-                    println!("{}", val.join("\n"));
                     x.push(val[xline].parse::<f64>().unwrap());
                     y.push(val[yline].parse::<f64>().unwrap());
                 }
             }
-            //kayak
+            
+            let x0 = x.first().unwrap();
+            let xl = x.last().unwrap();
+            let y0 = y.first().unwrap();
+            let yl = y.last().unwrap();
+            let head = format!("{}x{}", x0, y0);
+            let tail = format!("{}x{}", xl, yl);
+            heads.push(head);
+            tails.push(tail);
+
+            let head = format!("{}x{}", x0, y0);
+            let tail = format!("{}x{}", xl, yl);
+            el_x.push(x);
+            el_y.push(y);
+            if *heads1.get(&head).unwrap_or(&0) == 0 {
+                heads1.insert(head, j);
+            } else {
+                heads2.insert(head, j);
+            }
+            if *heads1.get(&tail).unwrap_or(&0) == 0 {
+                heads1.insert(tail, j);
+            } else {
+                heads2.insert(tail, j);
+            }
+        }
+    }
+
+    for l in 0..data.len() {
+        let mut to_join = 0;
+        if el_x[l].len() > 0 {
+            let mut end_loop = false;
+            while !end_loop {
+                let tmp = *heads1.get(&heads[l]).unwrap_or(&0);
+                if tmp != 0 && tmp != l && el_x[tmp].len() > 0 {
+                    to_join = tmp;
+                } else {
+                    let tmp = *heads2.get(&heads[l]).unwrap_or(&0);
+                    if tmp != 0 && tmp != l && el_x[tmp].len() > 0 {
+                        to_join = tmp;
+                    } else {
+                        let tmp = *heads2.get(&tails[l]).unwrap_or(&0);
+                        if tmp != 0 && tmp != l && el_x[tmp].len() > 0 {
+                            to_join = tmp;
+                        } else {
+                            let tmp = *heads1.get(&tails[l]).unwrap_or(&0);
+                            if tmp != 0 && tmp != l && el_x[tmp].len() > 0 {
+                                to_join = tmp;
+                            } else {
+                                end_loop = true;
+                            }
+                        }
+                    }
+                }
+                if !end_loop {
+                    if tails[l] == heads[to_join] {
+                        let tmp = format!("{}", tails[l]);
+                        heads2.insert(tmp, 0);
+                        let tmp = format!("{}", tails[l]);
+                        heads1.insert(tmp, 0);
+                        let mut to_append = el_x[to_join].to_vec();
+                        el_x[l].append(&mut to_append);
+                        let mut to_append = el_y[to_join].to_vec();
+                        el_y[l].append(&mut to_append);
+                        let tmp = format!("{}", tails[to_join]);
+                        tails[l] = tmp;
+                        el_x[to_join].clear();
+                    } else if tails[l] == tails[to_join] {
+                        let tmp = format!("{}", tails[l]);
+                        heads2.insert(tmp, 0);
+                        let tmp = format!("{}", tails[l]);
+                        heads1.insert(tmp, 0);
+                        let mut to_append = el_x[to_join].to_vec();
+                        to_append.reverse();
+                        el_x[l].append(&mut to_append);
+                        let mut to_append = el_y[to_join].to_vec();
+                        to_append.reverse();
+                        el_y[l].append(&mut to_append);
+                        let tmp = format!("{}", heads[to_join]);
+                        tails[l] = tmp;
+                        el_x[to_join].clear();
+                    } else if heads[l] == tails[to_join] {
+                        let tmp = format!("{}", heads[l]);
+                        heads2.insert(tmp, 0);
+                        let tmp = format!("{}", heads[l]);
+                        heads1.insert(tmp, 0);
+                        let to_append = el_x[to_join].to_vec();
+                        el_x[l].splice(0..0, to_append);
+                        let to_append = el_y[to_join].to_vec();
+                        el_y[l].splice(0..0, to_append);
+                        let tmp = format!("{}", heads[to_join]);
+                        heads[l] = tmp;
+                        el_x[to_join].clear();
+                    } else if heads[l] == heads[to_join] {
+                        let tmp = format!("{}", heads[l]);
+                        heads2.insert(tmp, 0);
+                        let tmp = format!("{}", heads[l]);
+                        heads1.insert(tmp, 0);
+                        let mut to_append = el_x[to_join].to_vec();
+                        to_append.reverse();
+                        el_x[l].splice(0..0, to_append);
+                        let mut to_append = el_y[to_join].to_vec();
+                        to_append.reverse();
+                        el_y[l].splice(0..0, to_append);
+                        let tmp = format!("{}", tails[to_join]);
+                        heads[l] = tmp;
+                        el_x[to_join].clear();
+                    }
+                }
+            }
+        }
+    }
+    for l in 0..data.len() {
+        let el_x_len = el_x[l].len();
+        if el_x_len > 0 {
+            let mut skip = false;
+            let mut depression = true;
+            if el_x_len < 3 {
+                skip = true;
+                el_x[l].clear();
+            }
+            let mut h = f64::NAN;
+            if !skip {
+                let mut mm: isize = (((el_x_len - 1) as f64) / 3.0).floor() as isize - 1;
+                if mm < 0 {
+                    mm = 0;
+                }
+                let mut m = mm as usize;
+                while m < el_x_len {
+                    let xm = el_x[l][m];
+                    let ym = el_y[l][m];
+                    if (xm - xstart) as f64 / size as f64 == ((xm - xstart) as f64 / size as f64).floor() {
+                        let xx = ((xm - xstart) as f64 / size as f64).floor() as u64;
+                        let yy = ((ym - ystart) as f64 / size as f64).floor() as u64;
+                        let h1 = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
+                        let h2 = *xyz.get(&(xx, yy + 1)).unwrap_or(&0.0);
+                        let h3 = h1 * (yy as f64 + 1.0 - (ym - ystart) as f64 / size as f64) +
+                                 h2 * ((ym - ystart) as f64 / size as f64 - yy as f64);
+                        h = (h3 / interval + 0.5).floor() * interval;
+                        m += el_x_len;
+                        println!("A {} {}", l, h);
+                    } else if m < el_x_len - 1 &&
+                    (el_y[l][m] - ystart) as f64 / size as f64 ==
+                    ((el_y[l][m] - ystart) as f64 / size as f64).floor() {
+                        let xx = ((xm - xstart) as f64 / size as f64).floor() as u64;
+                        let yy = ((ym - ystart) as f64 / size as f64).floor() as u64;
+                        let h1 = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
+                        let h2 = *xyz.get(&(xx + 1, yy)).unwrap_or(&0.0);
+                        let h3 = h1 * (xx as f64 + 1.0 - (xm - xstart) as f64 / size as f64) +
+                                 h2 * ((xm - xstart) as f64 / size as f64 - xx as f64);
+                        h = (h3 / interval + 0.5).floor() * interval;         
+                        m += el_x_len;
+                        println!("B {} {}", l, h);
+                    } else {
+                        m += 1;
+                    }
+                }
+            }
+            // kayak
         }
     }
     let output_filename = &format!("{}/out2.dxf", tmpfolder);

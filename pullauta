@@ -7042,8 +7042,6 @@ ENTITIES
             chop($temp2);
             @x = split( /\|/, $temp1 );
             @y = split( /\|/, $temp2 );
-            
-            # kayak
 
             $head = $x[0] . 'x' . $y[0];
             $tail = $x[$#x] . 'x' . $y[$#x];
@@ -7075,12 +7073,8 @@ ENTITIES
 
     #print "smooth\n";
     for ( $l = 0 ; $l < $j + 1 ; $l++ ) {
-
-        #print "$l\n";
         if ( $elex[$l] ne '' ) {
-
             $loppu = 0;
-
             while ( $loppu == 0 ) {
 
                 # loytyyka vastinparia.
@@ -7090,6 +7084,7 @@ ENTITIES
                     && $elex[ $head1{ $head[$l] } ] ne '' )
                 {
                     $tojoin = $head1{ $head[$l] };
+                    
                 }
                 else {
                     if (   $head2{ $head[$l] } ne ''
@@ -7122,15 +7117,10 @@ ENTITIES
                     }
 
                 }
-
                 if ( $loppu == 0 ) {
-
-                    # print "join $l + $tojoin \n";
-
                     $joined++;
 ## joinataan
 ## mika paa joinataan
-
                     if ( $tail[$l] eq $head[$tojoin] ) {
                         $head2{ $tail[$l] } = '';
                         $head1{ $tail[$l] } = '';
@@ -7138,9 +7128,7 @@ ENTITIES
                         $eley[$l] .= '|' . $eley[$tojoin];
                         $tail[$l]      = $tail[$tojoin];
                         $elex[$tojoin] = '';
-                    }
-                    else {
-
+                    } else {
                         if ( $tail[$l] eq $tail[$tojoin] ) {
                             $head2{ $tail[$l] } = '';
                             $head1{ $tail[$l] } = '';
@@ -7154,7 +7142,6 @@ ENTITIES
                             $elex[$tojoin] = '';
                         }
                         else {
-
                             if ( $head[$l] eq $tail[$tojoin] ) {
                                 $head2{ $head[$l] } = '';
                                 $head1{ $head[$l] } = '';
@@ -7164,7 +7151,6 @@ ENTITIES
                                 $elex[$tojoin] = '';
                             }
                             else {
-
                                 if ( $head[$l] eq $head[$tojoin] ) {
                                     $head2{ $head[$l] } = '';
                                     $head1{ $head[$l] } = '';
@@ -7187,25 +7173,20 @@ ENTITIES
                                     $head[$l]      = $tail[$tojoin];
                                     $elex[$tojoin] = '';
                                 }
-
                             }
-
                         }
                     }
                 }
-
             }
-
         }
-
     }
-
+    
     for ( $l = 0 ; $l < $j + 1 ; $l++ ) {
 
         if ( $elex[$l] ne '' ) {
 
             #print "#$l#\n";
-
+            $h = '';
             @x = split( /\|/, $elex[$l] );
             @y = split( /\|/, $eley[$l] );
 
@@ -7221,21 +7202,18 @@ ENTITIES
             if ( $#x < 2 ) {
                 $elex[$l] = '';
                 $skip = 1;
-
             }
 
             if ( $skip == 0 ) {
-
                 # kayran tason laskenta
-
                 $m = floor( $#x / 3 ) - 1;
                 if ( $m < 0 ) { $m = 0; }
                 while ( $m < $#x + 1 ) {
-
                     # lasketaan kayran taso
                     if ( ( $x[$m] - $xstart ) / $size ==
                         floor( ( $x[$m] - $xstart ) / $size ) )
                     {
+                        
                         $h1 =
                           $xyz[ floor( ( $x[$m] - $xstart ) / $size ) ]
                           [ floor( ( $y[$m] - $ystart ) / $size ) ];
@@ -7254,11 +7232,12 @@ ENTITIES
 
                         $h = ( floor( $h / $interval + 0.5 ) * $interval );
                         $m = $#x + 1;
+print "A ". $l. " ". $h ."\n";
                     }
                     if ( $m < $#x -2
                         && ( $y[$m] - $ystart ) / $size ==
-                        floor( ( $y[$m] - $ystart ) / $size ) && ( $x[$m] - $xstart ) / $size !=
-                        floor( ( $x[$m] - $xstart ) / $size ))
+                        floor( ( $y[$m] - $ystart ) / $size ) &&
+                        ( $x[$m] - $xstart ) / $size != floor( ( $x[$m] - $xstart ) / $size ))
                     {
                         $h1 =
                           $xyz[ floor( ( $x[$m] - $xstart ) / $size ) ]
@@ -7282,13 +7261,13 @@ ENTITIES
                         #  . ( floor( $h / $interval + 0.5 ) * $interval )
                         #  . "\n";
                         $m = $#x + 1;
-
+print "B ". $l. " ". $h ."\n";
                     }
 
                     $m++;
                 }
             }
-
+            # kayak
             if (   $skip == 0
                 && $#x < 180
                 && $x[0] == $x[$#x]
