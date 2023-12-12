@@ -2088,13 +2088,13 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
     if(1*$Config->{_}->{skipknolldetection} != 1){
         ## contours 2.5
         print "\nContour generation part 2\n";
-        system("rusty-pullauta  $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
+        system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyz_knolls.xyz null out.dxf");
     }else {
-        system("rusty-pullauta  $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
+        system("rusty-pullauta $thread xyz2contours ".(2.5*$scalefactor)." xyztemp.xyz null out.dxf ground");
     }
 ## smoothjoin
     print "\nContour generation part 3\n";
-    system("pullauta $thread smoothjoin");
+    system("rusty-pullauta $thread smoothjoin");
     print "\nContour generation part 4\n";
     system("pullauta $thread dotknolls");
 ## vege.png
