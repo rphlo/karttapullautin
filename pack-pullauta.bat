@@ -1,0 +1,1 @@
+pp -o pullauta.exe -M GD -M POSIX -M Config::Tiny -M Geo::ShapeFile -M Archive::Zip --link libbz2-1__.dll -l libfreetype-6__.dll -l libgd-3__.dll -l libiconv-2__.dll -l libjpeg-9__.dll -l liblzma-5__.dll -l libpng16-16__.dll -l libtiff-5__.dll -l libXpm__.dll -l zlib1__.dll pullauta.pl
