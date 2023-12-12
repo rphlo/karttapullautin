@@ -406,6 +406,17 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
     let tmpfolder = format!("temp{}", thread);
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let inidotknolls: f64 = conf.general_section().get("knolls").unwrap_or("0.8").parse::<f64>().unwrap_or(0.8);
+    let smoothing: f64 = conf.general_section().get("smoothing").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let curviness: f64 = conf.general_section().get("curviness").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let mut indexcontours: f64 = conf.general_section().get("indexcontours").unwrap_or("12.5").parse::<f64>().unwrap_or(12.5);
+    let formline: f64 = conf.general_section().get("formline").unwrap_or("2").parse::<f64>().unwrap_or(2.0);
+    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
+
+    if formline > 0.0 {
+        indexcontours = 25.0;
+    }
+
     let interval = 2.5 * scalefactor;
     let path = format!("{}/xyz_knolls.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
@@ -498,6 +509,21 @@ SECTION
 ENTITIES
   0
 ");
+
+    let depr_filename = &format!("{}/depressions.txt", tmpfolder);
+    let depr_output = Path::new(depr_filename);
+    let depr_fp = File::create(depr_output).expect("Unable to create file");
+    let mut depr_fp = BufWriter::new(depr_fp);
+
+    let dotknoll_filename = &format!("{}/dotknolls.txt", tmpfolder);
+    let dotknoll_output = Path::new(dotknoll_filename);
+    let dotknoll_fp = File::create(dotknoll_output).expect("Unable to create file");
+    let mut dotknoll_fp = BufWriter::new(dotknoll_fp);
+
+    let knollhead_filename = &format!("{}/knollheads.txt", tmpfolder);
+    let knollhead_output = Path::new(knollhead_filename);
+    let knollhead_fp = File::create(knollhead_output).expect("Unable to create file");
+    let mut knollhead_fp = BufWriter::new(knollhead_fp);
 
     let mut heads1: HashMap::<String, usize> = HashMap::new();
     let mut heads2: HashMap::<String, usize> = HashMap::new();
@@ -645,10 +671,10 @@ ENTITIES
         }
     }
     for l in 0..data.len() {
-        let el_x_len = el_x[l].len();
+        let mut el_x_len = el_x[l].len();
         if el_x_len > 0 {
             let mut skip = false;
-            let mut depression = true;
+            let mut depression = 1;
             if el_x_len < 3 {
                 skip = true;
                 el_x[l].clear();
@@ -672,7 +698,6 @@ ENTITIES
                                  h2 * ((ym - ystart) as f64 / size as f64 - yy as f64);
                         h = (h3 / interval + 0.5).floor() * interval;
                         m += el_x_len;
-                        println!("A {} {}", l, h);
                     } else if m < el_x_len - 1 &&
                     (el_y[l][m] - ystart) as f64 / size as f64 ==
                     ((el_y[l][m] - ystart) as f64 / size as f64).floor() {
@@ -684,15 +709,338 @@ ENTITIES
                                  h2 * ((xm - xstart) as f64 / size as f64 - xx as f64);
                         h = (h3 / interval + 0.5).floor() * interval;         
                         m += el_x_len;
-                        println!("B {} {}", l, h);
                     } else {
                         m += 1;
                     }
                 }
             }
-            // kayak
+            if !skip && el_x_len < 181 && el_x[l].first() == el_x[l].last() && el_y[l].first() == el_y[l].last() {
+                let mut mm: isize = (((el_x_len - 1) as f64) / 3.0).floor() as isize - 1;
+                if mm < 0 {
+                    mm = 0;
+                }
+                let mut m = mm as usize;
+                let mut x_avg = el_x[l][m];
+                let mut y_avg = el_y[l][m];
+                while m < el_x_len {
+                    let xm = (el_x[l][m] - xstart) as f64 / size as f64;
+                    let ym = (el_y[l][m] - ystart) as f64 / size as f64;
+                    if m < el_x_len - 3 && 
+                    ym == ym.floor() && 
+                    (xm - xm.floor()).abs() > 0.5 && 
+                    ym.floor() != ((el_y[l][0] - ystart) as f64 / size as f64).floor() &&
+                    xm.floor() != ((el_x[l][0] - xstart) as f64 / size as f64).floor()
+                    {
+                        x_avg = xm.floor() * size + xstart;
+                        y_avg = el_y[l][m].floor();
+                        m += el_x_len;
+                    }
+                    m += 1;
+                }
+                let foo_x = ((x_avg - xstart) / size).floor() as u64;
+                let foo_y = ((y_avg - ystart) / size).floor() as u64;
+
+                let h_center = *xyz.get(&(foo_x, foo_y)).unwrap_or(&0.0);
+
+                let mut hit = 0;
+
+                let xtest = foo_x as f64 * size + xstart;
+                let ytest = foo_y as f64 * size + ystart;
+
+                let mut x0 = f64::NAN;
+                let mut y0 = f64::NAN;
+                for n in 0..el_x[l].len() {
+                    
+                    let x1 = el_x[l][n];
+                    let y1 = el_y[l][n];
+                    if n > 0 {
+                        if ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0)) && 
+                           (xtest < (x1 - x0) * (ytest - y0) / (y1 - y0) + x0) {
+                            hit += 1;
+                        }
+                    }
+                    x0 = x1;
+                    y0 = y1;
+                }
+                depression = 1;
+                if (h_center < h && hit % 2 == 1) ||  (h_center > h && hit % 2 != 1) {
+                    depression = -1;
+                    depr_fp.write(format!("{},{}", el_x[l][0], el_y[l][0]).as_bytes()).expect("Unable to write file");
+                    for k in 1..el_x[l].len() {
+                        depr_fp.write(format!("|{},{}", el_x[l][k], el_y[l][k]).as_bytes()).expect("Unable to write file");
+                    }
+                    depr_fp.write("\n".as_bytes()).expect("Unable to write file");
+                }
+                if !skip { // Check if knoll is distinct enough
+                    let mut steepcounter = 0;
+                    let mut minele = f64::MAX;
+                    let mut maxele = f64::MIN;
+                    for k in 0..(el_x_len - 1) {
+                        let xx = ((el_x[l][k] - xstart) / size + 0.5).floor() as usize;
+                        let yy = ((el_y[l][k] - ystart) / size + 0.5).floor() as usize;
+                        let ss = steepness[xx][yy];
+                        if minele > h - 0.5 * ss {
+                            minele = h - 0.5 * ss;
+                        }
+                        if maxele < h + 0.5 * ss {
+                            maxele = h + 0.5 * ss;
+                        }
+                        if ss > 1.0 {
+                            steepcounter += 1;
+                        }
+                    }
+                    
+                    if (steepcounter as f64) < 0.4 * (el_x_len as f64  - 1.0) && (jarkkos_bug || el_x_len < 41) {
+                        if depression as f64 * h_center - 1.9 < minele {
+                            if maxele - 0.45 * scalefactor * inidotknolls < minele {
+                                skip = true;
+                            }
+                            if el_x_len < 33 && maxele - 0.75 * scalefactor * inidotknolls < minele {
+                                skip = true;
+                            }
+                            if el_x_len < 19 && maxele - 0.9 * scalefactor * inidotknolls < minele {
+                                skip = true;
+                            }
+                               
+                        }
+                    }
+                    if (steepcounter as f64) < inidotknolls * (el_x_len - 1) as f64 && el_x_len < 15 {
+                        skip = true;
+                    }
+                }
+            }
+            if el_x_len < 5 {
+                skip = true;
+            }
+            if !skip && el_x_len < 15 { // dot knoll
+                let mut x_avg = 0.0;
+                let mut y_avg = 0.0;
+                for k in 0..(el_x_len - 1) {
+                    x_avg += el_x[l][k];
+                    y_avg += el_y[l][k];
+                }
+                x_avg /= (el_x_len - 1) as f64;
+                y_avg /= (el_x_len - 1) as f64;
+                dotknoll_fp.write(format!("{} {} {}\n", depression, x_avg, y_avg).as_bytes()).expect("Unable to write to file");
+                skip = true;
+            }
+
+            if !skip { // not skipped, lets save first coordinate pair for later form line knoll PIP analysis
+                knollhead_fp.write(format!("{} {}\n", el_x[l][0], el_y[l][0]).as_bytes()).expect("Unable to write to file");
+                // adaptive generalization
+                if el_x_len > 101 {
+                    let mut newx: Vec<f64> = vec![];
+                    let mut newy: Vec<f64> = vec![];
+                    let mut xpre = el_x[l][0];
+                    let mut ypre = el_y[l][0];
+
+                    newx.push(el_x[l][0]);
+                    newy.push(el_y[l][0]);
+
+                    for k in 1..(el_x_len - 1) {
+                        let xx = ((el_x[l][k] - xstart) / size + 0.5).floor() as usize;
+                        let yy = ((el_y[l][k] - ystart) / size + 0.5).floor() as usize;
+                        let ss = steepness[xx][yy];
+                        if ss.is_nan() || ss < 0.5 {
+                            if ((xpre - el_x[l][k]).powi(2) + (ypre - el_y[l][k]).powi(2)).sqrt() >= 4.0 {
+                                newx.push(el_x[l][k]);
+                                newy.push(el_y[l][k]);
+                                xpre = el_x[l][k];
+                                ypre = el_y[l][k];
+                            }
+                        } else {
+                            newx.push(el_x[l][k]);
+                            newy.push(el_y[l][k]);
+                            xpre = el_x[l][k];
+                            ypre = el_y[l][k]; 
+                        }
+                    }
+                    newx.push(el_x[l][el_x_len - 1]);
+                    newy.push(el_y[l][el_x_len - 1]);
+
+                    el_x[l].clear();
+                    el_x[l].append(&mut newx);
+                    el_y[l].clear();
+                    el_y[l].append(&mut newy);
+                    el_x_len = el_x[l].len()
+                }
+                // Smoothing
+                let mut dx: Vec<f64> = vec![f64::NAN; el_x_len];
+                let mut dy: Vec<f64> = vec![f64::NAN; el_x_len];
+                for k in 2..(el_x_len - 3) {
+                    dx[k] = (
+                        el_x[l][k - 2] +
+                        el_x[l][k - 1] +
+                        el_x[l][k] +
+                        el_x[l][k + 1] +
+                        el_x[l][k + 2] +
+                        el_x[l][k + 3]
+                    ) / 6.0;
+                    dy[k] = (
+                        el_y[l][k - 2] +
+                        el_y[l][k - 1] +
+                        el_y[l][k] +
+                        el_y[l][k + 1] +
+                        el_y[l][k + 2] +
+                        el_y[l][k + 3]
+                    ) / 6.0;
+                }
+
+                let mut xa: Vec<f64> = vec![f64::NAN; el_x_len];
+                let mut ya: Vec<f64> = vec![f64::NAN; el_x_len];
+                for k in 1..(el_x_len - 1) {
+                    xa[k] = (el_x[l][k - 1] +
+                             el_x[l][k] / (0.01 + smoothing) +
+                             el_x[l][k + 1]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    ya[k] = (el_y[l][k - 1] +
+                             el_y[l][k] / (0.01 + smoothing) +
+                             el_y[l][k + 1]) / (2.0 + 1.0 / (0.01 + smoothing));
+                }
+
+                if el_x[l].first() == el_x[l].last() && el_x[l].first() == el_x[l].last() {
+                    let vx = (el_x[l][1] +
+                              el_x[l][0] / (0.01 + smoothing) + 
+                              el_x[l][el_x_len - 2]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    let vy = (el_y[l][1] + 
+                              el_y[l][0] / (0.01 + smoothing) + 
+                              el_y[l][el_x_len - 2]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    xa[0] = vx;
+                    ya[0] = vy;
+                    xa[el_x_len - 1] = vx;
+                    ya[el_x_len - 1] = vy;
+                } else {
+                    xa[0] = el_x[l][0];
+                    ya[0] = el_y[l][0];
+                    xa[el_x_len - 1] = el_x[l][el_x_len - 1];
+                    ya[el_x_len - 1] = el_y[l][el_x_len - 1];
+                }
+                for k in 1..(el_x_len - 1) {
+                    el_x[l][k] = (xa[k - 1] +
+                              xa[k] / (0.01 + smoothing) +
+                              xa[k + 1]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    el_y[l][k] = (ya[k - 1] +
+                              ya[k] / (0.01 + smoothing) +
+                              ya[k + 1]) / (2.0 + 1.0 / (0.01 + smoothing));
+                }
+                if xa.first() == xa.last() && ya.first() == ya.last() {
+                    let vx = (xa[1] +
+                              xa[0] / (0.01 + smoothing) + 
+                              xa[el_x_len - 2]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    let vy = (ya[1] + 
+                              ya[0] / (0.01 + smoothing) + 
+                              ya[el_x_len - 2]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    el_x[l][0] = vx;
+                    el_y[l][0] = vy;
+                    el_x[l][el_x_len - 1] = vx;
+                    el_y[l][el_x_len - 1] = vy;
+                } else {
+                    el_x[l][0] = xa[0];
+                    el_y[l][0] = ya[0];
+                    el_x[l][el_x_len - 1] = xa[el_x_len - 1];
+                    el_y[l][el_x_len - 1] = ya[el_x_len - 1];
+                }
+
+                for k in 1..(el_x_len - 1) {
+                    xa[k] = (el_x[l][k - 1] +
+                             el_x[l][k] / (0.01 + smoothing) +
+                             el_x[l][k + 1]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    ya[k] = (el_y[l][k - 1] +
+                             el_y[l][k] / (0.01 + smoothing) +
+                             el_y[l][k + 1]) / (2.0 + 1.0 / (0.01 + smoothing));
+                }
+                if el_x[l].first() == el_x[l].last() && el_x[l].first() == el_x[l].last() {
+                    let vx = (el_x[l][1] +
+                              el_x[l][0] / (0.01 + smoothing) + 
+                              el_x[l][el_x_len - 2]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    let vy = (el_y[l][1] + 
+                              el_y[l][0] / (0.01 + smoothing) + 
+                              el_y[l][el_x_len - 2]) / (2.0 + 1.0 / (0.01 + smoothing));
+                    xa[0] = vx;
+                    ya[0] = vy;
+                    xa[el_x_len - 1] = vx;
+                    ya[el_x_len - 1] = vy;
+                } else {
+                    xa[0] = el_x[l][0];
+                    ya[0] = el_y[l][0];
+                    xa[el_x_len - 1] = el_x[l][el_x_len - 1];
+                    ya[el_x_len - 1] = el_y[l][el_x_len - 1];
+                }
+                for k in 0..el_x_len {
+                    el_x[l][k] = xa[k];
+                    el_y[l][k] = ya[k];
+                }
+
+                let mut dx2: Vec<f64> = vec![f64::NAN; el_x_len];
+                let mut dy2: Vec<f64> = vec![f64::NAN; el_x_len];
+                for k in 2..(el_x_len - 3) {
+                    dx2[k] = (
+                        el_x[l][k - 2] +
+                        el_x[l][k - 1] +
+                        el_x[l][k] +
+                        el_x[l][k + 1] +
+                        el_x[l][k + 2] +
+                        el_x[l][k + 3]
+                    ) / 6.0;
+                    dy2[k] = (
+                        el_y[l][k - 2] +
+                        el_y[l][k - 1] +
+                        el_y[l][k] +
+                        el_y[l][k + 1] +
+                        el_y[l][k + 2] +
+                        el_y[l][k + 3]
+                    ) / 6.0;
+                }
+                for k in 3..(el_x_len - 3) {
+                    let vx = el_x[l][k] + (dx[k] - dx2[k]) * curviness;
+                    let vy = el_y[l][k] + (dy[k] - dy2[k]) * curviness;
+                    el_x[l][k] = vx;
+                    el_y[l][k] = vy;
+                }
+
+                let mut layer = String::from("contour");
+                if depression == -1 {
+                    layer = String::from("depression");
+                }
+                if indexcontours != 0.0 {
+                    if (((h / interval + 0.5).floor() * interval) / indexcontours).floor() -
+                        ((h / interval + 0.5).floor() * interval) / indexcontours == 0.0 {
+                        layer.push_str("_index");
+                    }
+                }
+                if formline > 0.0 {
+                    if (((h / interval + 0.5).floor() * interval) / (2.0 * interval)).floor() -
+                        ((h / interval + 0.5).floor() * interval) / (2.0 * interval) != 0.0 {
+                        layer.push_str("_intermed");
+                    }
+                }
+                out.push_str(format!("POLYLINE
+ 66
+1
+  8
+{}
+  0
+", layer).as_str());
+                for k in 0..el_x_len {
+                    out.push_str(format!("VERTEX
+  8
+{}
+ 10
+{}
+ 20
+{}
+  0
+", layer, el_x[l][k], el_y[l][k]).as_str());
+                }
+                out.push_str("SEQEND
+  0
+");
+            } // -- if not dotkoll
         }
     }
+    out.push_str("ENDSEC
+  0
+EOF
+");
     let output_filename = &format!("{}/out2.dxf", tmpfolder);
     let output = Path::new(output_filename);
     let fp = File::create(output).expect("Unable to create file");
