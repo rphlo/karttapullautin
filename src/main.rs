@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fs::File;
 use std::fs;
 use std::io::{self, BufRead};
-use image::{RgbImage, RgbaImage, Rgb, Rgba};
+use image::{RgbImage, RgbaImage, Rgb, Rgba, GrayImage, GrayAlphaImage, Luma, LumaA};
 use std::process::{Command, Stdio};
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
@@ -2862,6 +2862,9 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut imggr1b = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
     let mut imgye2 = RgbaImage::from_pixel((w * block) as u32, (h * block) as u32, Rgba([255, 255, 255, 0]));
     let mut imgwater = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
+    let mut img_green_bin = GrayImage::from_pixel((w * block) as u32, (h * block) as u32, Luma([0x00]));
+    let mut img_green_bin_b = GrayImage::from_pixel((w * block) as u32, (h * block) as u32, Luma([0x00]));
+    let mut img_yellow_bin = GrayAlphaImage::from_pixel((w * block) as u32, (h * block) as u32, LumaA([0x00, 0]));
     
     let mut greens = Vec::new();
     for i in 0..greenshades.len() {
@@ -2907,12 +2910,20 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     ).of_size(3, 3),
                     ye2
                 );
+                draw_filled_rect_mut(
+                    &mut img_yellow_bin,
+                    Rect::at(
+                        x as i32 * 3 + 2,
+                        (hy as i32 - y as i32) * 3 - 3
+                    ).of_size(3, 3),
+                    LumaA([0x1, 255])
+                )
             }
         }
     }
 
     imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
-
+    img_yellow_bin.save(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).expect("could not save output png");
     for x in 2..w as usize {
         for y in 2..h as usize {
             let mut ghit2 = 0;
@@ -2966,6 +2977,17 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                         ),
                         *greens.get(greenshade - 1).unwrap()
                     );
+                    draw_filled_rect_mut(
+                        &mut img_green_bin, 
+                        Rect::at(
+                            ((x as f64 + 0.5) * block) as i32 - addition, 
+                            (((h - y as f64) - 0.5) * block) as i32 - addition
+                        ).of_size(
+                            (block as i32 + addition) as u32,
+                            (block as i32 + addition) as u32,
+                        ),
+                        Luma([greenshade as u8 + 1])
+                    );
                 }
             }
         }
@@ -2973,19 +2995,28 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let med: u32 = conf.general_section().get("medianboxsize").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med > 0 {
         imggr1b = median_filter(&imggr1, med/2, med/2);
+        img_green_bin_b = median_filter(&img_green_bin, med/2, med/2);
     }
     let med2: u32 = conf.general_section().get("medianboxsize2").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med2 > 0 {
         imggr1 = median_filter(&imggr1b, med2/2, med2/2);
+        img_green_bin = median_filter(&img_green_bin_b, med/2, med/2);
     } else {
         imggr1 = imggr1b;
+        img_green_bin = img_green_bin_b;
     }
     imggr1.save(Path::new(&format!("{}/greens.png", tmpfolder))).expect("could not save output png");
+    img_green_bin.save(Path::new(&format!("{}/greens_mono.png", tmpfolder))).expect("could not save output png");
     
     let mut img = image::open(Path::new(&format!("{}/greens.png", tmpfolder))).ok().expect("Opening image failed");
     let img2 = image::open(Path::new(&format!("{}/yellow.png", tmpfolder))).ok().expect("Opening image failed");
     image::imageops::overlay(&mut img, &img2, 0, 0);
     img.save(Path::new(&format!("{}/vegetation.png", tmpfolder))).expect("could not save output png");
+    
+    let mut img_mono = image::open(Path::new(&format!("{}/greens_mono.png", tmpfolder))).ok().expect("Opening image failed");
+    let img_mono2 = image::open(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).ok().expect("Opening image failed");
+    image::imageops::overlay(&mut img_mono, &img_mono2, 0, 0);
+    img_mono.save(Path::new(&format!("{}/vegetation_mono.png", tmpfolder))).expect("could not save output png");
 
     let black = Rgb([0, 0, 0]);
     let blue = Rgb([29, 190, 255]);

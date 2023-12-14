@@ -8083,11 +8083,10 @@ if ( $command eq 'render' ) {
 
     @d = split( /POLYLINE/, $d );
 	
-		if($formline==2 && $nodepressions != 1){
-	open(FORMLINE,">" . $tempfolder . "formlines.dxf" );
-	print FORMLINE $d[0];
+	if($formline==2 && $nodepressions != 1){
+        open(FORMLINE,">" . $tempfolder . "formlines.dxf" );
+        print FORMLINE $d[0];
 	}
-	
 
     $j = 0;
     foreach $rec (@d) {
@@ -8140,7 +8139,9 @@ if ( $command eq 'render' ) {
         @x = split( /\|/, $temp1 );
         @y = split( /\|/, $temp2 );
         $col = $purple;
-        if ( $layer =~ /contour/ ) { $col = $brown; }
+        if ( $layer =~ /contour/ ) { 
+            $col = $brown;
+        }
         if ( $nodepressions != 1 || $layer =~ /contour/ ) {
             $curvew = 2;
             if ( $layer =~ /index/ ) {
