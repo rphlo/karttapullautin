@@ -14,7 +14,7 @@ use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
 use std::collections::HashMap;
 use rand::prelude::*;
-use imageproc::drawing::{draw_filled_rect_mut, draw_line_segment_mut};
+use imageproc::drawing::{draw_filled_rect_mut, draw_line_segment_mut, draw_filled_circle_mut};
 use imageproc::rect::Rect;
 use imageproc::filter::median_filter;
 
@@ -2648,6 +2648,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let firstandlastfactor = conf.general_section().get("firstandlastreturnfactor").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
     let lastfactor = conf.general_section().get("lastreturnfactor").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
 
+    let grayscaled_vege: bool = conf.general_section().get("grayscaled_vege").unwrap_or("0") == "1";
+
     let yellowfirstlast = conf.general_section().get("yellowfirstlast").unwrap_or("").parse::<u64>().unwrap_or(1);
     let vegethin: u32 = conf.general_section().get("vegethin").unwrap_or("0").parse::<u32>().unwrap_or(0);
     
@@ -2723,6 +2725,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ghit: HashMap<(u64, u64), u64> = HashMap::new();
     let mut greenhit: HashMap<(u64, u64), f64> = HashMap::new();
     let mut highit: HashMap<(u64, u64), u64> = HashMap::new();
+    let step: f32 = 6.0;
     if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
             if vegethin == 0 || ((i  + 1) as u32) % vegethin == 0 {
@@ -2756,8 +2759,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     let ab = a * (1.0 - distx) + b * distx;
                     let cd = c * (1.0 - distx) + d * distx;
                     let thelele = ab * (1.0 - disty) + cd * disty;
-                    let xx = ((x - xmin) / block / 6.0 + 0.5).floor() as u64;
-                    let yy = (((y - ymin) / block / 6.0).floor() + 0.5).floor() as u64;
+                    let xx = ((x - xmin) / block / (step as f64) + 0.5).floor() as u64;
+                    let yy = (((y - ymin) / block / (step as f64)).floor() + 0.5).floor() as u64;
                     let hh = h - thelele;
                     if hh <= 1.2 {
                         if r[3] == "2" {
@@ -2858,6 +2861,11 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         (h * block * 600.0 / 254.0 / scalefactor) as u32,
         Rgba([255, 255, 255, 0])
     );
+    let mut img_ug_mono = GrayImage::from_pixel(
+        (w * block * 600.0 / 254.0 / scalefactor) as u32,
+        (h * block * 600.0 / 254.0 / scalefactor) as u32,
+        Luma([0x00])
+    );
     let mut imggr1 = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
     let mut imggr1b = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
     let mut imgye2 = RgbaImage::from_pixel((w * block) as u32, (h * block) as u32, Rgba([255, 255, 255, 0]));
@@ -2910,20 +2918,24 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     ).of_size(3, 3),
                     ye2
                 );
-                draw_filled_rect_mut(
-                    &mut img_yellow_bin,
-                    Rect::at(
-                        x as i32 * 3 + 2,
-                        (hy as i32 - y as i32) * 3 - 3
-                    ).of_size(3, 3),
-                    LumaA([0x1, 255])
-                )
+                if grayscaled_vege {
+                    draw_filled_rect_mut(
+                        &mut img_yellow_bin,
+                        Rect::at(
+                            x as i32 * 3 + 2,
+                            (hy as i32 - y as i32) * 3 - 3
+                        ).of_size(3, 3),
+                        LumaA([0x1, 255])
+                    )
+                }
             }
         }
     }
 
     imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
-    img_yellow_bin.save(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).expect("could not save output png");
+    if grayscaled_vege {
+        img_yellow_bin.save(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).expect("could not save output png");
+    }
     for x in 2..w as usize {
         for y in 2..h as usize {
             let mut ghit2 = 0;
@@ -2977,17 +2989,19 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                         ),
                         *greens.get(greenshade - 1).unwrap()
                     );
-                    draw_filled_rect_mut(
-                        &mut img_green_bin, 
-                        Rect::at(
-                            ((x as f64 + 0.5) * block) as i32 - addition, 
-                            (((h - y as f64) - 0.5) * block) as i32 - addition
-                        ).of_size(
-                            (block as i32 + addition) as u32,
-                            (block as i32 + addition) as u32,
-                        ),
-                        Luma([greenshade as u8 + 1])
-                    );
+                    if grayscaled_vege {
+                        draw_filled_rect_mut(
+                            &mut img_green_bin, 
+                            Rect::at(
+                                ((x as f64 + 0.5) * block) as i32 - addition, 
+                                (((h - y as f64) - 0.5) * block) as i32 - addition
+                            ).of_size(
+                                (block as i32 + addition) as u32,
+                                (block as i32 + addition) as u32,
+                            ),
+                            Luma([greenshade as u8 + 1])
+                        );
+                    }
                 }
             }
         }
@@ -2995,28 +3009,37 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let med: u32 = conf.general_section().get("medianboxsize").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med > 0 {
         imggr1b = median_filter(&imggr1, med/2, med/2);
-        img_green_bin_b = median_filter(&img_green_bin, med/2, med/2);
+        if grayscaled_vege {
+            img_green_bin_b = median_filter(&img_green_bin, med/2, med/2);
+        }
     }
     let med2: u32 = conf.general_section().get("medianboxsize2").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med2 > 0 {
         imggr1 = median_filter(&imggr1b, med2/2, med2/2);
-        img_green_bin = median_filter(&img_green_bin_b, med/2, med/2);
+        if grayscaled_vege {
+            img_green_bin = median_filter(&img_green_bin_b, med/2, med/2);
+        }
     } else {
         imggr1 = imggr1b;
-        img_green_bin = img_green_bin_b;
+        if grayscaled_vege {
+            img_green_bin = img_green_bin_b;
+        }
     }
     imggr1.save(Path::new(&format!("{}/greens.png", tmpfolder))).expect("could not save output png");
-    img_green_bin.save(Path::new(&format!("{}/greens_mono.png", tmpfolder))).expect("could not save output png");
+    
     
     let mut img = image::open(Path::new(&format!("{}/greens.png", tmpfolder))).ok().expect("Opening image failed");
     let img2 = image::open(Path::new(&format!("{}/yellow.png", tmpfolder))).ok().expect("Opening image failed");
     image::imageops::overlay(&mut img, &img2, 0, 0);
     img.save(Path::new(&format!("{}/vegetation.png", tmpfolder))).expect("could not save output png");
     
-    let mut img_mono = image::open(Path::new(&format!("{}/greens_mono.png", tmpfolder))).ok().expect("Opening image failed");
-    let img_mono2 = image::open(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).ok().expect("Opening image failed");
-    image::imageops::overlay(&mut img_mono, &img_mono2, 0, 0);
-    img_mono.save(Path::new(&format!("{}/vegetation_mono.png", tmpfolder))).expect("could not save output png");
+    if grayscaled_vege {
+        img_green_bin.save(Path::new(&format!("{}/greens_mono.png", tmpfolder))).expect("could not save output png");
+        let mut img_mono = image::open(Path::new(&format!("{}/greens_mono.png", tmpfolder))).ok().expect("Opening image failed");
+        let img_mono2 = image::open(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).ok().expect("Opening image failed");
+        image::imageops::overlay(&mut img_mono, &img_mono2, 0, 0);
+        img_mono.save(Path::new(&format!("{}/vegetation_mono.png", tmpfolder))).expect("could not save output png");
+    }
 
     let black = Rgb([0, 0, 0]);
     let blue = Rgb([29, 190, 255]);
@@ -3081,13 +3104,13 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     
     let underg = Rgba([64, 121, 0, 255]);
     let tmpfactor = (600.0 / 254.0 / scalefactor) as f32;
-
+    
     let bf32 = block as f32;
     let hf32 = h as f32;
     let ww = w as f32 * bf32;
     let hh = hf32 * bf32;
-
     let mut x = 0.0 as f32;
+    
     loop {
         if x >= ww {
             break;
@@ -3097,8 +3120,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             if y >= hh {
                 break;
             }
-            let xx = (x / bf32 / 6.0).floor() as u64;
-            let yy = (y / bf32 / 6.0).floor() as u64;
+            let xx = ((x / bf32 / step).floor()) as u64;
+            let yy = ((y / bf32 / step).floor()) as u64;
             let foo = *ug.get(&(xx, yy)).unwrap_or(&0) as f64 / (
                 *ug.get(&(xx, yy)).unwrap_or(&0) as f64 +
                 *ugg.get(&(xx, yy)).unwrap_or(&0.0) as f64 +
@@ -3107,8 +3130,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             if foo > uglimit {
                 draw_line_segment_mut(
                     &mut imgug, 
-                    (tmpfactor * (x + bf32 * 3.0), tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
-                    (tmpfactor * (x + bf32 * 3.0), tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
+                    (tmpfactor * (x + bf32 * 3.0),       tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
+                    (tmpfactor * (x + bf32 * 3.0),       tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
                     underg
                 );
                 draw_line_segment_mut(
@@ -3119,8 +3142,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 );
                 draw_line_segment_mut(
                     &mut imgug, 
-                    (tmpfactor * (x - bf32 * 3.0), tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
-                    (tmpfactor * (x - bf32 * 3.0), tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
+                    (tmpfactor * (x - bf32 * 3.0),       tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)), 
+                    (tmpfactor * (x - bf32 * 3.0),       tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
                     underg
                 );
                 draw_line_segment_mut(
@@ -3129,6 +3152,18 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     (tmpfactor * (x - bf32 * 3.0) + 1.0, tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)),
                     underg
                 );
+
+                if grayscaled_vege {
+                    draw_filled_circle_mut(
+                        &mut img_ug_mono,
+                        (
+                            (tmpfactor * (x)) as i32,
+                            (tmpfactor * (hf32 * bf32 - y)) as i32
+                        ),
+                        (bf32 * 9.0 * 1.4142) as i32,
+                        Luma([0x01])
+                    )
+                }
             }
             if foo > uglimit2 {
                 draw_line_segment_mut(
@@ -3143,12 +3178,27 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     (tmpfactor * x + 1.0, tmpfactor * (hf32 * bf32 - y + bf32 * 3.0)), 
                     underg
                 );
+
+                if grayscaled_vege {
+                    draw_filled_circle_mut(
+                        &mut img_ug_mono,
+                        (
+                            (tmpfactor * (x)) as i32,
+                            (tmpfactor * (hf32 * bf32 - y)) as i32
+                        ),
+                        (bf32 * 9.0 * 1.4142) as i32,
+                        Luma([0x02])
+                    )
+                }
             }
-            y += bf32 * 6.0;
+        
+            y += bf32 * step;
         }
-        x += bf32 * 6.0;
+        x += bf32 * step;
     }
     imgug.save(Path::new(&format!("{}/undergrowth.png", tmpfolder))).expect("could not save output png");
+    let img_ug_mono_b = median_filter(&img_ug_mono, (bf32 * step) as u32, (bf32 * step) as u32);
+    img_ug_mono_b.save(Path::new(&format!("{}/undergrowth_mono.png", tmpfolder))).expect("could not save output png");
     
     let ugpgw = File::create(&Path::new(&format!("{}/undergrowth.pgw", tmpfolder))).expect("Unable to create file");
     let mut ugpgw = BufWriter::new(ugpgw);
