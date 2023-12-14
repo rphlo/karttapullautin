@@ -2861,7 +2861,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         (h * block * 600.0 / 254.0 / scalefactor) as u32,
         Rgba([255, 255, 255, 0])
     );
-    let mut img_ug_mono = GrayImage::from_pixel(
+    let mut img_ug_bit = GrayImage::from_pixel(
         (w * block * 600.0 / 254.0 / scalefactor) as u32,
         (h * block * 600.0 / 254.0 / scalefactor) as u32,
         Luma([0x00])
@@ -2934,7 +2934,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
     imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
     if vege_bitmode {
-        img_yellow_bin.save(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).expect("could not save output png");
+        img_yellow_bin.save(Path::new(&format!("{}/yellow_bit.png", tmpfolder))).expect("could not save output png");
     }
     for x in 2..w as usize {
         for y in 2..h as usize {
@@ -3034,11 +3034,11 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     img.save(Path::new(&format!("{}/vegetation.png", tmpfolder))).expect("could not save output png");
     
     if vege_bitmode {
-        img_green_bin.save(Path::new(&format!("{}/greens_mono.png", tmpfolder))).expect("could not save output png");
-        let mut img_mono = image::open(Path::new(&format!("{}/greens_mono.png", tmpfolder))).ok().expect("Opening image failed");
-        let img_mono2 = image::open(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).ok().expect("Opening image failed");
-        image::imageops::overlay(&mut img_mono, &img_mono2, 0, 0);
-        img_mono.save(Path::new(&format!("{}/vegetation_mono.png", tmpfolder))).expect("could not save output png");
+        img_green_bin.save(Path::new(&format!("{}/greens_bit.png", tmpfolder))).expect("could not save output png");
+        let mut img_bit = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder))).ok().expect("Opening image failed");
+        let img_bit2 = image::open(Path::new(&format!("{}/yellow_bit.png", tmpfolder))).ok().expect("Opening image failed");
+        image::imageops::overlay(&mut img_bit, &img_bit2, 0, 0);
+        img_bit.save(Path::new(&format!("{}/vegetation_bit.png", tmpfolder))).expect("could not save output png");
     }
 
     let black = Rgb([0, 0, 0]);
@@ -3155,7 +3155,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
                 if vege_bitmode {
                     draw_filled_circle_mut(
-                        &mut img_ug_mono,
+                        &mut img_ug_bit,
                         (
                             (tmpfactor * (x)) as i32,
                             (tmpfactor * (hf32 * bf32 - y)) as i32
@@ -3181,7 +3181,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
                 if vege_bitmode {
                     draw_filled_circle_mut(
-                        &mut img_ug_mono,
+                        &mut img_ug_bit,
                         (
                             (tmpfactor * (x)) as i32,
                             (tmpfactor * (hf32 * bf32 - y)) as i32
@@ -3197,8 +3197,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         x += bf32 * step;
     }
     imgug.save(Path::new(&format!("{}/undergrowth.png", tmpfolder))).expect("could not save output png");
-    let img_ug_mono_b = median_filter(&img_ug_mono, (bf32 * step) as u32, (bf32 * step) as u32);
-    img_ug_mono_b.save(Path::new(&format!("{}/undergrowth_mono.png", tmpfolder))).expect("could not save output png");
+    let img_ug_bit_b = median_filter(&img_ug_bit, (bf32 * step) as u32, (bf32 * step) as u32);
+    img_ug_bit_b.save(Path::new(&format!("{}/undergrowth_bit.png", tmpfolder))).expect("could not save output png");
     
     let ugpgw = File::create(&Path::new(&format!("{}/undergrowth.pgw", tmpfolder))).expect("Unable to create file");
     let mut ugpgw = BufWriter::new(ugpgw);
