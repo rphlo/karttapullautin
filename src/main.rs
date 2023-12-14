@@ -2648,7 +2648,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let firstandlastfactor = conf.general_section().get("firstandlastreturnfactor").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
     let lastfactor = conf.general_section().get("lastreturnfactor").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
 
-    let grayscaled_vege: bool = conf.general_section().get("grayscaled_vege").unwrap_or("0") == "1";
+    let vege_bitmode: bool = conf.general_section().get("vege_bitmode").unwrap_or("0") == "1";
 
     let yellowfirstlast = conf.general_section().get("yellowfirstlast").unwrap_or("").parse::<u64>().unwrap_or(1);
     let vegethin: u32 = conf.general_section().get("vegethin").unwrap_or("0").parse::<u32>().unwrap_or(0);
@@ -2918,7 +2918,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     ).of_size(3, 3),
                     ye2
                 );
-                if grayscaled_vege {
+                if vege_bitmode {
                     draw_filled_rect_mut(
                         &mut img_yellow_bin,
                         Rect::at(
@@ -2933,7 +2933,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     }
 
     imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
-    if grayscaled_vege {
+    if vege_bitmode {
         img_yellow_bin.save(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).expect("could not save output png");
     }
     for x in 2..w as usize {
@@ -2989,7 +2989,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                         ),
                         *greens.get(greenshade - 1).unwrap()
                     );
-                    if grayscaled_vege {
+                    if vege_bitmode {
                         draw_filled_rect_mut(
                             &mut img_green_bin, 
                             Rect::at(
@@ -3009,19 +3009,19 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let med: u32 = conf.general_section().get("medianboxsize").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med > 0 {
         imggr1b = median_filter(&imggr1, med/2, med/2);
-        if grayscaled_vege {
+        if vege_bitmode {
             img_green_bin_b = median_filter(&img_green_bin, med/2, med/2);
         }
     }
     let med2: u32 = conf.general_section().get("medianboxsize2").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med2 > 0 {
         imggr1 = median_filter(&imggr1b, med2/2, med2/2);
-        if grayscaled_vege {
+        if vege_bitmode {
             img_green_bin = median_filter(&img_green_bin_b, med/2, med/2);
         }
     } else {
         imggr1 = imggr1b;
-        if grayscaled_vege {
+        if vege_bitmode {
             img_green_bin = img_green_bin_b;
         }
     }
@@ -3033,7 +3033,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     image::imageops::overlay(&mut img, &img2, 0, 0);
     img.save(Path::new(&format!("{}/vegetation.png", tmpfolder))).expect("could not save output png");
     
-    if grayscaled_vege {
+    if vege_bitmode {
         img_green_bin.save(Path::new(&format!("{}/greens_mono.png", tmpfolder))).expect("could not save output png");
         let mut img_mono = image::open(Path::new(&format!("{}/greens_mono.png", tmpfolder))).ok().expect("Opening image failed");
         let img_mono2 = image::open(Path::new(&format!("{}/yellow_mono.png", tmpfolder))).ok().expect("Opening image failed");
@@ -3153,7 +3153,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     underg
                 );
 
-                if grayscaled_vege {
+                if vege_bitmode {
                     draw_filled_circle_mut(
                         &mut img_ug_mono,
                         (
@@ -3179,7 +3179,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     underg
                 );
 
-                if grayscaled_vege {
+                if vege_bitmode {
                     draw_filled_circle_mut(
                         &mut img_ug_mono,
                         (
