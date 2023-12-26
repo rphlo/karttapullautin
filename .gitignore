@@ -5,3 +5,6 @@ temp*/
 in/
 out/
 .DS_Store
+pullauta.ini
+pullautus*.png
+pullautus*.pgw

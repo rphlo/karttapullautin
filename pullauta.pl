@@ -228,7 +228,10 @@ basemapinterval=0
 scalefactor=1
 zoffset=0
 #skipknolldetection=0
-				
+
+# Settings specific to rusty-pullauta
+jarkkos2019=1
+vege_bitmode=0			
 ";
     close(ULOS);
 }
@@ -384,10 +387,10 @@ There is no warranty. Use it at your own risk!\n";
 
 if ( $command eq '' && -e $tempfolder . '/vegetation.png' && $batch == 0 ) {
     print "\nRendering png map with depressions\n";
-    system("pullauta render $pnorthlinesangle $pnorthlineswidth ");
+    system("rusty-pullauta render $pnorthlinesangle $pnorthlineswidth");
     print "\nRendering png map without depressions\n";
     system(
-        "pullauta render $pnorthlinesangle $pnorthlineswidth  nodepressions");
+        "rusty-pullauta render $pnorthlinesangle $pnorthlineswidth nodepressions");
 
     print "\n\nAll done!\n";
     exit;
@@ -1715,10 +1718,10 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 			
 			
             if ( $ziplist ne '' ) {
-                system("pullauta $thread temp$thread.xyz norender");
+                system("rusty-pullauta $thread temp$thread.xyz norender");
             }
             else {
-                system("pullauta $thread temp$thread.xyz");
+                system("rusty-pullauta $thread temp$thread.xyz");
             }
             if ( $ziplist ne '' ) {
                 system("pullauta $thread $ziplist");
@@ -1916,12 +1919,12 @@ if ( $command =~ /\.zip/i ) {    ## rendering with mtk data
     system "pullauta $thread unzipmtk " . join( ' ', @ARGV );
 
     print "\nRendering png map with depressions\n";
-    system("pullauta $thread render $pnorthlinesangle $pnorthlineswidth ");
+    system("rusty-pullauta $thread render $pnorthlinesangle $pnorthlineswidth");
 
     print "\nRendering png map without depressions\n";
 
     system(
-"pullauta $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions"
+"rusty-pullauta $thread render $pnorthlinesangle $pnorthlineswidth nodepressions"
     );
 
     print "\n\nAll done!\n";
@@ -2096,7 +2099,7 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
     print "\nContour generation part 3\n";
     system("rusty-pullauta $thread smoothjoin");
     print "\nContour generation part 4\n";
-    system("pullauta $thread dotknolls");
+    system("rusty-pullauta $thread dotknolls");
 ## vege.png
     if ( $vegemode == 0 ) {
         ## new vege
@@ -2133,10 +2136,10 @@ if(1*$Config->{_}->{skipknolldetection} != 1){
 
     if ( $ARGV[1] ne 'norender' ) {
         print "\nRendering png map with depressions\n";
-        system("pullauta $thread render $pnorthlinesangle $pnorthlineswidth ");
+        system("rusty-pullauta $thread render $pnorthlinesangle $pnorthlineswidth");
         print "\nRendering png map without depressions\n";
         system(
-"pullauta $thread render $pnorthlinesangle $pnorthlineswidth  nodepressions"
+"rusty-pullauta $thread render $pnorthlinesangle $pnorthlineswidth nodepressions"
         );
     }
     else {
