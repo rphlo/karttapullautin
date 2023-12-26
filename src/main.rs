@@ -22,7 +22,222 @@ use imageproc::filter::median_filter;
 fn main() {
     let mut thread: String = String::new();
     if !Path::new("pullauta.ini").exists() {
-        // TODO: create the ini file
+        let f = File::create(&Path::new(&format!("pullauta.ini"))).expect("Unable to create file");
+        let mut f = BufWriter::new(f);
+        f.write("#------------------------------------------------------#
+# Parameters for the Karttapullautin pullautus process #
+#----------------------------------------------------- #
+
+################## PARAMETERS #############################
+# vegetation mode. New mode =0, old original (pre 20130613) mode =1 
+vegemode=0
+
+### New vegetation mapping mode parameters (vegemode 0)##
+# Experimental undergrowth parameters. Smaller figures will give more undergrowth stripes
+# normal undergrowth 
+undergrowth=0.35
+
+# undergrowth walk
+undergrowth2=0.56
+
+# Note, you will need to iterate this if you use this mode. with commands 'pullauta makevegenew' and then 'pullauta' you can process only this part again. 
+# Elevation for hits below green. For green mapping hits below this will be calculated as points gone trough vegetation ~ ground.
+greenground=0.9
+greenhigh=2
+topweight=0.80
+vegezoffset=0
+greendetectsize=3
+
+### Here we calculate points. We can use elevation zones and factors for green. Example:
+# low|high|roof|factor
+# zone1=1|5|99|1  # points 1 to 5 meters will be calculates as one hit if tallest trees there as lower than 99 moters high 
+# zone2=5|9|11.0|0.75 # in additon, poitns 5 to 9 meters will be calculated as 0.75 point's worth if tallest trees are lower than 11 meters.
+# There can be as many zones as you like
+
+# low|high|roof|factor
+zone1=1.0|2.65|99|1
+zone2=2.65|3.4|99|0.1
+zone3=3.4|5.5|8|0.2
+
+
+## Here we fine how sensitively we get green for different (hight or low) forest types. 
+# For example tf tall forest with big trees gets too green compared to low forest, we can here tune it right. 
+# roof low|roof high| greenhits/ground ratio to trigger green factor 1
+thresold1=0.20|3|0.1
+thresold2=3|4|0.1  
+thresold3=4|7|0.1
+thresold4=7|20|0.1
+thresold5=20|99|0.1
+
+## areas where scanning lines overlap we have two or three times bigger point density. That may make those areas more or less green. Use these parameters to balance it. 
+# formula is:    * (1-pointvolumefactor * mydensity/averagedensity) ^ pointvolumeexponent
+# so pointvolumefactor = 0 gives no balancing/effect
+
+pointvolumefactor=0.1
+pointvolumeexponent=1 
+
+# green weighting if point is the only return - these are usually boulders or such 
+# so these are only partly counted
+firstandlastreturnfactor=1
+
+# green weighting for last return - these may be vegetation but less likely that earlier returns
+lastreturnfactor =1
+
+firstandlastreturnasground=3
+# green values for triggering green shades. Use high number like 99 to avoid some of the shades.
+#greenshades=0.0|0.1|0.2|0.3|0.4|0.5|0.6|0.7|0.8|0.9|1.0|1.1|1.2|1.3|1.4|1.5|1.6|1.7|1.8|1.9|2.0|2.1|2.2|2.3|2.4|2.5|2.6|2.7|2.8|2.9|3.0
+
+greenshades=0.2|0.35|0.5|0.7|1.3|2.6|4|99|99|99|99
+
+# tone for the lightest green. 255 is white.
+lightgreentone=200
+
+# dont change this now
+greendotsize=0
+
+# block size for calculating hits-below-green ratio. use 3 if  greendetectsize is smaller than 5, if 
+# it is bigger then use 1
+groundboxsize=1
+
+# green raster image filtering with median filter. Two rounds
+# use 1 to do no filtering.
+medianboxsize=9
+medianboxsize2=1
+
+## yellow parameters
+### hits below this will be calculated as yellow
+yellowheight=0.9  
+
+### how big part or the points must be below yellowheight to trigger yellow
+yellowthresold=0.9
+    
+
+
+#############################################
+## cliff maker min height values for each cliff type. vertical drop per 1 meter horisontal distance
+##  cliff1 = these cliffs will be erased if steepness is bigger than steepness value below
+##  cliff2 = impassable cliff
+
+cliff1 = 1.15
+cliff2 = 2.0
+cliffthin=1
+
+cliffsteepfactor=0.38
+cliffflatplace=3.5
+cliffnosmallciffs=5.5
+
+cliffdebug=0
+## north lines rotation angle (clockwise) and width. Width 0 means no northlines.
+northlinesangle=0
+northlineswidth=0
+
+## Form line mode, options:
+# 0 = 2.5m interval, no formlines
+# 1 = 2.5m interval, every second contour thin/thick
+# 2 = 5m interval, with some dashed form lines in between if needed 
+
+formline=2
+
+# steepness parameter for form lines. Greater value gives more and smaller value gives less form lines. 
+formlinesteepness=0.37
+
+## additional lengt of form lines in vertex points
+formlineaddition=17
+
+## shortest gap in between form line ends in vertex points
+minimumgap = 30
+
+# dash and gap parameters for form lines
+dashlength = 60 
+gaplength =12
+
+# interval for index contours. Used only if form line mode is 0
+indexcontours=12.5
+
+# smoothing contrors. Bigger value smoothes contours more. Default =1. Try values about between 0.5 and 3.0
+smoothing = 0.7
+
+# curviness. How curvy contours show up. default=1. Bigger value makes more curvy/exaggerated curves (reentrants and spurs)
+curviness=1.1
+
+# knoll qualification. default =0.8. range 0.0 ... 1.0  Bigger values gives less but more distinct knolls.
+knolls=0.6
+
+# xyz factors, for feet to meter conversion etc
+coordxfactor=1
+coordyfactor=1
+coordzfactor=1
+
+# las/laz to xyz thinning factor. For example 0.25 leaves 25% of points
+thinfactor = 1
+
+# if water classified points, this class will be drawn with blue (uncomment to enable this)
+# waterclass=9
+
+# Water eleveation, elevation lower than this gets drawn with blue (uncomment to enable this)
+# waterelevation=0.15
+
+# if buildings classified, this class will be drawn with black (uncomment to enable this)
+# buildingsclass=6
+
+# building detection. 1=on, 0=off. These will be drawn as purple with black edges. Highly experimental.
+detectbuildings=0
+
+# batch process mode, process all laz ans las files of this directory
+# off=0, on=1  
+batch=0
+
+# processes
+processes=2
+
+# batch process output folder
+batchoutfolder=./out
+
+# batch process input file folder
+lazfolder=./in
+
+# If you can't get relative paths work, try absolute paths like c:/yourfolder/lasfiles
+
+# Karttapullautin can render vector shape files. Maastotietokanta by National land survey of Finland
+# does not nee configuraiton file. For rendering those leave this parameter empty.
+# For other datasets like Fastighetskartan from Lantmateriet (Sweden) configuration file is needed.
+
+vectorconf=
+# vectorconf=osm.txt
+# vectorconf=fastighetskartan.txt
+
+# shape files should be in zip files and placed in batch input folder or zip 
+# should drag-dropped on pullauta.exe
+
+# maastotietokanta, do not render these levels, comma delimined
+mtkskiplayers=
+
+# uncomment this for no settlements color (skip these layers Pullautin usually draws with olive green)
+# mtkskiplayers=32000,40200,62100,32410,32411,32412,32413,32414,32415,32416,32417,32418
+
+# Color for vector buildings (RGB value 0,0,0 is black and 255,255,255 is white)
+buildingcolor=0,0,0
+
+# in bach mode, will we crop and copy also some temp files to output folder
+#  folder.  1=on 0 = off. use this if you want to use vector contors and such for each tile.
+    
+savetempfiles=0
+
+# in batch mode will we save the whole temp directory as it is
+savetempfolders=0
+            
+# the interval of additonal dxf contour layer (raw, for mapping). 0 = disabled. Value 1.125 gives such interval contours 
+basemapinterval=0 
+
+# Experimental parameters. Dont chance these unless you feel like experimenting
+scalefactor=1
+zoffset=0
+#skipknolldetection=0
+
+# Settings specific to rusty-pullauta
+jarkkos2019=1
+vege_bitmode=0
+".as_bytes()).expect("Cannot write file");
     }
 
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
@@ -51,12 +266,14 @@ fn main() {
 
     let tmpfolder = format!("temp{}", thread);
     fs::create_dir_all(&tmpfolder).expect("Could not create tmp folder");
+    let pnorthlinesangle: f64 = conf.general_section().get("northlinesangle").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+    let pnorthlineswidth: usize = conf.general_section().get("northlineswidth").unwrap_or("0").parse::<usize>().unwrap_or(0);
 
     if command == "" && Path::new(&format!("{}/vegetation.png", tmpfolder)).exists() && !batch {
         println!("Rendering png map with depressions");
-        // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, false);
+        render(&thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
         println!("Rendering png map without depressions");
-        // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, true);
+        render(&thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
         println!("\nAll done!");
         return();
     }
@@ -66,12 +283,17 @@ fn main() {
         return();
     }
 
-    if command == "groundfix" {
-        println!("Not implemented");
+    if command == "blocks" {
+        blocks(&thread).unwrap();
         return();
     }
 
-    if command == "profile" {
+    if command == "dotknolls" {
+        dotknolls(&thread).unwrap();
+        return();
+    }
+
+    if command == "dxfmerge" || command == "merge" {
         println!("Not implemented");
         return();
     }
@@ -86,14 +308,18 @@ fn main() {
         return();
     }
 
-    if command == "blocks" {
-        blocks(&thread).unwrap();
+    if command == "groundfix" {
+        println!("Not implemented");
         return();
     }
 
-    if command == "dxfmerge" || command == "merge" {
-        println!("Not implemented");
+    if command == "makecliffs" {
+        makecliffs(&thread).unwrap();
         return();
+    }
+    
+    if command == "makevegenew" {
+        makevegenew(&thread).unwrap();
     }
 
     if command == "pngmerge" || command == "pngmergedepr" {
@@ -128,8 +354,9 @@ fn main() {
         return();
     }
 
-    if command == "makevegenew" {
-        makevegenew(&thread).unwrap();
+    if command == "profile" {
+        println!("Not implemented");
+        return();
     }
 
     if command == "smoothjoin" {
@@ -141,7 +368,6 @@ fn main() {
     }
 
     if command == "xyz2contours" {
-        println!("{}", args[1]);
         let cinterval: f64 = args[0].parse::<f64>().unwrap();
         let xyzfilein = args[1].clone();
         let xyzfileout = args[2].clone();
@@ -154,10 +380,14 @@ fn main() {
         return();
     }
 
-    if command == "makecliffs" {
-        makecliffs(&thread).unwrap();
+    if command == "render" {
+        let angle: f64 = args[0].parse::<f64>().unwrap();
+        let nwidth: usize = args[1].parse::<usize>().unwrap();
+        let nodepressions: bool = args.len() > 2 && args[2] == "nodepressions";
+        render(&thread, angle, nwidth, nodepressions).unwrap();
         return();
     }
+
 
     fn batch_process(thread: &String) {
         // TODO: thread function in rust instead of PERL call
@@ -215,14 +445,17 @@ fn main() {
     }
 
     if accepted_files_re.is_match(&command.to_lowercase()) {
-        println!("Preparing input file");
-
+        let skipknolldetection = conf.general_section().get("skipknolldetection").unwrap_or("0") == "1";
+        if !skipknolldetection {
+            println!("skipknolldetection=0 not implemented in rusty-pullauta");
+            return()
+        }
         let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
         if vegemode {
             println!("vegemode=1 not implemented in rusty-pullauta");
             return()
         }
-
+        println!("Preparing input file");
         let mut skiplaz2txt: bool = false;
         if Regex::new(r".xyz$").unwrap().is_match(&command.to_lowercase()) {
             println!(".xyz input file");
@@ -349,27 +582,26 @@ fn main() {
                 println!("Basemap contours");
                 xyz2contours(&thread, basemapcontours, "xyz2.xyz", "", "basemap.dxf", false).expect("countour generation failed");
             }
-            let skipknolldetection = conf.general_section().get("skipknolldetection").unwrap_or("0") == "1";
             if !skipknolldetection {
                 println!("Knoll detection part 2");
                 println!("Step not implemented");
+                return();
                 // TODO: knolldetector(&thread);
             }
             println!("Contour generation part 1");
             xyzknolls(&thread).unwrap();
+
+            println!("Contour generation part 2");
             if !skipknolldetection {
                 // contours 2.5
-                println!("Contour generation part 2");
                 xyz2contours(&thread, 2.5 * scalefactor, "xyz_knolls.xyz", "null", "out.dxf", false).unwrap();
             } else {
                 xyz2contours(&thread, 2.5 * scalefactor, "xyztemp.xyz", "null", "out.dxf", true).unwrap();
             }
             println!("Contour generation part 3");
             smoothjoin(&thread).unwrap();
-            println!("\nNot implemented further...\n");
             println!("Contour generation part 4");
-            // TODO: dotknolls(&thread);
-            return();
+            dotknolls(&thread).unwrap();
         }
 
         println!("Vegetation generation");
@@ -389,11 +621,10 @@ fn main() {
             norender = args[1].clone() == "norender";
         }
         if !norender {
-            println!("Not implemented further");
             println!("Rendering png map with depressions");
-            // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, false);
+            render(&thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
             println!("Rendering png map without depressions");
-            // TODO: render(&thread, pnorthlinesangle, pnorthlineswidth, true);
+            render(&thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
         } else {
             println!("Skipped rendering");
         }
@@ -403,6 +634,7 @@ fn main() {
 }
 
 fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
+    println!("Smooth curves...");
     let tmpfolder = format!("temp{}", thread);
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
@@ -1046,11 +1278,12 @@ EOF
     let fp = File::create(output).expect("Unable to create file");
     let mut fp = BufWriter::new(fp);
     fp.write(out.as_bytes()).expect("Unable to write file");
+    println!("Done");
     Ok(())
 }
 
 fn makecliffs(thread: &String ) -> Result<(), Box<dyn Error>>  {
-    println!("Running makecliffs");
+    println!("Identifying cliffs...");
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
 
@@ -1581,7 +1814,7 @@ EOF
 }
 
 fn blocks(thread: &String) -> Result<(), Box<dyn Error>>  {
-    println!("Running blocks {}", thread);
+    println!("Identifying blocks...");
     let tmpfolder = format!("temp{}", thread);
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
@@ -1684,8 +1917,213 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>>  {
     Ok(())
 }
 
+
+fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>>  {
+    println!("Identifying dotknolls...");
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    
+    let tmpfolder = format!("temp{}", thread);
+
+    let path = format!("{}/xyz_knolls.xyz", tmpfolder);
+    let xyz_file_in = Path::new(&path);
+    
+    let mut xstart: f64 = 0.0;
+    let mut ystart: f64 = 0.0;
+    let mut size: f64 = 0.0;
+   
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for (i, line) in lines.enumerate() {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            let x: f64 = r[0].parse::<f64>().unwrap();
+            let y: f64 = r[1].parse::<f64>().unwrap();
+            if i == 0 {
+                xstart = x;
+                ystart = y;
+            } else if i == 1 {
+                size = y - ystart;
+            } else {
+                break;
+            }
+        }
+    }
+    let mut xmax = 0.0;
+    let mut ymax = 0.0;
+
+    if let Ok(lines) = read_lines(&xyz_file_in) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            if r.len() >= 2 {
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                
+                let xx = ((x - xstart) / size).floor();
+                let yy = ((y - ystart) / size).floor();
+
+                if xmax < xx {
+                    xmax = xx;
+                }
+                
+                if ymax < yy {
+                    ymax = yy;
+                }
+            }
+        }
+    }
+
+    let mut im = GrayImage::from_pixel(
+        (xmax * size / scalefactor) as u32,
+        (ymax * size / scalefactor) as u32,
+        Luma([0xff])
+    );
+
+    let f = File::create(&Path::new(&format!("{}/dotknolls.dxf", tmpfolder))).expect("Unable to create file");
+    let mut f = BufWriter::new(f);
+    f.write(format!("  0
+SECTION
+  2
+HEADER
+  9
+$EXTMIN
+ 10
+{}
+ 20
+{}
+  9
+$EXTMAX
+ 10
+{}
+ 20
+{}
+  0
+ENDSEC
+  0
+SECTION
+  2
+ENTITIES
+  0
+",
+        xstart,
+        ystart,
+        xmax * size + xstart,
+        ymax * size + ystart
+    ).as_bytes()).expect("Cannot write dxf file");
+
+    let input_filename = &format!("{}/out2.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split("\n").collect::<Vec<&str>>();
+            for (i, v) in val.iter().enumerate() {
+                if v == &" 10" {
+                    xline = i + 1;
+                }
+                if v == &" 20" {
+                    yline = i + 1;
+                }
+            }
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.split("\n").collect::<Vec<&str>>();
+                    x.push(val[xline].parse::<f64>().unwrap());
+                    y.push(val[yline].parse::<f64>().unwrap());
+                }
+            }
+        }
+        for i in 1..x.len() {
+            draw_line_segment_mut(
+                &mut im,
+                (
+                    ((x[i-1] - xstart) / scalefactor).floor() as f32,
+                    ((y[i-1] - ystart) / scalefactor).floor() as f32
+                ),
+                (
+                    ((x[i] - xstart) / scalefactor).floor() as f32,
+                    ((y[i] - ystart) / scalefactor).floor() as f32
+                ),
+                Luma([0x0])
+            )
+        }
+    }
+
+    let input_filename = &format!("{}/dotknolls.txt", tmpfolder);
+    let input = Path::new(input_filename);
+    if let Ok(lines) = read_lines(&input) {
+        for line in lines {
+            let ip = line.unwrap_or(String::new());
+            let parts = ip.split(" ");
+            let r = parts.collect::<Vec<&str>>();
+            if r.len() >= 3 {
+                let depression: bool = r[0] == "1";
+                let x: f64 = r[1].parse::<f64>().unwrap();
+                let y: f64 = r[2].parse::<f64>().unwrap();
+                let mut ok = true;
+                let mut i = (x  - xstart) / scalefactor - 3.0;
+                let mut layer = String::new();
+                while i < (x  - xstart) / scalefactor + 4.0 && (i as u32) < im.width() {
+                    let mut j = (y - ystart) / scalefactor - 3.0;
+                    while j < (y - ystart) / scalefactor + 4.0 && (j as u32) < im.height(){
+                        let pix = im.get_pixel(
+                            i as u32,
+                            j as u32
+                        );
+                        if pix[0] == 0 {
+                            ok = false;
+                        }
+                        j += 1.0;
+                    }
+                    i += 1.0;
+                }
+                if !ok {
+                    layer = String::from("ugly");
+                }
+                if depression {
+                    layer.push_str("dotknoll")
+                } else {
+                    layer.push_str("udepression")
+                }
+                f.write(format!(
+                    "POINT
+  8
+{}
+ 10
+{}
+ 20
+{}
+ 50
+0
+  0
+",
+                    layer,
+                    x,
+                    y
+                ).as_bytes()).expect("Can not write to file");
+            }
+        }
+    }
+    f.write("ENDSEC
+  0
+EOF
+".as_bytes()).expect("Can not write to file");
+    println!("Done");
+    Ok(())
+}
+
 fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &str, dxffile: &str, ground: bool) -> Result<(), Box<dyn Error>> {
-    println!("Running xyz2contours {} {} {} {} {} {}", thread, cinterval, xyzfilein, xyzfileout, dxffile, ground);
+    println!("Generating curves...");
 
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
@@ -1925,7 +2363,6 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             progress += 1.0;
             if (progress / total * 18.0).floor() > progprev {
                 progprev = (progress / total * 18.0).floor();
-                println!("Generating temp polylines: {}%", (progress / total * 100.0).floor() as u32);
             }
             let mut obj = Vec::<String>::new();
             let mut curves: HashMap<String, String> = HashMap::new();
@@ -2280,8 +2717,876 @@ fn check_obj_in (obj: &mut Vec<String>, curves: &mut HashMap<String, String>, x1
     }
 }
 
+fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -> Result<(), Box<dyn Error>> {
+    println!("Rendering...");
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let mut formlinesteepness: f64 = conf.general_section().get("formlinesteepness").unwrap_or("0.37").parse::<f64>().unwrap_or(0.37);
+    formlinesteepness *= scalefactor;
+    let formline: f64 = conf.general_section().get("formline").unwrap_or("2").parse::<f64>().unwrap_or(2.0);
+    let formlineaddition: f64 = conf.general_section().get("formlineaddition").unwrap_or("13").parse::<f64>().unwrap_or(13.0);
+    let dashlength: f64 = conf.general_section().get("dashlength").unwrap_or("60").parse::<f64>().unwrap_or(60.0);
+    let gaplength: f64 = conf.general_section().get("gaplength").unwrap_or("12").parse::<f64>().unwrap_or(12.0);
+    let minimumgap: u32 = conf.general_section().get("minimumgap").unwrap_or("30").parse::<u32>().unwrap_or(30);
+    let tmpfolder = format!("temp{}", thread);
+    let angle = - angle_deg / 180.0 * 3.14159265358;
+
+    let mut size: f64 = 0.0;
+    let mut xstart: f64 = 0.0;
+    let mut ystart: f64 = 0.0;
+    let mut steepness: HashMap<(usize, usize), f64> = HashMap::new();
+    if formline > 0.0 {
+        let path = format!("{}/xyz2.xyz", tmpfolder);
+        let xyz_file_in = Path::new(&path);
+        
+
+        if let Ok(lines) = read_lines(&xyz_file_in) {
+            for (i, line) in lines.enumerate() {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(" ");
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                if i == 0 {
+                    xstart = x;
+                    ystart = y;
+                } else if i == 1 {
+                    size = y - ystart;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        let mut sxmax: usize = usize::MIN;
+        let mut symax: usize = usize::MIN;
+
+        let mut xyz: HashMap<(usize, usize), f64> = HashMap::new();
+
+        if let Ok(lines) = read_lines(&xyz_file_in) {
+            for line in lines {
+                let ip = line.unwrap_or(String::new());
+                let parts = ip.split(" ");
+                let r = parts.collect::<Vec<&str>>();
+                let x: f64 = r[0].parse::<f64>().unwrap();
+                let y: f64 = r[1].parse::<f64>().unwrap();
+                let h: f64 = r[2].parse::<f64>().unwrap();
+
+                let xx = ((x - xstart) / size).floor() as usize;
+                let yy = ((y - ystart) / size).floor() as usize;
+
+                xyz.insert((xx, yy), h);
+
+                if sxmax < xx {
+                    sxmax = xx;
+                }
+                if symax < yy {
+                    symax = yy;
+                }
+            }
+        }
+        for i in 6..(sxmax - 7) {
+            for j in 6..(symax - 7) {
+                let mut det: f64 = 0.0;
+                let mut high: f64 = f64::MIN;
+
+                let mut temp = (xyz.get(&(i-4, j)).unwrap_or(&0.0) - xyz.get(&(i, j)).unwrap_or(&0.0)).abs() / 4.0;
+                let temp2 = (xyz.get(&(i, j)).unwrap_or(&0.0) - xyz.get(&(i+4, j)).unwrap_or(&0.0)).abs() / 4.0;
+                let det2 = (xyz.get(&(i, j)).unwrap_or(&0.0) - 0.5 * (xyz.get(&(i-4, j)).unwrap_or(&0.0) + xyz.get(&(i+4, j)).unwrap_or(&0.0))).abs()- 0.05 * (xyz.get(&(i-4, j)).unwrap_or(&0.0) - xyz.get(&(i+4, j)).unwrap_or(&0.0)).abs();
+                let mut porr = (((xyz.get(&(i-6, j)).unwrap_or(&0.0)-xyz.get(&(i+6, j)).unwrap_or(&0.0)) / 12.0).abs() - ((xyz.get(&(i-3, j)).unwrap_or(&0.0) - xyz.get(&(i+3, j)).unwrap_or(&0.0)) / 6.0).abs()).abs();
+
+                if det2 > det {
+                    det = det2;
+                }
+                if temp2 < temp {
+                    temp = temp2;
+                }
+                if temp > high {
+                    high = temp;
+                }
+
+                let mut temp = (xyz.get(&(i, j-4)).unwrap_or(&0.0) - xyz.get(&(i, j)).unwrap_or(&0.0)).abs() / 4.0;
+                let temp2 = (xyz.get(&(i, j)).unwrap_or(&0.0) - xyz.get(&(i, j-4)).unwrap_or(&0.0)).abs() / 4.0;
+                let det2 = (xyz.get(&(i, j)).unwrap_or(&0.0) - 0.5 * (xyz.get(&(i, j-4)).unwrap_or(&0.0) + xyz.get(&(i, j+4)).unwrap_or(&0.0))).abs() - 0.05 * (xyz.get(&(i, j-4)).unwrap_or(&0.0) - xyz.get(&(i, j+4)).unwrap_or(&0.0)).abs();
+                let porr2 = (((xyz.get(&(i, j-6)).unwrap_or(&0.0)-xyz.get(&(i, j+6)).unwrap_or(&0.0)) / 12.0).abs() - ((xyz.get(&(i, j-3)).unwrap_or(&0.0) - xyz.get(&(i, j+3)).unwrap_or(&0.0)) / 6.0).abs()).abs();
+
+                if porr2 > porr {
+                    porr = porr2;
+                }
+                if det2 > det {
+                    det = det2;
+                }
+                if temp2 < temp {
+                    temp = temp2;
+                }
+                if temp > high {
+                    high = temp;
+                }
+
+                let mut temp = (xyz.get(&(i-4, j-4)).unwrap_or(&0.0) - xyz.get(&(i, j)).unwrap_or(&0.0)).abs() / 5.6;
+                let temp2 = (xyz.get(&(i, j)).unwrap_or(&0.0) - xyz.get(&(i+4, j+4)).unwrap_or(&0.0)).abs() / 5.6;
+                let det2 = (xyz.get(&(i, j)).unwrap_or(&0.0) - 0.5 * (xyz.get(&(i-4, j-4)).unwrap_or(&0.0) + xyz.get(&(i+4, j+4)).unwrap_or(&0.0))).abs() - 0.05 * (xyz.get(&(i-4, j-4)).unwrap_or(&0.0) - xyz.get(&(i+4, j+4)).unwrap_or(&0.0)).abs();
+                let porr2 = (((xyz.get(&(i-6, j-6)).unwrap_or(&0.0)-xyz.get(&(i+6, j+6)).unwrap_or(&0.0)) / 17.0).abs() - ((xyz.get(&(i-3, j-3)).unwrap_or(&0.0) - xyz.get(&(i+3, j+3)).unwrap_or(&0.0)) / 8.5).abs()).abs();
+
+                if porr2 > porr {
+                    porr = porr2;
+                }
+                if det2 > det {
+                    det = det2;
+                }
+                if temp2 < temp {
+                    temp = temp2;
+                }
+                if temp > high {
+                    high = temp;
+                }
+                
+                let mut temp = (xyz.get(&(i-4, j+4)).unwrap_or(&0.0) - xyz.get(&(i, j)).unwrap_or(&0.0)).abs() / 5.6;
+                let temp2 = (xyz.get(&(i, j)).unwrap_or(&0.0) - xyz.get(&(i+4, j-4)).unwrap_or(&0.0)).abs() / 5.6;
+                let det2 = (xyz.get(&(i, j)).unwrap_or(&0.0) - 0.5 * (xyz.get(&(i+4, j-4)).unwrap_or(&0.0) + xyz.get(&(i-4, j+4)).unwrap_or(&0.0))).abs() - 0.05 * (xyz.get(&(i+4, j-4)).unwrap_or(&0.0) - xyz.get(&(i-4, j+4)).unwrap_or(&0.0)).abs();
+                let porr2 = (((xyz.get(&(i+6, j-6)).unwrap_or(&0.0)-xyz.get(&(i-6, j+6)).unwrap_or(&0.0)) / 17.0).abs() - ((xyz.get(&(i+3, j-3)).unwrap_or(&0.0) - xyz.get(&(i-3, j+3)).unwrap_or(&0.0)) / 8.5).abs()).abs();
+
+                if porr2 > porr {
+                    porr = porr2;
+                }
+                if det2 > det {
+                    det = det2;
+                }
+                if temp2 < temp {
+                    temp = temp2;
+                }
+                if temp > high {
+                    high = temp;
+                }
+                
+                let mut val = 12.0 * high / (1.0 + 8.0 * det);
+				if porr > 0.25 * 0.67 / (0.3 + formlinesteepness) {
+                    val = 0.01;
+                }
+                if high > val {
+                    val = high;
+                }
+                steepness.insert((i, j), val);
+            }
+        }
+    }
+
+    // Draw vegetation ----------
+    let path = format!("{}/vegetation.pgw", tmpfolder);
+    let tfw_in = Path::new(&path);
+    
+    let mut lines = read_lines(&tfw_in).expect("PGW file does not exist");
+    let x0 = lines.nth(4).expect("no 4 line").expect("Could not read line 5").parse::<f64>().unwrap();
+    let y0 = lines.nth(0).expect("no 5 line").expect("Could not read line 6").parse::<f64>().unwrap();
+    
+    
+    let mut img = image::open(Path::new(&format!("{}/vegetation.png", tmpfolder))).ok().expect("Opening image failed");
+    let mut imgug = image::open(Path::new(&format!("{}/undergrowth.png", tmpfolder))).ok().expect("Opening image failed");
+    
+    let w = img.width();
+    let h = img.height();
+    
+    let eastoff = -((x0 - (-angle).tan() * y0) - ((x0 - (-angle).tan() * y0) / (250.0 / angle.cos())).floor() * (250.0 / angle.cos())) / 254.0 * 600.0;
+
+    let new_width = (w as f64 * 600.0 / 254.0 / scalefactor) as u32;
+    let new_height = (h as f64 * 600.0 / 254.0 / scalefactor) as u32;
+    let mut img = image::imageops::resize(&mut img, new_width, new_height, image::imageops::FilterType::Nearest);
+    
+    let imgug = image::imageops::resize(&mut imgug, new_width, new_height, image::imageops::FilterType::Nearest);
+    
+    image::imageops::overlay(&mut img, &imgug, 0, 0);
+    
+    if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
+        let low = image::open(Path::new(&format!("{}/low.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut low = low.to_rgba8();
+        for p in low.pixels_mut() {
+            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
+                p[3] = 0;
+            }
+        }
+        let low = image::imageops::resize(&mut low, new_width, new_height, image::imageops::FilterType::Nearest);
+        image::imageops::overlay(&mut img, &low, 0, 0);
+    }
+    
+    // north lines ----------------
+    if angle != 999.0 {
+        let mut i: f64 = eastoff - 600.0 * 250.0 / 254.0 / angle.cos() * 100.0 / scalefactor;
+        while i < w as f64 * 5.0 * 600.0 / 254.0 / scalefactor {
+            for m in 0..nwidth {
+                draw_line_segment_mut(
+                    &mut img, 
+                    (i as f32 + m as f32, 0.0),
+                    (
+                        (i as f32 + (angle.tan() * (h as f64) * 600.0 / 254.0 / scalefactor) as f32) as f32 + m as f32,
+                        (h as f32 * 600.0 / 254.0 / scalefactor as f32) as f32
+                    ), 
+                    Rgba([0, 0, 200, 255])
+                );
+            }
+            i += 600.0 * 250.0 / 254.0 / angle.cos() / scalefactor;
+        }
+    }
+
+    // Drawing curves --------------
+    let input_filename = &format!("{}/out2.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+
+    let mut formline_out = String::new();
+    formline_out.push_str(data[0]);
+
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        let mut layer = "";
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split("\n").collect::<Vec<&str>>();
+            layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                if v == &" 10" {
+                    xline = i + 1;
+                }
+                if v == &" 20" {
+                    yline = i + 1;
+                }
+            }
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.split("\n").collect::<Vec<&str>>();
+                    x.push((val[xline].parse::<f64>().unwrap() - x0) * 600.0 / 254.0 / scalefactor);
+                    y.push((y0 - val[yline].parse::<f64>().unwrap()) * 600.0 / 254.0 / scalefactor);
+                }
+            }
+        }
+        let mut color = Rgba([200, 0, 200, 255]); // purple
+        if layer.contains("contour") {
+            color = Rgba([166, 85,  43, 255]) // brown
+        }
+        if !nodepressions || layer.contains("contour") {
+            let mut curvew = 2.0;
+            if layer.contains("index") {
+                curvew = 3.0;
+            }
+            if formline > 0.0 {
+                if formline == 1.0 {
+                    curvew = 2.5
+                }
+                if layer.contains("intermed") {
+                    curvew = 1.5
+                }
+                if layer.contains("index") {
+                    curvew = 3.5
+                }
+            }
+
+            let mut smallringtest = false;
+            let mut help = vec![false; x.len()];
+            let mut help2 = vec![false; x.len()];
+            if curvew == 1.5 {
+                for i in 0..x.len() {
+                    help[i] = false;
+                    help2[i] = true;
+                    let xx = (((x[i] / 600.0 * 254.0 * scalefactor + x0) - xstart) / size).floor();
+                    let yy = (((-y[i] / 600.0 * 254.0 * scalefactor + y0) - ystart) / size).floor();
+                    if curvew != 1.5 ||
+                       formline == 0.0 ||
+                       steepness.get(&(xx as usize, yy as usize)).unwrap_or(&0.0) < &formlinesteepness ||
+                       steepness.get(&(xx as usize, yy as usize + 1)).unwrap_or(&0.0) < &formlinesteepness ||
+                       steepness.get(&(xx as usize + 1, yy as usize)).unwrap_or(&0.0) < &formlinesteepness ||
+                       steepness.get(&(xx as usize + 1, yy as usize + 1)).unwrap_or(&0.0) < &formlinesteepness {
+                        help[i] = true;
+                    }
+                }
+                for i in 5..(x.len()-6) {
+                    let mut apu = 0;
+                    for j in (i-5)..(i+4) {
+                        if help[j] {
+                            apu += 1;
+                        }
+                    }
+                    if apu < 5 {
+                        help2[i] = false;
+                    }
+                }
+                for i in 0..6 {
+                    help2[i] = help2[6]
+                }
+                for i in (x.len()-6)..x.len() {
+                    help2[i] = help2[x.len()-7]
+                }
+                let mut on = 0.0;
+                for i in 0..x.len() {
+                    if help2[i] {
+                        on = formlineaddition
+                    }
+                    if on > 0.0 {
+                        help2[i] = true;
+                        on -= 1.0;
+                    }
+                }
+                if x.first() == x.last() && y.first() == y.last() && on > 0.0 {
+                    let mut i = 0;
+                    while i < x.len() && on > 0.0 {
+                        help2[i] = true;
+                        on -= 1.0;
+                        i += 1;
+                    }
+                }
+                let mut on = 0.0;
+                for i in 0..x.len() {
+                    let ii = x.len() - i - 1;
+                    if help2[ii] {
+                        on = formlineaddition
+                    }
+                    if on > 0.0 {
+                        help2[ii] = true;
+                        on -= 1.0;
+                    }
+                }
+                if x.first() == x.last() && y.first() == y.last() && on > 0.0 {
+                    let mut i = (x.len() - 1) as i32;
+                    while i > -1  && on > 0.0 {
+                        help2[i as usize] = true;
+                        on -= 1.0;
+                        i -= 1;
+                    }
+                }
+                // Let's not break small form line rings
+                smallringtest = false;
+                if x.first() == x.last() && y.first() == y.last() && x.len() < 122 {
+                    for i in 1..x.len() {
+                        if help2[i] {
+                            smallringtest = true
+                        }
+                    }
+                }
+                // Let's draw short gaps together
+                if !smallringtest {
+                    let mut tester = 1;
+                    for i in 1..x.len() {
+                        if help2[i] {
+                            if tester < i && ((i - tester) as u32) < minimumgap {
+                                for j in tester..(i+1) {
+                                    help2[j] = true;
+                                }
+                            }
+                            tester = i;
+                        }
+                    }
+                    // Ring handling
+                    if x.first() == x.last() && y.first() == y.last() && x.len() < 2 {
+                        let mut i = 1;
+                        while i < x.len() && !help2[i] {
+                            i += 1
+                        }
+                        let mut j = x.len() - 1;
+                        while j > 1 && !help2[i] {
+                            j -= 1
+                        }
+                        if ((x.len() - j + i - 1) as u32) < minimumgap && j > i {
+                            for k in 0..(i+1) {
+                                help2[k] = true
+                            }
+                            for k in j..x.len() {
+                                help2[k] = true
+                            }
+                        }
+                    }
+                }
+            }
+
+            let mut linedist = 0.0;
+            let mut onegapdone = false;
+            let mut gap = 0.0;
+            let mut formlinestart = false;
+            
+            for i in 1..x.len() {
+                if curvew != 1.5 || formline == 0.0 || help2[i] || smallringtest {
+                    if formline == 2.0 && !nodepressions && curvew == 1.5 {
+                        if !formlinestart {
+                            formline_out.push_str("POLYLINE
+ 66
+1
+  8
+formline
+  0
+");
+                            formlinestart = true;
+                        }
+                        formline_out.push_str(
+                            format!(
+                                "VERTEX
+  8
+formline
+ 10
+{}
+ 20
+{}
+  0
+",
+                                x[i] / 600.0 * 254.0 * scalefactor + x0, 
+                                -y[i] / 600.0 * 254.0 * scalefactor + y0
+                            ).as_str()
+                        );
+                    }
+                    if curvew == 1.5 && formline == 2.0 {
+                        let step = (
+                            (x[i-1] - x[i]).powi(2) + 
+                            (y[i-1] - y[i]).powi(2)
+                        ).sqrt();
+                        if i < 4 {
+                            linedist = 0.0
+                        }
+                        linedist += step;
+                        if linedist > dashlength && i > 10 && i < x.len() - 11 {
+                            let mut sum = 0.0;
+                            for k in (i-4)..(i+6) {
+                                sum += (
+                                    (x[k-1] - x[k]).powi(2) + 
+                                    (y[k-1] - y[k]).powi(2)
+                                ).sqrt()
+                            }
+                            let mut toonearend = false;
+                            for k in (i-10)..(i+10) {
+                                if !help2[k] {
+                                    toonearend = true;
+                                    break;
+                                }
+                            }
+                            if !toonearend && 
+                                (
+                                    (x[i-5] - x[i+5]).powi(2) + 
+                                    (y[i-5] - y[i+5]).powi(2)
+                                ).sqrt() * 1.138 > sum
+                            {
+                                linedist = 0.0;
+                                gap = gaplength;
+                                onegapdone = true;
+                            }
+                        }
+                        if !onegapdone && (i < x.len() - 9) && i > 6 {
+                            gap = gaplength * 0.82;
+                            onegapdone = true;
+                            linedist = 0.0
+                        }
+                        if gap > 0.0 {
+                            gap -= step;
+                            if gap < 0.0 && onegapdone && step > 0.0 {
+                                let mut n = -curvew - 0.5;
+                                while n < curvew + 0.5 {
+                                    let mut m = -curvew - 0.5;
+                                    while m < curvew + 0.5 {
+                                        draw_line_segment_mut(
+                                            &mut img,
+                                            (
+                                                ((-x[i-1] * gap + (step + gap) * x[i]) / step + n) as f32,
+                                                ((-y[i-1] * gap + (step + gap) * y[i]) / step + m) as f32,
+                                            ),
+                                            (
+                                                (x[i] + n) as f32,
+                                                (y[i] + m) as f32
+                                            ),
+                                            color
+                                        );
+                                        m += 1.0;
+                                    }
+                                    n += 1.0;
+                                }
+                                gap = 0.0;
+                            }
+                        } else {
+                            let mut n = -curvew - 0.5;
+                            while n < curvew + 0.5 {
+                                let mut m = -curvew - 0.5;
+                                while m < curvew + 0.5 {
+                                    draw_line_segment_mut(
+                                        &mut img,
+                                        (
+                                            (x[i-1] + n) as f32,
+                                            (y[i-1] + m) as f32
+                                        ),
+                                        (
+                                            (x[i] + n) as f32,
+                                            (y[i] + m) as f32
+                                        ),
+                                        color
+                                    );
+                                    m += 1.0;
+                                }
+                                n += 1.0;
+                            }
+                        }
+                    } else {
+                        let mut n = -curvew;
+                        while n < curvew {
+                            let mut m = -curvew;
+                            while m < curvew {
+                                draw_line_segment_mut(
+                                    &mut img,
+                                    (
+                                        (x[i-1] + n) as f32,
+                                        (y[i-1] + m) as f32
+                                    ),
+                                    (
+                                        (x[i] + n) as f32,
+                                        (y[i] + m) as f32
+                                    ),
+                                    color
+                                );
+                                m += 1.0;
+                            }
+                            n += 1.0;
+                        }
+                    }
+                } else {
+                    if formline == 2.0 && formlinestart && !nodepressions {
+                        formline_out.push_str(
+                            "SEQEND
+  0
+"
+                        );
+                        formlinestart = false;
+                    }
+                }
+            }
+            if formline == 2.0 && formlinestart && !nodepressions {
+                formline_out.push_str(
+                    "SEQEND
+  0
+"
+                );
+            }
+        }
+    }
+    if formline == 2.0 && !nodepressions {
+        formline_out.push_str(
+            "ENDSEC
+  0
+EOF"
+        );
+        let filename = &format!("{}/formlines.dxf", tmpfolder);
+        let output = Path::new(filename);
+        let fp = File::create(output).expect("Unable to create file");
+        let mut fp = BufWriter::new(fp);
+        fp.write(formline_out.as_bytes()).expect("Unable to write file");
+    }
+    // dotknolls----------
+    let input_filename = &format!("{}/dotknolls.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POINT").collect();
+
+    for (j, rec) in data.iter().enumerate() {
+        let mut x: f64 = 0.0;
+        let mut y: f64 = 0.0;
+        if j > 0 {
+            let val = rec.split("\n").collect::<Vec<&str>>();
+            let layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                if v == &" 10" {
+                    x = (val[i + 1].parse::<f64>().unwrap() - x0) * 600.0 / 254.0 / scalefactor;
+                    
+                }
+                if v == &" 20" {
+                    y = (y0 - val[i+1].parse::<f64>().unwrap()) * 600.0 / 254.0 / scalefactor;
+                }
+            }
+            if layer == "dotknoll" {
+                let color = Rgba([166, 85, 43, 255]);
+                
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x as i32, y as i32),
+                    7,
+                    color
+                )
+            }
+        }
+    }
+    // blocks -------------
+    if Path::new(&format!("{}/blocks.png", tmpfolder)).exists() {
+        let blockpurple = image::open(Path::new(&format!("{}/blocks.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut blockpurple = blockpurple.to_rgba8();
+        for p in blockpurple.pixels_mut() {
+            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
+                p[3] = 0;
+            }
+        }
+        let new_width = (w as f64) * 600.0 / 254.0 / scalefactor;
+        let new_height = (h as f64) * 600.0 / 254.0 / scalefactor;
+        let mut blockpurple = image::imageops::crop(&mut blockpurple, 0, 0, w, h).to_image();
+        let blockpurple_thumb = image::imageops::resize(
+            &mut blockpurple,
+            new_width as u32,
+            new_height as u32,
+            image::imageops::FilterType::Nearest
+        );
+        
+        for i in 0..3 {
+            for j in 0..3 {
+                image::imageops::overlay(&mut img, &blockpurple_thumb, (i as i64 - 1)*2 , (j as i64 - 1)*2);
+            }
+        }
+        image::imageops::overlay(&mut img, &blockpurple_thumb, 0, 0);
+    }
+    // blueblack -------------
+    if Path::new(&format!("{}/blueblack.png", tmpfolder)).exists() {
+        let imgbb = image::open(Path::new(&format!("{}/blueblack.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut imgbb = imgbb.to_rgba8();
+        for p in imgbb.pixels_mut() {
+            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
+                p[3] = 0;
+            }
+        }
+        let new_width = (w as f64) * 600.0 / 254.0 / scalefactor;
+        let new_height = (h as f64) * 600.0 / 254.0 / scalefactor;
+        let mut imgbb = image::imageops::crop(&mut imgbb, 0, 0, w, h).to_image();
+        let imgbb_thumb = image::imageops::resize(
+            &mut imgbb,
+            new_width as u32,
+            new_height as u32,
+            image::imageops::FilterType::Nearest
+        );
+        image::imageops::overlay(&mut img, &imgbb_thumb, 0, 0);
+    }
+
+    let cliffdebug: bool = conf.general_section().get("cliffdebug").unwrap_or("0") == "1";
+
+    let black = Rgba([0, 0, 0, 255]);
+
+    let mut cliffcolor = HashMap::from([
+        ("cliff2", black),
+        ("cliff3", black),
+        ("cliff4", black)
+    ]);
+    if cliffdebug {
+        cliffcolor = HashMap::from([
+            ("cliff2", Rgba([100, 0, 100, 255])),
+            ("cliff3", Rgba([0, 100, 100, 255])),
+            ("cliff4", Rgba([100, 100, 0, 255]))
+        ]);
+    }
+    
+    let input_filename = &format!("{}/c2g.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+
+    let mut formline_out = String::new();
+    formline_out.push_str(data[0]);
+
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        let mut layer = "";
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split("\n").collect::<Vec<&str>>();
+            layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                if v == &" 10" {
+                    xline = i + 1;
+                }
+                if v == &" 20" {
+                    yline = i + 1;
+                }
+            }
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.split("\n").collect::<Vec<&str>>();
+                    x.push((val[xline].parse::<f64>().unwrap() - x0) * 600.0 / 254.0 / scalefactor);
+                    y.push((y0 - val[yline].parse::<f64>().unwrap()) * 600.0 / 254.0 / scalefactor);
+                }
+            }
+        }
+        let last_idx = x.len() - 1;
+        if x.first() != x.last() || y.first() != y.last() {
+            let dist = (
+                (x[0] - x[last_idx]).powi(2) +
+                (y[0] - y[last_idx]).powi(2)
+            ).sqrt();
+            if dist > 0.0 {
+                let dx = x[0] - x[last_idx];
+                let dy = y[0] - y[last_idx];
+                x[0] += dx / dist * 1.5;
+                y[0] += dy / dist * 1.5;
+                x[last_idx] -= dx / dist * 1.5;
+                y[last_idx] -= dy / dist * 1.5;
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[0] as i32, y[0] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black)
+                );
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[last_idx] as i32, y[last_idx] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black)
+                );
+            }
+        }
+        for i in 1..x.len() {
+            for n in 0..6 {
+                for m in 0..6 {
+                    draw_line_segment_mut(
+                        &mut img,
+                        (
+                            (x[i-1] + (n as f64) - 3.0).floor() as f32,
+                            (y[i-1] + (m as f64) - 3.0).floor() as f32
+                        ),
+                        (
+                            (x[i] + (n as f64) - 3.0).floor() as f32,
+                            (y[i] + (m as f64) - 3.0).floor() as f32
+                        ),
+                        *cliffcolor.get(&layer).unwrap_or(&black)
+                    )
+                }
+            }
+        }
+    }
+
+
+    let input_filename = &format!("{}/c3g.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+
+    let mut formline_out = String::new();
+    formline_out.push_str(data[0]);
+
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        let mut layer = "";
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split("\n").collect::<Vec<&str>>();
+            layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                if v == &" 10" {
+                    xline = i + 1;
+                }
+                if v == &" 20" {
+                    yline = i + 1;
+                }
+            }
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.split("\n").collect::<Vec<&str>>();
+                    x.push((val[xline].parse::<f64>().unwrap() - x0) * 600.0 / 254.0 / scalefactor);
+                    y.push((y0 - val[yline].parse::<f64>().unwrap()) * 600.0 / 254.0 / scalefactor);
+                }
+            }
+        }
+        let last_idx = x.len() - 1;
+        if x.first() != x.last() || y.first() != y.last() {
+            let dist = (
+                (x[0] - x[last_idx]).powi(2) +
+                (y[0] - y[last_idx]).powi(2)
+            ).sqrt();
+            if dist > 0.0 {
+                let dx = x[0] - x[last_idx];
+                let dy = y[0] - y[last_idx];
+                x[0] += dx / dist * 1.5;
+                y[0] += dy / dist * 1.5;
+                x[last_idx] -= dx / dist * 1.5;
+                y[last_idx] -= dy / dist * 1.5;
+
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[0] as i32, y[0] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black)
+                );
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[last_idx] as i32, y[last_idx] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black)
+                );
+            }
+        }
+        for i in 1..x.len() {
+            for n in 0..6 {
+                for m in 0..6 {
+                    draw_line_segment_mut(
+                        &mut img,
+                        (
+                            (x[i-1] + (n as f64) - 3.0).floor() as f32,
+                            (y[i-1] + (m as f64) - 3.0).floor() as f32
+                        ),
+                        (
+                            (x[i] + (n as f64) - 3.0).floor() as f32,
+                            (y[i] + (m as f64) - 3.0).floor() as f32
+                        ),
+                        *cliffcolor.get(&layer).unwrap_or(&black)
+                    )
+                }
+            }
+        }
+    }
+
+    // high -------------
+    if Path::new(&format!("{}/high.png", tmpfolder)).exists() {
+        let high = image::open(Path::new(&format!("{}/high.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut high = high.to_rgba8();
+        for p in high.pixels_mut() {
+            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
+                p[3] = 0;
+            }
+        }
+        let new_width = (w as f64) * 600.0 / 254.0 / scalefactor;
+        let new_height = (h as f64) * 600.0 / 254.0 / scalefactor;
+        let mut high = image::imageops::crop(&mut high, 0, 0, w, h).to_image();
+        let high_thumb = image::imageops::resize(
+            &mut high,
+            new_width as u32,
+            new_height as u32,
+            image::imageops::FilterType::Nearest
+        );
+        image::imageops::overlay(&mut img, &high_thumb, 0, 0);
+    }
+    
+    let mut filename = format!("pullautus{}", thread);
+    if !nodepressions {
+        filename = format!("pullautus_depr{}", thread);
+    }
+    img.save(Path::new(&format!("{}.png", filename))).expect("could not save output png");
+    
+    let path_in = format!("{}/vegetation.pgw", tmpfolder);
+    let file_in = Path::new(&path_in);
+    let pgw_file_out = File::create(&format!("{}.pgw", filename)).expect("Unable to create file");
+    let mut pgw_file_out = BufWriter::new(pgw_file_out);
+                    
+    if let Ok(lines) = read_lines(&file_in) {
+        for (i, line) in lines.enumerate() {
+            let ip = line.unwrap_or(String::new());
+            let x: f64 = ip.parse::<f64>().unwrap();
+            if i == 0 || i == 3 {
+                pgw_file_out.write(format!("{}\n", x / 600.0 * 254.0 * scalefactor).as_bytes()).expect("Unable to write to file");
+            } else {
+                pgw_file_out.write(format!("{}\n", ip).as_bytes()).expect("Unable to write to file");
+            }
+        }
+    }
+    println!("Done");
+    Ok(())
+} 
+
 fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Running xyzknolls");
+    println!("Identifying knolls...");
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
 
@@ -2549,11 +3854,12 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
             f2.write("\n".as_bytes()).expect("cannot write to file");
         }
     }
+    println!("Done");
     Ok(())
 }
 
 fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Running makevege");
+    println!("Generating vegetation...");
 
     let tmpfolder = format!("temp{}", thread);
 
