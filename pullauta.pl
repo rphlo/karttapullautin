@@ -554,125 +554,120 @@ if ( $command eq 'groundfix' ) {
 if ( $command eq 'profile' ) {
     use POSIX;
 	
-	
-use GD;
+    use GD;
 
-$xpix= 1*$ARGV[1];
-$ypix= 1* $ARGV[2];
-$tile= $ARGV[4];
+    $xpix= 1*$ARGV[1];
+    $ypix= 1* $ARGV[2];
+    $tile= $ARGV[4];
 
 
-   $img = new GD::Image( 1000, 1000);
-  $wh = $img->colorAllocate( 255, 255, 255 );
-   $gr = $img->colorAllocate( 0,   180, 0 );
-   $br = $img->colorAllocate( 150,   77, 7 );
-      $last = $img->colorAllocate( 150,   0, 150 );
-         $flast= $img->colorAllocate( 250,   0, 0 );
+    $img = new GD::Image( 1000, 1000);
+    $wh = $img->colorAllocate( 255, 255, 255 );
+    $gr = $img->colorAllocate( 0,   180, 0 );
+    $br = $img->colorAllocate( 150,   77, 7 );
+    $last = $img->colorAllocate( 150,   0, 150 );
+    $flast= $img->colorAllocate( 250,   0, 0 );
 		 
-      $img2 = new GD::Image( 1000, 1000);
-  $wh = $img2->colorAllocate( 255, 255, 255 );
-   $gr = $img2->colorAllocate( 0,   180, 0 );
-   $br = $img2->colorAllocate(150,   77, 7);
-      $last = $img2->colorAllocate( 150,   0, 150 );
-         $flast= $img2->colorAllocate( 250,   0, 0 );   
-open(SISAAN,"<pullautus_depr".$tile.".pgw");
-@d=<SISAAN>;
-close SISAAN;
-$res=$d[0]*1;
-$x0=$d[4]*1;
-$y0=$d[5]*1;
+    $img2 = new GD::Image( 1000, 1000);
+    $wh = $img2->colorAllocate( 255, 255, 255 );
+    $gr = $img2->colorAllocate( 0,   180, 0 );
+    $br = $img2->colorAllocate(150,   77, 7);
+    $last = $img2->colorAllocate( 150,   0, 150 );
+    $flast= $img2->colorAllocate( 250,   0, 0 );   
+    open(SISAAN,"<pullautus_depr".$tile.".pgw");
+    @d=<SISAAN>;
+    close SISAAN;
+    $res=$d[0]*1;
+    $x0=$d[4]*1;
+    $y0=$d[5]*1;
 
 
-if( $ARGV[3] ne 'm'){
-$x=$xpix*$res+$x0;
-$y=$y0-$ypix*$res;
-}else{
-$x=$xpix;
-$y=$ypix;
-}
+    if( $ARGV[3] ne 'm'){
+        $x=$xpix*$res+$x0;
+        $y=$y0-$ypix*$res;
+    }else{
+        $x=$xpix;
+        $y=$ypix;
+    }
 
-$z='';	$z2='';	
-$tempfolder='temp'.$tile.'/';
+    $z='';	$z2='';	
+    $tempfolder='temp'.$tile.'/';
 
     open( SISAAN, "<" . $tempfolder . "xyztemp.xyz" );
     
     while ( $rec = <SISAAN> ) {
-            @r = split( / /, $rec );
-### 
+        @r = split( / /, $rec );
+    ### 
 		if($r[0]>$x -50 && $r[1]> $y -2.5 && $r[0]<$x +50 && $r[1]< $y+2.5)	{
-		if($z eq ''){
-		$z=$r[2];
-		}
-		if($r[3] ==2){
-		$c=$br;
-		}else{
-		$c=$gr;
-			if($r[4] ==$r[5]){
-			$c=$last;
-			if($r[4] ==1){
-			$c=$flast;
-			}
-			}
-		
-		}
-		 $img->setPixel( ($r[0] - $x+50)*10, 600-($r[2] - $z)*10 , $c );
-$img->setPixel( ($r[0] - $x+50)*10+1, 600-($r[2] - $z)*10 , $c );
-$img->setPixel( ($r[0] - $x+50)*10, 600-($r[2] - $z)*10+1 , $c );
-$img->setPixel( ($r[0] - $x+50)*10+1, 600-($r[2] - $z)*10 +1, $c );
-		 #print ''.(($r[0] - $x)*10).' '.( 600-($r[2] - $z)*10)."\n";
-		}
-###	
-		if($r[0]>$x -2.5 && $r[1]> $y -50 && $r[0]<$x +2.5 && $r[1]< $y+50)	{
-		if($z2 eq ''){
-		$z2=$r[2];
-		}
-		if($r[3] ==2){
-		$c=$br;
-		}else{
-		$c=$gr;
-			if($r[4] ==$r[5]){
-			$c=$last;
-			if($r[4] ==1){
-			$c=$flast;
-			}
-			}
-		
-		}
-		 $img2->setPixel( ($r[1] - $y+50)*10, 600-($r[2] - $z2)*10 , $c );
-		 $img2->setPixel( ($r[1] - $y+50)*10+1, 600-($r[2] - $z2)*10 , $c );
-		 		 $img2->setPixel( ($r[1] - $y+50)*10, 600-($r[2] - $z2)*10 +1, $c );
-				 		 $img2->setPixel( ($r[1] - $y+50)*10+1, 600-($r[2] - $z2)*10+1 , $c );
-		 #print ''.(($r[0] - $x)*10).' '.( 600-($r[2] - $z)*10)."\n";
-		}
-
-	
-	}
+            if($z eq ''){
+                $z=$r[2];
+            }
+            if($r[3] ==2){
+                $c=$br;
+            }else{
+                $c=$gr;
+                if($r[4] ==$r[5]){
+                    $c=$last;
+                    if($r[4] ==1){
+                        $c=$flast;
+                    }
+                }
+            }
+            $img->setPixel( ($r[0] - $x+50)*10, 600-($r[2] - $z)*10 , $c );
+            $img->setPixel( ($r[0] - $x+50)*10+1, 600-($r[2] - $z)*10 , $c );
+            $img->setPixel( ($r[0] - $x+50)*10, 600-($r[2] - $z)*10+1 , $c );
+            $img->setPixel( ($r[0] - $x+50)*10+1, 600-($r[2] - $z)*10 +1, $c );
+            #print ''.(($r[0] - $x)*10).' '.( 600-($r[2] - $z)*10)."\n";
+        }
+        ###	
+        if($r[0]>$x -2.5 && $r[1]> $y -50 && $r[0]<$x +2.5 && $r[1]< $y+50)	{
+            if($z2 eq ''){
+                $z2=$r[2];
+            }
+            if($r[3] ==2){
+                $c=$br;
+            }else{
+                $c=$gr;
+                if($r[4] ==$r[5]){
+                    $c=$last;
+                    if($r[4] ==1){
+                        $c=$flast;
+                    }
+                }
+            }
+            $img2->setPixel( ($r[1] - $y+50)*10, 600-($r[2] - $z2)*10 , $c );
+            $img2->setPixel( ($r[1] - $y+50)*10+1, 600-($r[2] - $z2)*10 , $c );
+            $img2->setPixel( ($r[1] - $y+50)*10, 600-($r[2] - $z2)*10 +1, $c );
+            $img2->setPixel( ($r[1] - $y+50)*10+1, 600-($r[2] - $z2)*10+1 , $c );
+            #print ''.(($r[0] - $x)*10).' '.( 600-($r[2] - $z)*10)."\n";
+        }
+    }
 	close SISAAN;
 
-                $myImage = newFromPng GD::Image("pullautus_depr".$tile.".png");
+    $myImage = newFromPng GD::Image("pullautus_depr".$tile.".png");
 				 
-   $img->copyResized( $myImage, 0, 0, $xpix-70/$res, $ypix-70/$res, 200,200,70/$res*2, 70/$res*2 );
+    $img->copyResized( $myImage, 0, 0, $xpix-70/$res, $ypix-70/$res, 200,200,70/$res*2, 70/$res*2 );
   
-  $img->rectangle( 28, 92, 28+144, 92+17 , $br );
+    $img->rectangle( 28, 92, 28+144, 92+17 , $br );
 	
 	open( ULOS, ">profile_WE.png" );
     binmode ULOS;
     print ULOS $img->png;
     close ULOS;
 
-	     $tempimg = new GD::Image( 200, 200);
-	   $tempimg->copyResized( $myImage, 0, 0, $xpix-70/$res, $ypix-70/$res, 200,200,70/$res*2, 70/$res*2 );
-	     $tempimg2 = new GD::Image( 200, 200);
-	   $tempimg2 = $tempimg->copyRotate90();
-   $img2->copy( $tempimg2, 0, 0,0,0,200,200);
-  $img2->rectangle( 28, 92, 28+144, 92+17 , $br );
+	$tempimg = new GD::Image( 200, 200);
+	$tempimg->copyResized( $myImage, 0, 0, $xpix-70/$res, $ypix-70/$res, 200,200,70/$res*2, 70/$res*2 );
+	$tempimg2 = new GD::Image( 200, 200);
+	$tempimg2 = $tempimg->copyRotate90();
+    $img2->copy( $tempimg2, 0, 0,0,0,200,200);
+    $img2->rectangle( 28, 92, 28+144, 92+17 , $br );
 	
 	open( ULOS, ">profile_SN.png" );
     binmode ULOS;
     print ULOS $img2->png;
     close ULOS;
-	
 }
+
 if ( $command eq 'ground' ) {
     use GD;
     use POSIX;
@@ -747,7 +742,6 @@ if ( $command eq 'ground' ) {
     exit;
 }
 
-
 if ( $command eq 'ground2' ) {
     use GD;
     use POSIX;
@@ -790,39 +784,38 @@ if ( $command eq 'ground2' ) {
     close SISAAN;
 
     print "..";
-        open( SISAAN, "<" . $tempfolder . "/xyz2.xyz" );
-        @d = <SISAAN>;
-        close SISAAN;
+    open( SISAAN, "<" . $tempfolder . "/xyz2.xyz" );
+    @d = <SISAAN>;
+    close SISAAN;
 
-        @r1 = split( / /, $d[0] );
-        @r2 = split( / /, $d[1] );
-        $size   = $r2[1] - $r1[1];
-		print " $r2[1] - $r1[1] ";
-        $xstart = $r1[0];
-        $ystart = $r1[1];
-        $sxmax  = -9999999999;
-        $symax  = -9999999999;
-        foreach $rec (@d) {
-            @r = split( / /, $rec );
+    @r1 = split( / /, $d[0] );
+    @r2 = split( / /, $d[1] );
+    $size   = $r2[1] - $r1[1];
+    print " $r2[1] - $r1[1] ";
+    $xstart = $r1[0];
+    $ystart = $r1[1];
+    $sxmax  = -9999999999;
+    $symax  = -9999999999;
+    foreach $rec (@d) {
+        @r = split( / /, $rec );
 
-            $xyz[ floor( ( $r[0] - $xstart ) / $size ) ]
-              [ floor( ( $r[1] - $ystart ) / $size ) ] = 1 * $r[2];
-            if (   floor( ( $r[0] - $xstart ) / $size ) < 0
-                || floor( ( $r[1] - $ystart ) / $size ) < 0 )
-            {
-                print "error";
-                exit;
-            }
-            if ( $sxmax < floor( ( $r[0] - $xstart ) / $size ) ) {
-                $sxmax = floor( ( $r[0] - $xstart ) / $size );
-            }
-            if ( $symax < floor( ( $r[1] - $ystart ) / $size ) ) {
-                $symax = floor( ( $r[1] - $ystart ) / $size );
-            }
-            $c++;
+        $xyz[ floor( ( $r[0] - $xstart ) / $size ) ]
+            [ floor( ( $r[1] - $ystart ) / $size ) ] = 1 * $r[2];
+        if (   floor( ( $r[0] - $xstart ) / $size ) < 0
+            || floor( ( $r[1] - $ystart ) / $size ) < 0 )
+        {
+            print "error";
+            exit;
         }
-        print "..". $tempfolder.' '.$size.'.';
-	
+        if ( $sxmax < floor( ( $r[0] - $xstart ) / $size ) ) {
+            $sxmax = floor( ( $r[0] - $xstart ) / $size );
+        }
+        if ( $symax < floor( ( $r[1] - $ystart ) / $size ) ) {
+            $symax = floor( ( $r[1] - $ystart ) / $size );
+        }
+        $c++;
+    }
+    print "..". $tempfolder.' '.$size.'.';
 	
     $img = new GD::Image( floor( $xmax - $xmin ), floor( $ymax - $ymin ) );
     $white = $img->colorAllocate( 255, 255, 255 );
@@ -831,36 +824,31 @@ if ( $command eq 'ground2' ) {
     open( SISAAN, "<" . $tempfolder . "/xyztemp.xyz" );
 
     while ( $rec = <SISAAN> ) {
-
         @r = split( / /, $rec );
+        if ( $r[0] > $xmin && $r[1] > $ymin ) {
+            $a=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) ];
+            $b=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1][ floor( ( $r[1] - $ymin ) / $size) ];
+            $c=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) +1];
+            $d=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1 ][ floor( ( $r[1] - $ymin ) / $size) +1];
 
-		
-	            if ( $r[0] > $xmin && $r[1] > $ymin ) {
-			
-									$a=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) ];
-						$b=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1][ floor( ( $r[1] - $ymin ) / $size) ];
-						$c=$xyz[ floor( ( $r[0] - $xmin ) / $size ) ][ floor( ( $r[1] - $ymin ) / $size) +1];
-						$d=$xyz[ floor( ( $r[0] - $xmin ) / $size ) +1 ][ floor( ( $r[1] - $ymin ) / $size) +1];
-
-						$distx=($r[0] - $xmin ) / $size -floor( ( $r[0] - $xmin ) / $size );
-						$disty=( $r[1] - $ymin ) / $size -floor( ( $r[1] - $ymin ) / $size);
+            $distx=($r[0] - $xmin ) / $size -floor( ( $r[0] - $xmin ) / $size );
+            $disty=( $r[1] - $ymin ) / $size -floor( ( $r[1] - $ymin ) / $size);
+            
+            $ab=$a*(1-$distx)+$b*$distx;
+            $cd=$c*(1-$distx)+$d*$distx;
+            
+            $thelele=$ab*(1-$disty)+$cd*$disty;
 						
-						$ab=$a*(1-$distx)+$b*$distx;
-						$cd=$c*(1-$distx)+$d*$distx;
-						
-						$thelele=$ab*(1-$disty)+$cd*$disty;
-						
-		
-        if ( $thelele < $r[2] +0.25) {
-            $img->line(
-                ( $r[0] - $xmin ),
-                ( $ymax - $r[1] ),
-                ( $r[0] - $xmin ),
-                ( $ymax - $r[1] ),
-                $black
-            );
+            if ( $thelele < $r[2] +0.25) {
+                $img->line(
+                    ( $r[0] - $xmin ),
+                    ( $ymax - $r[1] ),
+                    ( $r[0] - $xmin ),
+                    ( $ymax - $r[1] ),
+                    $black
+                );
+            }
         }
-}
     }
     close SISAAN;
 
@@ -943,8 +931,7 @@ if ( $command eq 'blocks' ) {
             $xyz[ floor( ( $r[0] - $xstartxyz ) / $size ) ]
             [ floor( ( $r[1] - $ystartxyz ) / $size ) ] )
         {
-
-#$img->line(( $r[0]-$xmin ),( $ymax-$r[1]),( $r[0]-$xmin ),( $ymax-$r[1]), $black );
+            #$img->line(( $r[0]-$xmin ),( $ymax-$r[1]),( $r[0]-$xmin ),( $ymax-$r[1]), $black );
             $img->filledRectangle(
                 $r[0] - $xstartxyz - 1,
                 $ystartxyz + 2 * $ymax - $r[1] - 1,
@@ -954,8 +941,7 @@ if ( $command eq 'blocks' ) {
             );
         }
         else {
-
-#$img->line(( $r[0]-$xmin ),( $ymax-$r[1]),( $r[0]-$xmin ),( $ymax-$r[1]), $black );
+            #$img->line(( $r[0]-$xmin ),( $ymax-$r[1]),( $r[0]-$xmin ),( $ymax-$r[1]), $black );
             $img2->filledRectangle(
                 $r[0] - $xstartxyz - 1,
                 $ystartxyz + 2 * $ymax - $r[1] - 1,
@@ -1083,8 +1069,8 @@ if ( $command eq 'dxfmerge'||  $command eq 'merge' ) {
     open( SISAAN, "<dxflist.txt" );
     @dxflist = <SISAAN>;
     close(SISAAN);
-## contours
-open( ULOS2, ">merged.dxf" );
+    ## contours
+    open( ULOS2, ">merged.dxf" );
     open( ULOS, ">merged_contours.dxf" );
     foreach $dx (@dxflist) {
         chomp($dx);
@@ -1121,9 +1107,9 @@ open( ULOS2, ">merged.dxf" );
     print ULOS 'ENDSEC' . $footer;
     close ULOS;
 
-###
+    ###
     $headprinted = '';
-##cliffs
+    ##cliffs
     open( ULOS, ">merged_c2.dxf" );
     foreach $dx (@dxflist) {
         chomp($dx);
@@ -1151,39 +1137,39 @@ open( ULOS2, ">merged.dxf" );
     }
     print ULOS 'ENDSEC' . $footer;
     close ULOS;
-### basemap
-if($basemapcontours > 0){
-    $headprinted = '';
-    open( ULOS, ">merged_basemap.dxf" );
-    foreach $dx (@dxflist) {
-        chomp($dx);
+    ### basemap
+    if($basemapcontours > 0){
+        $headprinted = '';
+        open( ULOS, ">merged_basemap.dxf" );
+        foreach $dx (@dxflist) {
+            chomp($dx);
 
-        $dxf = $batchoutfolder . "/" . $dx;
-        if ( -e $dxf && ( $dxf =~ /\_basemap.dxf/i ) ) {
-            open( SISAAN, "<$dxf" );
-            @dxf = <SISAAN>;
-            close(SISAAN);
-            $d = join( '', @dxf );
-            if ( $d =~ /POLYLINE/ ) {
-                ( $head, $d )      = split( /POLYLINE/, $d, 2 );
-                ( $d,    $footer ) = split( /ENDSEC/,   $d, 2 );
+            $dxf = $batchoutfolder . "/" . $dx;
+            if ( -e $dxf && ( $dxf =~ /\_basemap.dxf/i ) ) {
+                open( SISAAN, "<$dxf" );
+                @dxf = <SISAAN>;
+                close(SISAAN);
+                $d = join( '', @dxf );
+                if ( $d =~ /POLYLINE/ ) {
+                    ( $head, $d )      = split( /POLYLINE/, $d, 2 );
+                    ( $d,    $footer ) = split( /ENDSEC/,   $d, 2 );
 
-                if ( $headprinted eq '' ) {
-                    print ULOS $headout;
-                    $headprinted = 1;
+                    if ( $headprinted eq '' ) {
+                        print ULOS $headout;
+                        $headprinted = 1;
+                    }
+                    print ULOS 'POLYLINE';
+                    print ULOS $d;
+                    print ULOS2 'POLYLINE';
+                    print ULOS2 $d;
                 }
-                print ULOS 'POLYLINE';
-                print ULOS $d;
-                print ULOS2 'POLYLINE';
-                print ULOS2 $d;
-				}
+            }
         }
-    }
-    print ULOS 'ENDSEC' . $footer;
-    close ULOS;
+        print ULOS 'ENDSEC' . $footer;
+        close ULOS;
 	}
-#####
-###
+    #####
+    ###
     $headprinted = '';
     open( ULOS, ">merged_c3.dxf" );
     foreach $dx (@dxflist) {
@@ -1207,13 +1193,13 @@ if($basemapcontours > 0){
                 print ULOS $d;
                 print ULOS2 'POLYLINE';
                 print ULOS2 $d;
-				}
+			}
         }
     }
     print ULOS 'ENDSEC' . $footer;
     close ULOS;
-#####
-### formlines
+    #####
+    ### formlines
     $headprinted = '';
     open( ULOS, ">formlines.dxf" );
     foreach $dx (@dxflist) {
@@ -1237,13 +1223,13 @@ if($basemapcontours > 0){
                 print ULOS $d;
                 print ULOS2 'POLYLINE';
                 print ULOS2 $d;
-				}
+			}
         }
     }
     print ULOS 'ENDSEC' . $footer;
     close ULOS;
-#####
-## dotknolls
+    #####
+    ## dotknolls
     $headprinted = '';
     open( ULOS, ">merged_dotknolls.dxf" );
     foreach $dx (@dxflist) {
@@ -1267,13 +1253,12 @@ if($basemapcontours > 0){
                 print ULOS $d;
                 print ULOS2 'POINT';
                 print ULOS2 $d;
-
-				}
+			}
         }
     }
     print ULOS 'ENDSEC' . $footer;
     close ULOS;
-###
+    ###
     $headprinted = '';
     open( ULOS, ">merged_detected.dxf" );
     foreach $dx (@dxflist) {
@@ -1304,11 +1289,12 @@ if($basemapcontours > 0){
     close ULOS2;
 	###
 	
-	if (   $command eq 'merge' ) {
-	$command = 'pngmergevege';
+	if ( $command eq 'merge' ) {
+	    $command = 'pngmergevege';
 	}else{
-    exit;
-}}
+        exit;
+    }
+}
 
 if ( $command eq 'pngmerge' || $command eq 'pngmergedepr' ) {
 

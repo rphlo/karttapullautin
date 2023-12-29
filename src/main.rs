@@ -2075,7 +2075,7 @@ ENTITIES
                 let mut layer = String::new();
                 while i < (x  - xstart) / scalefactor + 4.0 && (i as u32) < im.width() {
                     let mut j = (y - ystart) / scalefactor - 3.0;
-                    while j < (y - ystart) / scalefactor + 4.0 && (j as u32) < im.height(){
+                    while j < (y - ystart) / scalefactor + 4.0 && (j as u32) < im.height() {
                         let pix = im.get_pixel(
                             i as u32,
                             j as u32
