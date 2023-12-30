@@ -2073,15 +2073,20 @@ ENTITIES
                 let mut ok = true;
                 let mut i = (x  - xstart) / scalefactor - 3.0;
                 let mut layer = String::new();
-                while i < (x  - xstart) / scalefactor + 4.0 && (i as u32) < im.width() {
+                while i < (x  - xstart) / scalefactor + 4.0 && ok {
                     let mut j = (y - ystart) / scalefactor - 3.0;
-                    while j < (y - ystart) / scalefactor + 4.0 && (j as u32) < im.height() {
+                    while j < (y - ystart) / scalefactor + 4.0 && ok {
+                        if (i as u32) >= im.width() || (j as u32) >= im.height() {
+                            ok = false;
+                            break;
+                        }
                         let pix = im.get_pixel(
                             i as u32,
                             j as u32
                         );
                         if pix[0] == 0 {
                             ok = false;
+                            break;
                         }
                         j += 1.0;
                     }
