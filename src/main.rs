@@ -1250,8 +1250,10 @@ ENTITIES
 1
   8
 {}
+ 38
+{}
   0
-", layer).as_str());
+", layer, h).as_str());
                 for k in 0..el_x_len {
                     out.push_str(format!("VERTEX
   8
