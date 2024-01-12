@@ -1245,15 +1245,25 @@ ENTITIES
                         layer.push_str("_intermed");
                     }
                 }
-                out.push_str(format!("POLYLINE
+                out.push_str(
+                    format!(
+                        "POLYLINE
  66
 1
   8
 {}
   0
-", layer).as_str());
+ 38
+{}
+", 
+                        layer,
+                        h
+                    ).as_str()
+                );
                 for k in 0..el_x_len {
-                    out.push_str(format!("VERTEX
+                    out.push_str(
+                        format!(
+                            "VERTEX
   8
 {}
  10
@@ -1261,7 +1271,12 @@ ENTITIES
  20
 {}
   0
-", layer, el_x[l][k], el_y[l][k]).as_str());
+",
+                            layer,
+                            el_x[l][k],
+                            el_y[l][k]
+                        ).as_str()
+                    );
                 }
                 out.push_str("SEQEND
   0

@@ -1715,6 +1715,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 
             #crop
 
+            if (-e 'pullautus' . $thread . '.png') {
             $myImage = newFromPng GD::Image( 'pullautus' . $thread . '.png' );
 
             ( $width, $height ) = $myImage->getBounds();
@@ -1806,7 +1807,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                   . '_depr.pgw /Y' );
 
             #print "filecopy done!";
-
+            }
             ## copy files form temp folder
             if ( $savetempfiles == 1 ) {
 
@@ -1866,21 +1867,32 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                 print OUT @tfw;
                 close OUT;
                 ## dxf files
-                system("rusty-pullauta polylinedxfcrop temp$thread/out2.dxf " . $batchoutfolderwin . "/". $laz . "_contours.dxf $minx $miny $maxx $maxy");
-                ## out2.dxf done
-                system("rusty-pullauta polylinedxfcrop temp$thread/c2g.dxf " . $batchoutfolderwin . "/". $laz . "_c2g.dxf $minx $miny $maxx $maxy");
-                system("rusty-pullauta polylinedxfcrop temp$thread/c3g.dxf " . $batchoutfolderwin . "/". $laz . "_c3g.dxf $minx $miny $maxx $maxy");
-                system("rusty-pullauta polylinedxfcrop temp$thread/contours03.dxf " . $batchoutfolderwin . "/". $laz . "_contours03.dxf $minx $miny $maxx $maxy");
-                system("rusty-pullauta polylinedxfcrop temp$thread/detected.dxf " . $batchoutfolderwin . "/". $laz . "_detected.dxf $minx $miny $maxx $maxy");
-
+                if (-e "temp$thread/out2.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/out2.dxf " . $batchoutfolderwin . "/". $laz . "_contours.dxf $minx $miny $maxx $maxy");
+                }
+                if (-e "temp$thread/c2g.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/c2g.dxf " . $batchoutfolderwin . "/". $laz . "_c2g.dxf $minx $miny $maxx $maxy");
+                }
+                if (-e "temp$thread/c3g.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/c3g.dxf " . $batchoutfolderwin . "/". $laz . "_c3g.dxf $minx $miny $maxx $maxy");
+                }
+                if (-e "temp$thread/contours03.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/contours03.dxf " . $batchoutfolderwin . "/". $laz . "_contours03.dxf $minx $miny $maxx $maxy");
+                }
+                if (-e "temp$thread/detected.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/detected.dxf " . $batchoutfolderwin . "/". $laz . "_detected.dxf $minx $miny $maxx $maxy");
+                }
 				if(-e "temp$thread/formlines.dxf"){
                     system("rusty-pullauta polylinedxfcrop temp$thread/formlines.dxf " . $batchoutfolderwin . "/". $laz . "_formlines.dxf $minx $miny $maxx $maxy");
 				}
 				
-                system("rusty-pullauta pointdxfcrop temp$thread/dotknolls.dxf " . $batchoutfolderwin . "/". $laz . "_dotknolls.dxf $minx $miny $maxx $maxy");
+                ## dotknolls.dxf
+                if(-e "temp$thread/dotknolls.dxf"){
+                    system("rusty-pullauta pointdxfcrop temp$thread/dotknolls.dxf " . $batchoutfolderwin . "/". $laz . "_dotknolls.dxf $minx $miny $maxx $maxy");
+                }
             }
 
-			if ( $basemapcontours > 0 ){
+			if (-e "temp$thread/basemap.dxf" && $basemapcontours > 0 ){
                 system("rusty-pullauta polylinedxfcrop temp$thread/basemap.dxf " . $batchoutfolderwin . "/". $laz . "_basemap.dxf $minx $miny $maxx $maxy");	
 			}
 			
