@@ -29,6 +29,9 @@ else {
 # vegetation mode. New mode =0, old original (pre 20130613) mode =1 
 vegemode=0
 
+#vegetaton output in bit-files
+vege_bitmode=1
+
 # vegetation only in batch mode, original behaviour with contours = 0, only run vegetation in batch = 1
 vegeonly=0
 
@@ -359,6 +362,8 @@ $vegemode = $Config->{_}->{vegemode};
 $vegemode = 1 * $vegemode;
 $vegeonly = $Config->{_}->{vegeonly};
 $vegeonly = 1 * $vegeonly;
+$vege_bitmode = $Config->{_}->{vege_bitmode};
+$vege_bitmode = 1 * $vege_bitmode;
 $proc     = $Config->{_}->{processes};
 
 $command = $ARGV[0];
@@ -1850,7 +1855,39 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                 open( OUT,">" . $batchoutfolderwin . "/" . $laz . '_undergrowth.pgw' );
                 print OUT @tfw;
                 close OUT;
-			
+
+		if ( $vege_bitmode == 1 ) {
+                 # vege-bit-copied
+
+               $myImage = newFromPng GD::Image("temp$thread/vegetation_bit.png", 1 );
+                ( $width, $height ) = $myImage->getBounds();
+                $im = new GD::Image( ( $maxx - $minx ) + 1, ( $maxy - $miny ) + 1, 1 );
+
+                $im->copy( $myImage, -$dx, -$dy, 0, 0, $width, $height );
+
+                open( OUT, ">" . $batchoutfolderwin . "/" . $laz . '_vege_bit.png' );
+                binmode OUT;
+                print OUT $im->png;
+                close OUT;
+
+                # vege-bit-copied-end
+
+                # yellow-bit-copied
+
+               $myImage = newFromPng GD::Image("temp$thread/undergrowth_bit.png", 1 );
+                ( $width, $height ) = $myImage->getBounds();
+                $im = new GD::Image( ( $maxx - $minx ) + 1, ( $maxy - $miny ) + 1, 1 );
+
+                $im->copy( $myImage, -$dx, -$dy, 0, 0, $width, $height );
+
+                open( OUT, ">" . $batchoutfolderwin . "/" . $laz . '_undergrowth_bit.png' );
+                binmode OUT;
+                print OUT $im->png;
+                close OUT;
+
+                # vege-bit-copied-end
+                }
+
                 $myImage = newFromPng GD::Image("temp$thread/vegetation.png", 1 );
                 ( $width, $height ) = $myImage->getBounds();
                 $im = new GD::Image( ( $maxx - $minx ) + 1, ( $maxy - $miny ) + 1, 1 );
@@ -1874,6 +1911,18 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                 open( OUT, ">" . $batchoutfolderwin . "/" . $laz . '_vege.pgw' );
                 print OUT @tfw;
                 close OUT;
+
+  		if ( $vege_bitmode == 1 ) {
+                # pgw-files for _bit.png
+                open( OUT, ">" . $batchoutfolderwin . "/" . $laz . '_vege_bit.pgw' );
+                print OUT @tfw;
+                close OUT;
+
+                open( OUT, ">" . $batchoutfolderwin . "/" . $laz . '_undergrowth_bit.pgw' );
+                print OUT @tfw;
+                close OUT;
+                }
+
                 ## dxf files
                 if (-e "temp$thread/out2.dxf") {
                     system("rusty-pullauta polylinedxfcrop temp$thread/out2.dxf " . $batchoutfolderwin . "/". $laz . "_contours.dxf $minx $miny $maxx $maxy");
