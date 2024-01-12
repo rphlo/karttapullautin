@@ -1245,7 +1245,9 @@ ENTITIES
                         layer.push_str("_intermed");
                     }
                 }
-                out.push_str(format!("POLYLINE
+                out.push_str(
+                    format!(
+                        "POLYLINE
  66
 1
   8
@@ -1253,9 +1255,14 @@ ENTITIES
  38
 {}
   0
-", layer, h).as_str());
+",
+                      layer,
+                      h
+                  ).as_str());
                 for k in 0..el_x_len {
-                    out.push_str(format!("VERTEX
+                    out.push_str(
+                        format!(
+                            "VERTEX
   8
 {}
  10
@@ -1263,7 +1270,12 @@ ENTITIES
  20
 {}
   0
-", layer, el_x[l][k], el_y[l][k]).as_str());
+",
+                            layer,
+                            el_x[l][k],
+                            el_y[l][k]
+                        ).as_str()
+                    );
                 }
                 out.push_str("SEQEND
   0
@@ -2075,15 +2087,20 @@ ENTITIES
                 let mut ok = true;
                 let mut i = (x  - xstart) / scalefactor - 3.0;
                 let mut layer = String::new();
-                while i < (x  - xstart) / scalefactor + 4.0 && (i as u32) < im.width() {
+                while i < (x  - xstart) / scalefactor + 4.0 && ok {
                     let mut j = (y - ystart) / scalefactor - 3.0;
-                    while j < (y - ystart) / scalefactor + 4.0 && (j as u32) < im.height(){
+                    while j < (y - ystart) / scalefactor + 4.0 && ok {
+                        if (i as u32) >= im.width() || (j as u32) >= im.height() {
+                            ok = false;
+                            break;
+                        }
                         let pix = im.get_pixel(
                             i as u32,
                             j as u32
                         );
                         if pix[0] == 0 {
                             ok = false;
+                            break;
                         }
                         j += 1.0;
                     }

@@ -1649,13 +1649,12 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 
     foreach $laz (@lazlist) {
         chomp($laz);
-	$laz = basename($laz);
+	    $laz = basename($laz);
         $i++;
         if ( -e $batchoutfolder . '/' . $laz . '.png' ) {
             print "skipping $laz" . '.png'
               . " it exists already in out folder.\n";
-        }
-        else {
+        } else {
             print "$laz -> $laz" . ".png\n";
             open( FOUT, ">$batchoutfolder" . '/' . $laz . '.png' );
             close(FOUT);
@@ -1715,8 +1714,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 			
             if ( $ziplist ne '' ) {
                 system("rusty-pullauta $thread temp$thread.xyz norender");
-            }
-            else {
+            } else {
                 system("rusty-pullauta $thread temp$thread.xyz");
             }
             if ( $ziplist ne '' ) {
@@ -1724,99 +1722,98 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
             }
 
             #crop
+            if (-e 'pullautus' . $thread . '.png') {
+                $myImage = newFromPng GD::Image( 'pullautus' . $thread . '.png' );
 
-            $myImage = newFromPng GD::Image( 'pullautus' . $thread . '.png' );
+                ( $width, $height ) = $myImage->getBounds();
+            #$im = new GD::Image($width-127*600/254*2+2,$height-127*600/254*2+2);
+                $im = new GD::Image(
+                    ( $maxx - $minx ) * 600 / 254/$scalefactor  + 2,
+                    ( $maxy - $miny ) * 600 / 254/$scalefactor  + 2
+                );
 
-            ( $width, $height ) = $myImage->getBounds();
+                #$foo=($maxx-$minx)*600/254+2;
+                #print "#$foo#";
+                #$foo=($maxy-$miny)*600/254+2;
+                #print "#$foo#\n";
 
-           #$im = new GD::Image($width-127*600/254*2+2,$height-127*600/254*2+2);
-            $im = new GD::Image(
-                ( $maxx - $minx ) * 600 / 254/$scalefactor  + 2,
-                ( $maxy - $miny ) * 600 / 254/$scalefactor  + 2
-            );
+                open( SISAAN, "<pullautus$thread.pgw" );
+                @tfw = <SISAAN>;
+                close(SISAAN);
 
-            #$foo=($maxx-$minx)*600/254+2;
-            #print "#$foo#";
-            #$foo=($maxy-$miny)*600/254+2;
-            #print "#$foo#\n";
+                $dx     = $minx - $tfw[4];
+                $dy     = -$maxy + $tfw[5];
+                $tfw[4] = $minx + $tfw[0] / 2;
+                $tfw[5] = $maxy - $tfw[0] / 2;
+                $tfw[4] .= "\n";
+                $tfw[5] .= "\n";
 
-            open( SISAAN, "<pullautus$thread.pgw" );
-            @tfw = <SISAAN>;
-            close(SISAAN);
+                open( OUT, ">pullautus$thread.pgw" );
+                print OUT @tfw;
+                close OUT;
 
-            $dx     = $minx - $tfw[4];
-            $dy     = -$maxy + $tfw[5];
-            $tfw[4] = $minx + $tfw[0] / 2;
-            $tfw[5] = $maxy - $tfw[0] / 2;
-            $tfw[4] .= "\n";
-            $tfw[5] .= "\n";
+                open( OUT, ">pullautus_depr$thread.pgw" );
+                print OUT @tfw;
+                close OUT;
 
-            open( OUT, ">pullautus$thread.pgw" );
-            print OUT @tfw;
-            close OUT;
+                #print "cp 0,0, $dx*600/254,$dy*600/254,$width,$height\n";
 
-            open( OUT, ">pullautus_depr$thread.pgw" );
-            print OUT @tfw;
-            close OUT;
+                $im->copy(
+                    $myImage,
+                    -$dx * 600 / 254/$scalefactor ,
+                    -$dy * 600 / 254/$scalefactor ,
+                    0, 0, $width, $height
+                );
 
-            #print "cp 0,0, $dx*600/254,$dy*600/254,$width,$height\n";
+                open( OUT, ">pullautus$thread.png" );
+                binmode OUT;
 
-            $im->copy(
-                $myImage,
-                -$dx * 600 / 254/$scalefactor ,
-                -$dy * 600 / 254/$scalefactor ,
-                0, 0, $width, $height
-            );
+                # Convert the image to PNG and print it on standard output
+                print OUT $im->png;
+                close OUT;
 
-            open( OUT, ">pullautus$thread.png" );
-            binmode OUT;
+                $myImage = newFromPng GD::Image("pullautus_depr$thread.png");
 
-            # Convert the image to PNG and print it on standard output
-            print OUT $im->png;
-            close OUT;
+                $im = new GD::Image(
+                    ( $maxx - $minx ) * 600 / 254/$scalefactor  + 2,
+                    ( $maxy - $miny ) * 600 / 254/$scalefactor  + 2
+                );
 
-            $myImage = newFromPng GD::Image("pullautus_depr$thread.png");
+                $im->copy(
+                    $myImage,
+                    -$dx * 600 / 254/$scalefactor ,
+                    -$dy * 600 / 254/$scalefactor ,
+                    0, 0, $width, $height
+                );
 
-            $im = new GD::Image(
-                ( $maxx - $minx ) * 600 / 254/$scalefactor  + 2,
-                ( $maxy - $miny ) * 600 / 254/$scalefactor  + 2
-            );
+                open( OUT, ">pullautus_depr$thread.png" );
+                binmode OUT;
 
-            $im->copy(
-                $myImage,
-                -$dx * 600 / 254/$scalefactor ,
-                -$dy * 600 / 254/$scalefactor ,
-                0, 0, $width, $height
-            );
+                # Convert the image to PNG and print it on standard output
+                print OUT $im->png;
+                close OUT;
 
-            open( OUT, ">pullautus_depr$thread.png" );
-            binmode OUT;
+                #print "filecopy ";
 
-            # Convert the image to PNG and print it on standard output
-            print OUT $im->png;
-            close OUT;
+                system( "cp pullautus$thread.png "
+                    . $batchoutfolderwin . "/"
+                    . $laz
+                    . '.png' );
+                system( "cp pullautus$thread.pgw "
+                    . $batchoutfolderwin . "/"
+                    . $laz
+                    . '.pgw' );
+                system( "cp pullautus_depr$thread.png "
+                    . $batchoutfolderwin . "/"
+                    . $laz
+                    . '_depr.png' );
+                system( "cp pullautus_depr$thread.pgw "
+                    . $batchoutfolderwin . "/"
+                    . $laz
+                    . '_depr.pgw' );
 
-            #print "filecopy ";
-
-            system( "cp pullautus$thread.png "
-                  . $batchoutfolderwin . "/"
-                  . $laz
-                  . '.png' );
-            system( "cp pullautus$thread.pgw "
-                  . $batchoutfolderwin . "/"
-                  . $laz
-                  . '.pgw' );
-            system( "cp pullautus_depr$thread.png "
-                  . $batchoutfolderwin . "/"
-                  . $laz
-                  . '_depr.png' );
-            system( "cp pullautus_depr$thread.pgw "
-                  . $batchoutfolderwin . "/"
-                  . $laz
-                  . '_depr.pgw' );
-
-            #print "filecopy done!";
-
+                #print "filecopy done!";
+            }
             ## copy files form temp folder
             if ( $savetempfiles == 1 ) {
 
@@ -1878,22 +1875,32 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                 print OUT @tfw;
                 close OUT;
                 ## dxf files
-                system("rusty-pullauta polylinedxfcrop temp$thread/out2.dxf " . $batchoutfolderwin . "/". $laz . "_contours.dxf $minx $miny $maxx $maxy");
-                ## out2.dxf done
-                system("rusty-pullauta polylinedxfcrop temp$thread/c2g.dxf " . $batchoutfolderwin . "/". $laz . "_c2g.dxf $minx $miny $maxx $maxy");
-                system("rusty-pullauta polylinedxfcrop temp$thread/c3g.dxf " . $batchoutfolderwin . "/". $laz . "_c3g.dxf $minx $miny $maxx $maxy");
-                system("rusty-pullauta polylinedxfcrop temp$thread/contours03.dxf " . $batchoutfolderwin . "/". $laz . "_contours03.dxf $minx $miny $maxx $maxy");
-                system("rusty-pullauta polylinedxfcrop temp$thread/detected.dxf " . $batchoutfolderwin . "/". $laz . "_detected.dxf $minx $miny $maxx $maxy");
-
+                if (-e "temp$thread/out2.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/out2.dxf " . $batchoutfolderwin . "/". $laz . "_contours.dxf $minx $miny $maxx $maxy");
+                }
+                if (-e "temp$thread/c2g.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/c2g.dxf " . $batchoutfolderwin . "/". $laz . "_c2g.dxf $minx $miny $maxx $maxy");
+                }
+                if (-e "temp$thread/c3g.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/c3g.dxf " . $batchoutfolderwin . "/". $laz . "_c3g.dxf $minx $miny $maxx $maxy");
+                }
+                if (-e "temp$thread/contours03.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/contours03.dxf " . $batchoutfolderwin . "/". $laz . "_contours03.dxf $minx $miny $maxx $maxy");
+                }
+                if (-e "temp$thread/detected.dxf") {
+                    system("rusty-pullauta polylinedxfcrop temp$thread/detected.dxf " . $batchoutfolderwin . "/". $laz . "_detected.dxf $minx $miny $maxx $maxy");
+                }
 				if(-e "temp$thread/formlines.dxf"){
                     system("rusty-pullauta polylinedxfcrop temp$thread/formlines.dxf " . $batchoutfolderwin . "/". $laz . "_formlines.dxf $minx $miny $maxx $maxy");
 				}
 				
                 ## dotknolls.dxf
-                system("rusty-pullauta pointdxfcrop temp$thread/dotknolls.dxf " . $batchoutfolderwin . "/". $laz . "_dotknolls.dxf $minx $miny $maxx $maxy");
+                if(-e "temp$thread/dotknolls.dxf"){
+                    system("rusty-pullauta pointdxfcrop temp$thread/dotknolls.dxf " . $batchoutfolderwin . "/". $laz . "_dotknolls.dxf $minx $miny $maxx $maxy");
+                }
             }
 
-			if ( $basemapcontours > 0 ){
+			if (-e "temp$thread/basemap.dxf" && $basemapcontours > 0 ){
                 system("rusty-pullauta polylinedxfcrop temp$thread/basemap.dxf " . $batchoutfolderwin . "/". $laz . "_basemap.dxf $minx $miny $maxx $maxy");	
 			}
 			
