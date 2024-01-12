@@ -1252,14 +1252,13 @@ ENTITIES
 1
   8
 {}
-  0
  38
 {}
-", 
-                        layer,
-                        h
-                    ).as_str()
-                );
+  0
+",
+                      layer,
+                      h
+                  ).as_str());
                 for k in 0..el_x_len {
                     out.push_str(
                         format!(
