@@ -30,7 +30,7 @@ else {
 vegemode=0
 
 #vegetaton output in bit-files
-vege_bitmode=1
+vege_bitmode=0
 
 # vegetation only in batch mode, original behaviour with contours = 0, only run vegetation in batch = 1
 vegeonly=0
@@ -1872,7 +1872,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 
                         # vege-bit-copied-end
 
-                        # yellow-bit-copied
+                        # undergrowth-bit-copied
 
                         $myImage = newFromPng GD::Image("temp$thread/undergrowth_bit.png", 1 );
                         ( $width, $height ) = $myImage->getBounds();
@@ -1885,7 +1885,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                         print OUT $im->png;
                         close OUT;
 
-                        # vege-bit-copied-end
+                        # undergrowth-bit-copied-end
                 }
 
                 $myImage = newFromPng GD::Image("temp$thread/vegetation.png", 1 );
