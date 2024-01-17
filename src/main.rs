@@ -4195,8 +4195,6 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut imggr1b = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
     let mut imgye2 = RgbaImage::from_pixel((w * block) as u32, (h * block) as u32, Rgba([255, 255, 255, 0]));
     let mut imgwater = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
-    let mut img_green_bin = GrayImage::from_pixel((w * block) as u32, (h * block) as u32, Luma([0x00]));
-    let mut img_green_bin_b = GrayImage::from_pixel((w * block) as u32, (h * block) as u32, Luma([0x00]));
     let mut img_yellow_bin = GrayAlphaImage::from_pixel((w * block) as u32, (h * block) as u32, LumaA([0x00, 0]));
     
     let mut greens = Vec::new();
@@ -4314,42 +4312,22 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                         ),
                         *greens.get(greenshade - 1).unwrap()
                     );
-                    if vege_bitmode {
-                        draw_filled_rect_mut(
-                            &mut img_green_bin, 
-                            Rect::at(
-                                ((x as f64 + 0.5) * block) as i32 - addition, 
-                                (((h - y as f64) - 0.5) * block) as i32 - addition
-                            ).of_size(
-                                (block as i32 + addition) as u32,
-                                (block as i32 + addition) as u32,
-                            ),
-                            Luma([greenshade as u8 + 1])
-                        );
-                    }
                 }
             }
         }
     }
+    
     let med: u32 = conf.general_section().get("medianboxsize").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med > 0 {
         imggr1b = median_filter(&imggr1, med/2, med/2);
-        if vege_bitmode {
-            img_green_bin_b = median_filter(&img_green_bin, med/2, med/2);
-        }
     }
     let med2: u32 = conf.general_section().get("medianboxsize2").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med2 > 0 {
         imggr1 = median_filter(&imggr1b, med2/2, med2/2);
-        if vege_bitmode {
-            img_green_bin = median_filter(&img_green_bin_b, med/2, med/2);
-        }
     } else {
         imggr1 = imggr1b;
-        if vege_bitmode {
-            img_green_bin = img_green_bin_b;
-        }
     }
+    
     imggr1.save(Path::new(&format!("{}/greens.png", tmpfolder))).expect("could not save output png");
     
     
@@ -4359,7 +4337,25 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     img.save(Path::new(&format!("{}/vegetation.png", tmpfolder))).expect("could not save output png");
     
     if vege_bitmode {
-        img_green_bin.save(Path::new(&format!("{}/greens_bit.png", tmpfolder))).expect("could not save output png");
+        let g_img = image::open(Path::new(&format!("{}/greens.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut g_img = g_img.to_rgb8();
+        for pixel in g_img.pixels_mut() {
+            let mut found = false;
+            for (idx, color) in greens.iter().enumerate() {
+                let c = idx as u8 + 2;
+                if pixel[0] == color[0] && pixel[1] == color[1] && pixel[2] == color[2] {
+                    *pixel = Rgb([c, c, c]);
+                    found = true;
+                }
+            }
+            if !found {
+                *pixel = Rgb([0, 0, 0]);
+            }                
+        };
+        g_img.save(Path::new(&format!("{}/greens_bit.png", tmpfolder))).expect("could not save output png");
+        let g_img = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder))).ok().expect("Opening image failed");
+        let g_img = g_img.to_luma8();
+        g_img.save(Path::new(&format!("{}/greens_bit.png", tmpfolder))).expect("could not save output png");
         let mut img_bit = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder))).ok().expect("Opening image failed");
         let img_bit2 = image::open(Path::new(&format!("{}/yellow_bit.png", tmpfolder))).ok().expect("Opening image failed");
         image::imageops::overlay(&mut img_bit, &img_bit2, 0, 0);
