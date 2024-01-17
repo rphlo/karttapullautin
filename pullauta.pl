@@ -1849,7 +1849,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 			open( OUT,">" . $batchoutfolderwin . "\\" . $laz . '_undergrowth.pgw' );
             print OUT @tfw;
             close OUT;
-
+			
             if ( $vege_bitmode == 1 ) {
                     # vege-bit-copied
 
@@ -1866,7 +1866,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 
                     # vege-bit-copied-end
 
-                    #undergrowth-bit-copied
+                    # undergrowth-bit-copied
 
                     $myImage = newFromPng GD::Image("temp$thread/undergrowth_bit.png", 1 );
                     ( $width, $height ) = $myImage->getBounds();
@@ -1879,9 +1879,9 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                     print OUT $im->png;
                     close OUT;
 
-                    #undergrowth-bit-copied-end
+                    # undergrowth-bit-copied-end
             }
-			
+
                 $myImage = newFromPng GD::Image("temp$thread/vegetation.png");
                 ( $width, $height ) = $myImage->getBounds();
                 $im =
@@ -1909,7 +1909,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                 print OUT @tfw;
                 close OUT;
 
-                if ( $vege_bitmode == 1 ) {
+  		        if ( $vege_bitmode == 1 ) {
                     # pgw-files for _bit.png
                     open( OUT, ">" . $batchoutfolderwin . "/" . $laz . '_vege_bit.pgw' );
                     print OUT @tfw;
@@ -1919,6 +1919,7 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
                     print OUT @tfw;
                     close OUT;
                 }
+
 
                 ## dxf files
                 if (-e "temp$thread/out2.dxf") {
@@ -5174,7 +5175,7 @@ if ( $command eq 'xyz2contours' ) {
 
 #####################
 
-        #print "\n\nYhdist?\n";
+        #print "\n\nYhdist�\n";
         open( ULOS2, ">>" . $tempfolder . "temp_polylines.txt" );
 
         for ( $i = 0 ; $i < $ob ; $i++ ) {
@@ -5989,7 +5990,7 @@ ENTITIES
 
             while ( $loppu == 0 ) {
 
-                # loytyyk? vastinparia.
+                # loytyyk� vastinparia.
 
                 if (   $head1{ $head[$l] } ne ''
                     && $head1{ $head[$l] } ne $l
@@ -6035,7 +6036,7 @@ ENTITIES
 
                     $joined++;
 ## joinataan
-## mik? p?? joinataan
+## mik� p�� joinataan
 
                     if ( $tail[$l] eq $head[$tojoin] ) {
                         $head2{ $tail[$l] } = '';
@@ -6161,13 +6162,13 @@ ENTITIES
                 $y[ $#y + 1 ] = $y[0];
 
                 # onko kuoppa
-                # k?yr?n tason laskenta
+                # k�yr�n tason laskenta
 
                 $m = floor( $#x / 3 ) - 1;
                 if ( $m < 0 ) { $m = 0; }
                 while ( $m < $#x + 1 ) {
 
-                    # lasketaan k?yr?n taso
+                    # lasketaan k�yr�n taso
                     if ( ( $x[$m] - $xstart ) / $size ==
                         floor( ( $x[$m] - $xstart ) / $size ) )
                     {
@@ -6289,7 +6290,7 @@ ENTITIES
                     #print "OUT $n $hit $#x $xtest $ytest - $y0 $x0 $y1 $x1 \n";
                 }
 
-                # hylk?? kuopat
+                # hylk�� kuopat
 
                 if (   ( $h_center < $h && $hit % 2 == 1 )
                     || ( $h_center > $h && $hit % 2 != 1 ) )
