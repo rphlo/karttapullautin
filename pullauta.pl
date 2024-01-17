@@ -5120,7 +5120,7 @@ if ( $command eq 'xyz2contours' ) {
 
 #####################
 
-        #print "\n\nYhdist�\n";
+        #print "\n\nYhdistä\n";
         open( ULOS2, ">>" . $tempfolder . "temp_polylines.txt" );
 
         for ( $i = 0 ; $i < $ob ; $i++ ) {
@@ -5935,7 +5935,7 @@ ENTITIES
 
             while ( $loppu == 0 ) {
 
-                # loytyyk� vastinparia.
+                # loytyykö vastinparia.
 
                 if (   $head1{ $head[$l] } ne ''
                     && $head1{ $head[$l] } ne $l
@@ -5981,7 +5981,7 @@ ENTITIES
 
                     $joined++;
 ## joinataan
-## mik� p�� joinataan
+## mikä pää joinataan
 
                     if ( $tail[$l] eq $head[$tojoin] ) {
                         $head2{ $tail[$l] } = '';
@@ -6107,13 +6107,13 @@ ENTITIES
                 $y[ $#y + 1 ] = $y[0];
 
                 # onko kuoppa
-                # k�yr�n tason laskenta
+                # käyrän tason laskenta
 
                 $m = floor( $#x / 3 ) - 1;
                 if ( $m < 0 ) { $m = 0; }
                 while ( $m < $#x + 1 ) {
 
-                    # lasketaan k�yr�n taso
+                    # lasketaan käyrän taso
                     if ( ( $x[$m] - $xstart ) / $size ==
                         floor( ( $x[$m] - $xstart ) / $size ) )
                     {
@@ -6235,7 +6235,7 @@ ENTITIES
                     #print "OUT $n $hit $#x $xtest $ytest - $y0 $x0 $y1 $x1 \n";
                 }
 
-                # hylk�� kuopat
+                # hylkää kuopat
 
                 if (   ( $h_center < $h && $hit % 2 == 1 )
                     || ( $h_center > $h && $hit % 2 != 1 ) )
