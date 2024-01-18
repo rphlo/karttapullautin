@@ -3,8 +3,30 @@ on:
     types: [created]
 
 jobs:
+  pack-windows-exe:
+    name: Create windows executable
+    runs-on: windows-2019
+    steps:
+      - name: cpan install
+        uses: perl-actions/install-with-cpanm@stable
+        with:
+          install: |
+            PAR::Packer
+            GD
+            POSIX
+            Config::Tiny
+            Geo::ShapeFile
+            Archive::Zip
+      - run: pp -o pullauta.exe -M GD -M POSIX -M Config::Tiny -M Geo::ShapeFile -M Archive::Zip --link libbz2-1__.dll -l libfreetype-6__.dll -l libgd-3__.dll -l libiconv-2__.dll -l libjpeg-9__.dll -l liblzma-5__.dll -l libpng16-16__.dll -l libtiff-5__.dll -l libXpm__.dll -l zlib1__.dll pullauta.pl
+      - name: Archive exe
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-exectable
+          path: pullauta.exe
+
   release:
     name: release ${{ matrix.target }}
+    needs: pack-windows-exe
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -12,10 +34,14 @@ jobs:
         target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl, x86_64-apple-darwin]
     steps:
       - uses: actions/checkout@master
+      - name: Download windows exe
+        uses: actions/download-artifact@v3
+        with:
+          name: windows-exectable
       - name: Compile and release
         uses: rust-build/rust-build.action@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           RUSTTARGET: ${{ matrix.target }}
-          EXTRA_FILES: "README.md LICENSE pullauta"
+          EXTRA_FILES: "README.md LICENSE pullauta${{ matrix.target == 'x86_64-pc-windows-gnu' && '.exe'}}"
