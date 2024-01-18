@@ -12,10 +12,11 @@ jobs:
         target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl, x86_64-apple-darwin]
     steps:
       - uses: actions/checkout@master
+      - run: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
       - name: Compile and release
         uses: rust-build/rust-build.action@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           RUSTTARGET: ${{ matrix.target }}
-          EXTRA_FILES: "README.md LICENSE pullauta${{ matrix.strategy == 'x86_64-pc-windows-gnu' && '.exe' }}"
+          EXTRA_FILES: ${{ matrix.target == 'x86_64-pc-windows-gnu' && 'pullauta.exe' || 'pullauta' }} README.md LICENSE"
