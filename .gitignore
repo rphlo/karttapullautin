@@ -9,3 +9,7 @@ pullauta.ini
 pullautus*.png
 pullautus*.pgw
 .vs/
+header*.xyz
+lazlist*.txt
+temp*.xyz
+ziplist*.txt
