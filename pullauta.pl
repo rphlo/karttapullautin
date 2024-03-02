@@ -235,7 +235,8 @@ jarkkos2019=1
 #vegetaton output in bit-files
 vege_bitmode=0
 # vegetation only in batch mode, original behaviour with contours = 0, only run vegetation in batch = 1
-vegeonly=0			
+vegeonly=0	
+yellow_smoothing=0		
 ";
     close(ULOS);
 }

@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fs::File;
 use std::fs;
 use std::io::{self, BufRead};
-use image::{RgbImage, RgbaImage, Rgb, Rgba, GrayImage, GrayAlphaImage, Luma, LumaA};
+use image::{RgbImage, RgbaImage, Rgb, Rgba, GrayImage, Luma};
 use std::process::{Command, Stdio};
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
@@ -237,6 +237,7 @@ zoffset=0
 # Settings specific to rusty-pullauta
 jarkkos2019=1
 vege_bitmode=0
+yellow_smoothing=0
 ".as_bytes()).expect("Cannot write file");
     }
 
@@ -4198,8 +4199,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut imggr1 = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
     let mut imggr1b = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
     let mut imgye2 = RgbaImage::from_pixel((w * block) as u32, (h * block) as u32, Rgba([255, 255, 255, 0]));
+    let mut imgye2b = RgbaImage::from_pixel((w * block) as u32, (h * block) as u32, Rgba([255, 255, 255, 0]));
     let mut imgwater = RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
-    let mut img_yellow_bin = GrayAlphaImage::from_pixel((w * block) as u32, (h * block) as u32, LumaA([0x00, 0]));
     
     let mut greens = Vec::new();
     for i in 0..greenshades.len() {
@@ -4244,25 +4245,11 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                         (hy as i32 - y as i32) * 3 - 3
                     ).of_size(3, 3),
                     ye2
-                );
-                if vege_bitmode {
-                    draw_filled_rect_mut(
-                        &mut img_yellow_bin,
-                        Rect::at(
-                            x as i32 * 3 + 2,
-                            (hy as i32 - y as i32) * 3 - 3
-                        ).of_size(3, 3),
-                        LumaA([0x1, 255])
-                    )
-                }
+                 );
             }
         }
     }
-
-    imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
-    if vege_bitmode {
-        img_yellow_bin.save(Path::new(&format!("{}/yellow_bit.png", tmpfolder))).expect("could not save output png");
-    }
+    
     for x in 2..w as usize {
         for y in 2..h as usize {
             let mut ghit2 = 0;
@@ -4320,20 +4307,29 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    
+    let proceed_yellows: bool = conf.general_section().get("yellow_smoothing").unwrap_or("0") == "1";
     let med: u32 = conf.general_section().get("medianboxsize").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med > 0 {
         imggr1b = median_filter(&imggr1, med/2, med/2);
+        if proceed_yellows {
+            imgye2b = median_filter(&imgye2, med/2, med/2);
+        }
     }
     let med2: u32 = conf.general_section().get("medianboxsize2").unwrap_or("0").parse::<u32>().unwrap_or(0);
     if med2 > 0 {
         imggr1 = median_filter(&imggr1b, med2/2, med2/2);
+        if proceed_yellows {
+            imgye2 = median_filter(&imgye2, med/2, med/2);
+        }
     } else {
         imggr1 = imggr1b;
+        if proceed_yellows {
+            imgye2 = imgye2b;
+        }
     }
-    
+
+    imgye2.save(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("could not save output png");
     imggr1.save(Path::new(&format!("{}/greens.png", tmpfolder))).expect("could not save output png");
-    
     
     let mut img = image::open(Path::new(&format!("{}/greens.png", tmpfolder))).ok().expect("Opening image failed");
     let img2 = image::open(Path::new(&format!("{}/yellow.png", tmpfolder))).ok().expect("Opening image failed");
@@ -4360,6 +4356,21 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         let g_img = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder))).ok().expect("Opening image failed");
         let g_img = g_img.to_luma8();
         g_img.save(Path::new(&format!("{}/greens_bit.png", tmpfolder))).expect("could not save output png");
+        
+        let y_img = image::open(Path::new(&format!("{}/yellow.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut y_img = y_img.to_rgba8();
+        for pixel in y_img.pixels_mut() {
+            if pixel[0] == ye2[0] && pixel[1] == ye2[1] && pixel[2] == ye2[2]  && pixel[3] == ye2[3] {
+                *pixel = Rgba([1, 1, 1, 255]);
+            } else {
+                *pixel = Rgba([0, 0, 0, 0]);
+            }                
+        }
+        y_img.save(Path::new(&format!("{}/yellow_bit.png", tmpfolder))).expect("could not save output png");
+        let y_img = image::open(Path::new(&format!("{}/yellow_bit.png", tmpfolder))).ok().expect("Opening image failed");
+        let y_img = y_img.to_luma_alpha8();
+        y_img.save(Path::new(&format!("{}/yellow_bit.png", tmpfolder))).expect("could not save output png");
+
         let mut img_bit = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder))).ok().expect("Opening image failed");
         let img_bit2 = image::open(Path::new(&format!("{}/yellow_bit.png", tmpfolder))).ok().expect("Opening image failed");
         image::imageops::overlay(&mut img_bit, &img_bit2, 0, 0);
