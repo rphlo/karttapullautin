@@ -1714,10 +1714,10 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 			
 			
             if ( $ziplist ne '' ) {
-                system("rusty-pullauta $thread temp$thread.xyz norender");
+                system("pullauta $thread temp$thread.xyz norender");
             }
             else {
-                system("rusty-pullauta $thread temp$thread.xyz");
+                system("pullauta $thread temp$thread.xyz");
             }
             if ( $ziplist ne '' ) {
                 system("pullauta $thread $ziplist");
