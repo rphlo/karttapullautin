@@ -6375,7 +6375,7 @@ ENTITIES
         }
 
     }
-    # kayak
+
     @tops = split( /\n/, $temp );
 
     #####################

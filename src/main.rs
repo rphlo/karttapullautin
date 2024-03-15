@@ -4078,7 +4078,6 @@ ENTITIES
             }
         }
     }
-
     let tops = temp.split("\n").collect::<Vec<&str>>();
     let mut temp = String::new();
 
@@ -4171,13 +4170,13 @@ ENTITIES
             mov.insert(id, test);
         } else {
             let tid = *best.get(&topid).unwrap();
-            if *mov.get(&tid).unwrap_or(&0.0) < 1.75 && 
+            if *mov.get(&tid).unwrap() < 1.75 && 
                (*elevation.get(&topid).unwrap() - *elevation.get(&tid).unwrap() - 0.6).abs() < 0.2 {
                 // no action
             } else {
-                if *mov.get(&tid).unwrap_or(&0.0) > test {
+                if *mov.get(&tid).unwrap() > test {
                     best.insert(topid, id);
-                    mov.insert(tid, test);
+                    mov.insert(id, test);
                 }
             }
         }
@@ -4327,7 +4326,6 @@ ENTITIES
   0
 EOF
 ".as_bytes()).expect("Can not write to file");
-    // kayak
 
     let f = File::create(&Path::new(&format!("{}/pins.txt", tmpfolder))).expect("Unable to create file");
     let mut f = BufWriter::new(f);
