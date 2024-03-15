@@ -4171,11 +4171,11 @@ ENTITIES
             mov.insert(id, test);
         } else {
             let tid = *best.get(&topid).unwrap();
-            if *mov.get(&tid).unwrap() < 1.75 && 
+            if *mov.get(&tid).unwrap_or(&0.0) < 1.75 && 
                (*elevation.get(&topid).unwrap() - *elevation.get(&tid).unwrap() - 0.6).abs() < 0.2 {
                 // no action
             } else {
-                if *mov.get(&tid).unwrap() > test {
+                if *mov.get(&tid).unwrap_or(&0.0) > test {
                     best.insert(topid, id);
                     mov.insert(tid, test);
                 }
