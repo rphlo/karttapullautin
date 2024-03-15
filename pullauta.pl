@@ -1714,10 +1714,10 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 			
 			
             if ( $ziplist ne '' ) {
-                system("pullauta $thread temp$thread.xyz norender");
+                system("rusty-pullauta $thread temp$thread.xyz norender");
             }
             else {
-                system("pullauta $thread temp$thread.xyz");
+                system("rusty-pullauta $thread temp$thread.xyz");
             }
             if ( $ziplist ne '' ) {
                 system("pullauta $thread $ziplist");
@@ -2115,7 +2115,7 @@ to the same folder as pullautin.exe \n ";
 ## 2m grid & controus 0.3
     print "\nKnoll detection part 1\n";
     system(
-"rusty-pullauta  $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
+"rusty-pullauta $thread xyz2contours ".(0.3*$scalefactor)." xyztemp.xyz xyz_03.xyz contours03.dxf ground"
     );
 
  
@@ -2135,7 +2135,7 @@ to the same folder as pullautin.exe \n ";
 if(1*$Config->{_}->{skipknolldetection} != 1){
 ## detector
     print "\nKnoll detection part 2\n";
-    system("pullauta $thread knolldetector");
+    system("rusty-pullauta $thread knolldetector");
 	}
 ## xyz_knolls
     print "\nContour generation part 1\n";

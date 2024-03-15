@@ -1721,9 +1721,9 @@ if (   ( $command eq '' && $batch == 1 && $proc < 2 )
 			
 			
             if ( $ziplist ne '' ) {
-                system("perl pullauta $thread temp$thread.xyz norender");
+                system("pullauta $thread temp$thread.xyz norender");
             } else {
-                system("perl pullauta $thread temp$thread.xyz");
+                system("pullauta $thread temp$thread.xyz");
             }
             if ( $ziplist ne '' ) {
                 system("perl pullauta $thread $ziplist");
@@ -2136,7 +2136,7 @@ to the same folder as pullautin.exe \n ";
         if(1*$Config->{_}->{skipknolldetection} != 1){
             ## detector
             print "\nKnoll detection part 2\n";
-            system("perl pullauta $thread knolldetector");
+            system("rusty-pullauta $thread knolldetector");
         }
 
         ## xyz_knolls
