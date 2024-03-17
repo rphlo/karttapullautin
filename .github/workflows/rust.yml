@@ -18,5 +18,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           RUSTTARGET: ${{ matrix.target }}
-          EXTRA_FILES: ${{ matrix.target == 'x86_64-pc-windows-gnu' && 'pullauta.exe' || 'pullauta' }} README.md LICENSE
-          TOOLCHAIN_VERSION: 1.73.0
+          EXTRA_FILES: README.md original-perl-readme.txt LICENSE osm.txt fastighetskartan.txt
