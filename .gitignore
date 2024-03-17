@@ -6,6 +6,8 @@ in/
 out/
 .DS_Store
 pullauta.ini
+pullauta.pl
+pullauta
 pullautus*.png
 pullautus*.pgw
 .vs/
