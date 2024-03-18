@@ -1,6 +1,7 @@
 use std::env;
 use regex::Regex;
 use std::path::Path;
+use std::path::PathBuf;
 extern crate ini;
 use ini::Ini;
 use std::{thread, time};
@@ -392,35 +393,14 @@ yellow_smoothing=0
         return();
     }
 
-
-    fn batch_process(thread: &String) {
-        // TODO: thread function in rust instead of PERL call
-        if cfg!(target_os = "windows") {
-            Command::new("pullauta.exe")
-                .arg("startthread")
-                .arg(thread)
-                .stdout(Stdio::inherit())
-                .output()
-                .expect("Failed to run pullauta thread");
-        } else {
-            Command::new("perl")
-                .arg("pullauta")
-                .arg("startthread")
-                .arg(thread)
-                .stdout(Stdio::inherit())
-                .output()
-                .expect("Failed to run pullauta thread");
-        }
-        return();
-    }
-
     let proc: u64 = conf.general_section().get("processes").unwrap().parse::<u64>().unwrap();
     if command == "" && batch && proc > 1 {
         let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
         for i in 0..proc {
             let handle = thread::spawn(move || {
                 println!("Starting thread {}", i + 1);
-                batch_process(&format!("{}", i + 1));     
+                batch_process(&format!("{}", i + 1));   
+                println!("Thread {} complete", i + 1);  
             });
             thread::sleep(time::Duration::from_millis(100));
             handles.push(handle);
@@ -444,192 +424,235 @@ yellow_smoothing=0
 
     let zip_files_re = Regex::new(r"\.zip$").unwrap();
     if zip_files_re.is_match(&command.to_lowercase())  {
-        println!("Not implemented");
+        let mut zips: Vec<String> = vec![command];
+        zips.extend(args);
+        process_zip(&thread, &zips).unwrap();
         return();
     }
 
     if accepted_files_re.is_match(&command.to_lowercase()) {
-        let skipknolldetection = conf.general_section().get("skipknolldetection").unwrap_or("0") == "1";
-
-        let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
-        if vegemode {
-            println!("vegemode=1 not implemented in rusty-pullauta");
-            return()
+        let mut norender: bool = false;
+        if args.len() > 1 {
+            norender = args[1].clone() == "norender";
         }
-        println!("Preparing input file");
-        let mut skiplaz2txt: bool = false;
-        if Regex::new(r".xyz$").unwrap().is_match(&command.to_lowercase()) {
-            println!(".xyz input file");
-            if let Ok(lines) = read_lines(Path::new(&command)) {
-                let mut i: u32 = 0;
-                for line in lines {
-                    if  i == 2 {
-                        let ip = line.unwrap_or(String::new());
-                        let parts = ip.split(" ");
-                        let r = parts.collect::<Vec<&str>>();                     
-                        if r.len() == 7 {
-                            skiplaz2txt = true;
-                            break;
-                        }
+        process_tile(&thread, &command, norender).unwrap();
+        return();
+    }
+}
+
+fn process_zip(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn Error>>  {
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let pnorthlinesangle: f64 = conf.general_section().get("northlinesangle").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+    let pnorthlineswidth: usize = conf.general_section().get("northlineswidth").unwrap_or("0").parse::<usize>().unwrap_or(0);
+
+    println!("ZIP processing not implemented in rust, switching to perl");
+    if cfg!(target_os = "windows") {
+        Command::new("pullauta.exe")
+            .arg(thread)
+            .arg("unzipmtk")
+            .args(filenames)
+            .stdout(Stdio::inherit())
+            .output()
+            .expect("Failed to run pullauta thread");
+    } else {
+        Command::new("perl")
+            .arg("pullauta")
+            .arg(thread)
+            .arg("unzipmtk")
+            .args(filenames)
+            .stdout(Stdio::inherit())
+            .output()
+            .expect("Failed to run pullauta thread");
+    }
+    
+    println!("Rendering png map with depressions");
+    render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+    println!("Rendering png map without depressions");
+    render(thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+    Ok(())
+}
+
+fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result<(), Box<dyn Error>>  {
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let skipknolldetection = conf.general_section().get("skipknolldetection").unwrap_or("0") == "1";
+    let tmpfolder = format!("temp{}", thread);
+    fs::create_dir_all(&tmpfolder).expect("Could not create tmp folder");
+    let pnorthlinesangle: f64 = conf.general_section().get("northlinesangle").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+    let pnorthlineswidth: usize = conf.general_section().get("northlineswidth").unwrap_or("0").parse::<usize>().unwrap_or(0);
+
+    let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
+    if vegemode {
+        println!("vegemode=1 not implemented in rusty-pullauta");
+        return Ok(());
+    }
+    println!("Preparing input file");
+    let mut skiplaz2txt: bool = false;
+    if Regex::new(r".xyz$").unwrap().is_match(&filename.to_lowercase()) {
+        if let Ok(lines) = read_lines(Path::new(filename)) {
+            let mut i: u32 = 0;
+            for line in lines {
+                if  i == 2 {
+                    let ip = line.unwrap_or(String::new());
+                    let parts = ip.split(" ");
+                    let r = parts.collect::<Vec<&str>>();                     
+                    if r.len() == 7 {
+                        skiplaz2txt = true;
+                        break;
                     }
-                    i += 1;
                 }
+                i += 1;
             }
         }
+    }
 
-        if !skiplaz2txt {
-            let out = Command::new("las2txt")
-                    .arg("-version")
-                    .output()
-                    .expect("las2txt command failed to start");
-            if out.status.success() {
-                let mut thinfactor: f64 = conf.general_section().get("thinfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-                if thinfactor == 0.0 {
-                    thinfactor = 1.0;
-                }
-                if thinfactor != 1.0 {
-                    println!("Using thinning factor {}", thinfactor); 
-                }
+    if !skiplaz2txt {
+        let out = Command::new("las2txt")
+                .arg("-version")
+                .output()
+                .expect("las2txt command failed to start");
+        if out.status.success() {
+            let mut thinfactor: f64 = conf.general_section().get("thinfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+            if thinfactor == 0.0 {
+                thinfactor = 1.0;
+            }
+            if thinfactor != 1.0 {
+                println!("Using thinning factor {}", thinfactor); 
+            }
 
-                let mut xfactor: f64 = conf.general_section().get("coordxfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-                let mut yfactor: f64 = conf.general_section().get("coordyfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-                let mut zfactor: f64 = conf.general_section().get("coordzfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-                let zoff: f64 = conf.general_section().get("zoffset").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
-                if xfactor == 0.0 {
-                    xfactor = 1.0;
-                }
-                if yfactor == 0.0 {
-                    yfactor = 1.0;
-                }
-                if zfactor == 0.0 {
-                    zfactor = 1.0;
-                }
+            let mut xfactor: f64 = conf.general_section().get("coordxfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+            let mut yfactor: f64 = conf.general_section().get("coordyfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+            let mut zfactor: f64 = conf.general_section().get("coordzfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+            let zoff: f64 = conf.general_section().get("zoffset").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+            if xfactor == 0.0 {
+                xfactor = 1.0;
+            }
+            if yfactor == 0.0 {
+                yfactor = 1.0;
+            }
+            if zfactor == 0.0 {
+                zfactor = 1.0;
+            }
 
-                if xfactor == 1.0 && yfactor == 1.0 && zfactor == 1.0 && zoff == 0.0 {
-                    let _result = Command::new("las2txt")
-                        .arg("-i")
-                        .arg(command)
-                        .arg("-parse")
-                        .arg("xyzcnri")
-                        .arg("-keep_random_fraction")
-                        .arg(format!("{}", thinfactor))
-                        .arg("-o")
-                        .arg(format!("{}/xyztemp.xyz", tmpfolder))
-                        .output();
-                } else {
-                    let _result = Command::new("las2txt")
+            if xfactor == 1.0 && yfactor == 1.0 && zfactor == 1.0 && zoff == 0.0 {
+                let _result = Command::new("las2txt")
                     .arg("-i")
-                    .arg(command)
+                    .arg(filename)
                     .arg("-parse")
                     .arg("xyzcnri")
                     .arg("-keep_random_fraction")
                     .arg(format!("{}", thinfactor))
                     .arg("-o")
-                    .arg(format!("{}/xyztemp1.xyz", tmpfolder))
-                    .output();
+                    .arg(format!("{}/xyztemp.xyz", tmpfolder))
+                    .output().unwrap();
+            } else {
+                let _result = Command::new("las2txt")
+                .arg("-i")
+                .arg(filename)
+                .arg("-parse")
+                .arg("xyzcnri")
+                .arg("-keep_random_fraction")
+                .arg(format!("{}", thinfactor))
+                .arg("-o")
+                .arg(format!("{}/xyztemp1.xyz", tmpfolder))
+                .output().expect("las2txt command failed");
 
-                    println!("Scaling xyz...");
+                println!("Scaling xyz...");
 
-                    let path_in = format!("{}/xyztemp1.xyz", tmpfolder);
-                    let xyz_file_in = Path::new(&path_in);
+                let path_in = format!("{}/xyztemp1.xyz", tmpfolder);
+                let xyz_file_in = Path::new(&path_in);
 
-                    let path_out = format!("{}/xyztemp.xyz", tmpfolder);
-                    let xyz_file_out = File::create(&path_out).expect("Unable to create file");
-                    let mut xyz_file_out = BufWriter::new(xyz_file_out);
-                    
-                    if let Ok(lines) = read_lines(&xyz_file_in) {
-                        for line in lines {
-                            let ip = line.unwrap_or(String::new());
-                            let parts = ip.split(" ");
-                            let r = parts.collect::<Vec<&str>>();
-                            let x: f64 = r[0].parse::<f64>().unwrap();
-                            let y: f64 = r[1].parse::<f64>().unwrap();
-                            let z: f64 = r[2].parse::<f64>().unwrap();
-                            let (_xyz, rest) = r.split_at(3);
-                            xyz_file_out.write(format!(
-                                "{} {} {} {}\n",
-                                x * xfactor,
-                                y * yfactor,
-                                z * zfactor + zoff,
-                                rest.join(" ")
-                            ).as_bytes()).expect("Cannot write xyz file");
-                        }
+                let path_out = format!("{}/xyztemp.xyz", tmpfolder);
+                let xyz_file_out = File::create(&path_out).expect("Unable to create file");
+                let mut xyz_file_out = BufWriter::new(xyz_file_out);
+                
+                if let Ok(lines) = read_lines(&xyz_file_in) {
+                    for line in lines {
+                        let ip = line.unwrap_or(String::new());
+                        let parts = ip.split(" ");
+                        let r = parts.collect::<Vec<&str>>();
+                        let x: f64 = r[0].parse::<f64>().unwrap();
+                        let y: f64 = r[1].parse::<f64>().unwrap();
+                        let z: f64 = r[2].parse::<f64>().unwrap();
+                        let (_xyz, rest) = r.split_at(3);
+                        xyz_file_out.write(format!(
+                            "{} {} {} {}\n",
+                            x * xfactor,
+                            y * yfactor,
+                            z * zfactor + zoff,
+                            rest.join(" ")
+                        ).as_bytes()).expect("Cannot write xyz file");
                     }
-                    fs::remove_file(path_in).unwrap();
                 }
-            } else {
-                println!("Can not find las2txt binary. It is needed if input file is not xyz file with xyzc data. Make sure it is in $PATH");
-                return();
+                fs::remove_file(path_in).unwrap();
             }
         } else {
-            fs::copy(Path::new(&command), Path::new(&format!("{}/xyztemp.xyz", tmpfolder))).expect("Could not copy file to tmpfolder");
+            println!("Can not find las2txt binary. It is needed if input file is not xyz file with xyzc data. Make sure it is in $PATH");
+            return Ok(());
         }
-        println!("Done");
-        println!("Knoll detection part 1");
-        let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-        let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
-
-        if !vegeonly {
-            xyz2contours(&thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "contours03.dxf", true).expect("countour generation failed");
-        } else {
-            xyz2contours(&thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "null", true).expect("countour generation failed"); 
-        }
-
-        fs::copy(format!("{}/xyz_03.xyz", tmpfolder), format!("{}/xyz2.xyz", tmpfolder)).expect("Could not copy file");
-        
-        if !vegeonly {
-            let basemapcontours: f64 = conf.general_section().get("basemapinterval").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
-            if basemapcontours != 0.0 {
-                println!("Basemap contours");
-                xyz2contours(&thread, basemapcontours, "xyz2.xyz", "", "basemap.dxf", false).expect("countour generation failed");
-            }
-            if !skipknolldetection {
-                println!("Knoll detection part 2");
-                knolldetector(&thread).unwrap();
-            }
-            println!("Contour generation part 1");
-            xyzknolls(&thread).unwrap();
-
-            println!("Contour generation part 2");
-            if !skipknolldetection {
-                // contours 2.5
-                xyz2contours(&thread, 2.5 * scalefactor, "xyz_knolls.xyz", "null", "out.dxf", false).unwrap();
-            } else {
-                xyz2contours(&thread, 2.5 * scalefactor, "xyztemp.xyz", "null", "out.dxf", true).unwrap();
-            }
-            println!("Contour generation part 3");
-            smoothjoin(&thread).unwrap();
-            println!("Contour generation part 4");
-            dotknolls(&thread).unwrap();
-        }
-
-        println!("Vegetation generation");
-        makevegenew(&thread).unwrap();
-
-        if !vegeonly {
-            println!("Cliff generation");
-            makecliffs(&thread).unwrap();
-        }
-        let detectbuildings: bool = conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
-        if detectbuildings {
-            println!("Detecting buildings");
-            blocks(&thread).unwrap();
-        }
-        let mut norender: bool = false;
-        if args.len() > 1 {
-            norender = args[1].clone() == "norender";
-        }
-        if !norender {
-            println!("Rendering png map with depressions");
-            render(&thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
-            println!("Rendering png map without depressions");
-            render(&thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
-        } else {
-            println!("Skipped rendering");
-        }
-        println!("\n\nAll done!");
-        return();
+    } else {
+        fs::copy(Path::new(filename), Path::new(&format!("{}/xyztemp.xyz", tmpfolder))).expect("Could not copy file to tmpfolder");
     }
+    println!("Done");
+    println!("Knoll detection part 1");
+    let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
+
+    if !vegeonly {
+        xyz2contours(thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "contours03.dxf", true).expect("countour generation failed");
+    } else {
+        xyz2contours(thread, scalefactor * 0.3, "xyztemp.xyz", "xyz_03.xyz", "null", true).expect("countour generation failed"); 
+    }
+
+    fs::copy(format!("{}/xyz_03.xyz", tmpfolder), format!("{}/xyz2.xyz", tmpfolder)).expect("Could not copy file");
+    
+    if !vegeonly {
+        let basemapcontours: f64 = conf.general_section().get("basemapinterval").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+        if basemapcontours != 0.0 {
+            println!("Basemap contours");
+            xyz2contours(thread, basemapcontours, "xyz2.xyz", "", "basemap.dxf", false).expect("countour generation failed");
+        }
+        if !skipknolldetection {
+            println!("Knoll detection part 2");
+            knolldetector(thread).unwrap();
+        }
+        println!("Contour generation part 1");
+        xyzknolls(thread).unwrap();
+
+        println!("Contour generation part 2");
+        if !skipknolldetection {
+            // contours 2.5
+            xyz2contours(thread, 2.5 * scalefactor, "xyz_knolls.xyz", "null", "out.dxf", false).unwrap();
+        } else {
+            xyz2contours(thread, 2.5 * scalefactor, "xyztemp.xyz", "null", "out.dxf", true).unwrap();
+        }
+        println!("Contour generation part 3");
+        smoothjoin(thread).unwrap();
+        println!("Contour generation part 4");
+        dotknolls(thread).unwrap();
+    }
+
+    println!("Vegetation generation");
+    makevegenew(thread).unwrap();
+
+    if !vegeonly {
+        println!("Cliff generation");
+        makecliffs(thread).unwrap();
+    }
+    let detectbuildings: bool = conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
+    if detectbuildings {
+        println!("Detecting buildings");
+        blocks(thread).unwrap();
+    }
+    if !skip_rendering {
+        println!("Rendering png map with depressions");
+        render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+        println!("Rendering png map without depressions");
+        render(thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+    } else {
+        println!("Skipped rendering");
+    }
+    println!("\n\nAll done!");
+    Ok(())
 }
 
 fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
@@ -5397,4 +5420,355 @@ fn pointdxfcrop(input: &Path, output: &Path, minx: f64, miny: f64, maxx: f64, ma
     let mut fp = BufWriter::new(fp);
     fp.write(out.as_bytes()).expect("Unable to write file");
     Ok(())
+}
+
+fn batch_process(thread: &String) {
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let lazfolder = conf.general_section().get("lazfolder").unwrap_or("");
+    let batchoutfolder = conf.general_section().get("batchoutfolder").unwrap_or("");
+    let savetempfiles: bool = conf.general_section().get("savetempfiles").unwrap() == "1";
+    let savetempfolders: bool = conf.general_section().get("savetempfolders").unwrap() == "1";
+    let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let vege_bitmode: bool = conf.general_section().get("vege_bitmode").unwrap_or("0") == "1";
+
+    fs::create_dir_all(batchoutfolder).expect("Could not create output folder");
+        
+    let mut zip_files: Vec<String> = Vec::new();
+    for element in Path::new(lazfolder).read_dir().unwrap() {
+        let path = element.unwrap().path();
+        if let Some(extension) = path.extension() {
+            if extension == "zip" {
+                zip_files.push(String::from(path.to_str().unwrap()));
+            }
+        }
+    }
+
+    let mut laz_files: Vec<PathBuf> = Vec::new();
+    for element in Path::new(lazfolder).read_dir().unwrap() {
+        let path = element.unwrap().path();
+        if let Some(extension) = path.extension() {
+            if extension == "laz" || extension == "las" {
+                laz_files.push(path);
+            }
+        }
+    }
+
+    for laz in &laz_files {
+        let laz = laz.as_path().file_name().unwrap().to_str().unwrap();
+        if Path::new(&format!("{}/{}.png", batchoutfolder, laz)).exists() {
+            // println!("Skipping {}.png it exists already in output folder.", laz);
+            continue;
+        }
+
+        println!("{} -> {}.png", laz, laz);
+        File::create(format!("{}/{}.png", batchoutfolder, laz)).unwrap();
+        if Path::new(&format!("header{}.xyz", thread)).exists() {
+            fs::remove_file(format!("header{}.xyz", thread)).unwrap();
+        }
+        let _result = Command::new("las2txt")
+            .arg("-i").arg(format!("{}/{}", lazfolder, laz))
+            .arg("-header").arg("pound")
+            .arg("-keep_xy").arg("0").arg("0").arg("0").arg("0")
+            .arg("-o").arg(format!("header{}.xyz", thread))
+            .output().unwrap();
+        let mut old_las2txt = false;
+        if !Path::new(&format!("header{}.xyz", thread)).exists() {
+            old_las2txt = true;
+            println!("las2txt failed, trying old las2txt command line format...");
+            let _result = Command::new("las2txt")
+                .arg("-i").arg(format!("{}/{}", lazfolder, laz))
+                .arg("-header").arg("pound")
+                .arg("-clip").arg("0").arg("0").arg("0").arg("0")
+                .arg("-o").arg(format!("header{}.xyz", thread))
+                .output().expect("las2txt command failed");
+        }
+
+        let header_filename = format!("header{}.xyz", thread);
+        let input = Path::new(&header_filename);
+        let data = fs::read_to_string(input)
+            .expect("Can not read input file");
+        let data: Vec<&str> = data.split("\n").collect();
+
+        let minxyz_re = Regex::new(r"^# min x y z +(-?\d+.?\d*) +(-?\d+.?\d*) +(-?\d+.?\d*)").unwrap();
+        let mut minx = f64::NAN;
+        let mut miny = f64::NAN;
+
+        let maxxyz_re = Regex::new(r"^# max x y z +(-?\d+.?\d*) +(-?\d+.?\d*) +(-?\d+.?\d*)").unwrap();
+        let mut maxx = f64::NAN;
+        let mut maxy = f64::NAN;
+
+        for line in data.iter() {
+            if minxyz_re.is_match(line) {
+                let vals = minxyz_re.captures(line).unwrap();
+                minx = vals.get(1).unwrap().as_str().parse::<f64>().unwrap_or(0.0);
+                miny = vals.get(2).unwrap().as_str().parse::<f64>().unwrap_or(0.0);
+            }
+            if maxxyz_re.is_match(line) {
+                let vals = maxxyz_re.captures(line).unwrap();
+                maxx = vals.get(1).unwrap().as_str().parse::<f64>().unwrap_or(0.0);
+                maxy = vals.get(2).unwrap().as_str().parse::<f64>().unwrap_or(0.0);
+            }
+        }
+
+        let minx2 = minx - 127.0;
+        let miny2 = miny - 127.0;
+        let maxx2 = maxx + 127.0;
+        let maxy2 = maxy + 127.0;
+
+        let mut args: Vec<String> = Vec::new();
+        
+        args.push(String::from("-i"));
+        for x in &laz_files {
+            args.push(x.to_str().unwrap().to_string())
+        }
+        args.push(String::from("-merged"));
+        args.push(String::from("-o"));
+        let argoutput = format!("temp{}.xyz", thread);
+        args.push(argoutput);
+        args.push(String::from("-parse"));
+        args.push(String::from("xyzcnri"));
+
+        if old_las2txt {
+            args.push(String::from("-clip"));
+        } else {
+            args.push(String::from("-inside"));
+        }
+        let argminx = format!("{}", minx2);
+        let argminy = format!("{}", miny2);
+        let argmaxx = format!("{}", maxx2);
+        let argmaxy = format!("{}", maxy2);
+        args.push(argminx);
+        args.push(argminy);
+        args.push(argmaxx);
+        args.push(argmaxy);
+
+        let zoff = conf.general_section().get("zoffset").unwrap_or("");
+        if zoff != "0" {
+            args.push(String::from("-translate_z"));
+            args.push(String::from(zoff));
+        }
+
+        let _result = Command::new("las2txt").args(&args).output().expect("las2txt command failed");
+
+        if zip_files.is_empty() {
+            process_tile(thread, &format!("temp{}.xyz", thread), false).unwrap();
+            println!("OK {}", laz)
+        } else {
+            process_tile(thread, &format!("temp{}.xyz", thread), true).unwrap();
+            process_zip(thread, &zip_files).unwrap();
+        }
+
+        // crop
+        if Path::new(&format!("pullautus{}.png", thread)).exists() {
+            let path = format!("pullautus{}.pgw", thread);
+            let tfw_in = Path::new(&path);
+            
+            let mut lines = read_lines(&tfw_in).expect("PGW file does not exist");
+            let tfw0 = lines.nth(0).expect("no 1 line").expect("Could not read line 1").parse::<f64>().unwrap();
+            let tfw1 = lines.nth(0).expect("no 2 line").expect("Could not read line 2").parse::<f64>().unwrap();
+            let tfw2 = lines.nth(0).expect("no 3 line").expect("Could not read line 3").parse::<f64>().unwrap();
+            let tfw3 = lines.nth(0).expect("no 4 line").expect("Could not read line 4").parse::<f64>().unwrap();
+            let tfw4 = lines.nth(0).expect("no 5 line").expect("Could not read line 5").parse::<f64>().unwrap();
+            let tfw5 = lines.nth(0).expect("no 6 line").expect("Could not read line 6").parse::<f64>().unwrap();
+            
+            let dx = minx - tfw4;
+            let dy = - maxy + tfw5;
+
+            let pgw_file_out = File::create(&tfw_in).expect("Unable to create file");
+            let mut pgw_file_out = BufWriter::new(pgw_file_out);
+            pgw_file_out.write(
+                format!(
+                    "{}\n{}\n{}\n{}\n{}\n{}\n",
+                    tfw0, tfw1, tfw2, tfw3, minx + tfw0 / 2.0, maxy - tfw0 / 2.0
+                ).as_bytes()
+            ).expect("Unable to write to file");
+            pgw_file_out.flush().unwrap();
+            fs::copy(
+                Path::new(&format!("pullautus{}.pgw", thread)),
+                Path::new(&format!("pullautus_depr{}.pgw", thread))
+            ).expect("Could not copy file");
+    
+            let orig_img = image::open(Path::new(&format!("pullautus{}.png", thread))).ok().expect("Opening image failed");
+            let mut img = RgbImage::from_pixel(
+                ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
+                ((maxy - miny) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
+                Rgb([255, 255, 255])
+            );
+            image::imageops::overlay(
+                &mut img,
+                &orig_img.to_rgb8(),
+                (-dx * 600.0 / 254.0 / scalefactor) as i64,
+                (-dy * 600.0 / 254.0 / scalefactor) as i64,
+            );
+            img.save(Path::new(&format!("pullautus{}.png", thread))).expect("could not save output png");
+            
+            let orig_img = image::open(Path::new(&format!("pullautus_depr{}.png", thread))).ok().expect("Opening image failed");
+            let mut img = RgbImage::from_pixel(
+                ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
+                ((maxy - miny) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
+                Rgb([255, 255, 255])
+            );
+            image::imageops::overlay(
+                &mut img,
+                &orig_img.to_rgb8(),
+                (-dx * 600.0 / 254.0 / scalefactor) as i64,
+                (-dy * 600.0 / 254.0 / scalefactor) as i64,
+            );
+            img.save(Path::new(&format!("pullautus_depr{}.png", thread))).expect("could not save output png");
+
+            fs::copy(Path::new(&format!("pullautus{}.png", thread)), Path::new(&format!("{}/{}.png", batchoutfolder, laz))).expect("Could not copy file to output folder");
+            fs::copy(Path::new(&format!("pullautus{}.pgw", thread)), Path::new(&format!("{}/{}.pgw", batchoutfolder, laz))).expect("Could not copy file to output folder");
+            fs::copy(Path::new(&format!("pullautus_depr{}.png", thread)), Path::new(&format!("{}/{}_depr.png", batchoutfolder, laz))).expect("Could not copy file to output folder");
+            fs::copy(Path::new(&format!("pullautus_depr{}.pgw", thread)), Path::new(&format!("{}/{}_depr.pgw", batchoutfolder, laz))).expect("Could not copy file to output folder");
+        }
+
+        if savetempfiles {
+            let path = format!("temp{}/undergrowth.pgw", thread);
+            let tfw_in = Path::new(&path);
+            let mut lines = read_lines(&tfw_in).expect("PGW file does not exist");
+            let tfw0 = lines.nth(0).expect("no 1 line").expect("Could not read line 1").parse::<f64>().unwrap();
+            let tfw1 = lines.nth(0).expect("no 2 line").expect("Could not read line 2").parse::<f64>().unwrap();
+            let tfw2 = lines.nth(0).expect("no 3 line").expect("Could not read line 3").parse::<f64>().unwrap();
+            let tfw3 = lines.nth(0).expect("no 4 line").expect("Could not read line 4").parse::<f64>().unwrap();
+            let tfw4 = lines.nth(0).expect("no 5 line").expect("Could not read line 5").parse::<f64>().unwrap();
+            let tfw5 = lines.nth(0).expect("no 6 line").expect("Could not read line 6").parse::<f64>().unwrap();
+            
+            let dx = minx - tfw4;
+            let dy = - maxy + tfw5;
+
+            let pgw_file_out = File::create(&Path::new(&format!("{}/{}_undergrowth.pgw", batchoutfolder, laz))).expect("Unable to create file");
+            let mut pgw_file_out = BufWriter::new(pgw_file_out);
+            pgw_file_out.write(
+                format!(
+                    "{}\n{}\n{}\n{}\n{}\n{}\n",
+                    tfw0, tfw1, tfw2, tfw3, minx + tfw0 / 2.0, maxy - tfw0 / 2.0
+                ).as_bytes()
+            ).expect("Unable to write to file");
+            pgw_file_out.flush().unwrap();
+
+            let orig_img = image::open(Path::new(&format!("temp{}/undergrowth.png", thread))).ok().expect("Opening image failed");
+            let mut img = RgbaImage::from_pixel(
+                ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
+                ((maxy - miny) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
+                Rgba([255, 255, 255, 0])
+            );
+            image::imageops::overlay(
+                &mut img,
+                &orig_img,
+                (-dx * 600.0 / 254.0 / scalefactor) as i64,
+                (-dy * 600.0 / 254.0 / scalefactor) as i64,
+            );
+            
+            let orig_img = image::open(Path::new(&format!("temp{}/vegetation.png", thread))).ok().expect("Opening image failed");
+            let mut img = RgbImage::from_pixel(
+                ((maxx - minx) + 1.0) as u32,
+                ((maxy - miny) + 1.0) as u32,
+                Rgb([255, 255, 255])
+            );
+            image::imageops::overlay(
+                &mut img,
+                &orig_img.to_rgb8(),
+                -dx as i64,
+                -dy as i64,
+            );
+            img.save(Path::new(&format!("{}/{}_vege.png", batchoutfolder, laz))).expect("could not save output png");
+
+            let pgw_file_out = File::create(&format!("{}/{}_vege.pgw", batchoutfolder, laz)).expect("Unable to create file");
+            let mut pgw_file_out = BufWriter::new(pgw_file_out);
+            pgw_file_out.write(
+                format!(
+                    "1.0\n0.0\n0.0\n-1.0\n{}\n{}\n",
+                    minx + 0.5, maxy - 0.5
+                ).as_bytes()
+            ).expect("Unable to write to file");
+            pgw_file_out.flush().unwrap();
+
+            if vege_bitmode {
+                let orig_img = image::open(Path::new(&format!("temp{}/vegetation_bit.png", thread))).ok().expect("Opening image failed");
+                let mut img = GrayImage::from_pixel(
+                    ((maxx - minx) + 1.0) as u32,
+                    ((maxy - miny) + 1.0) as u32,
+                    Luma([0])
+                );
+                image::imageops::overlay(
+                    &mut img,
+                    &orig_img.to_luma8(),
+                    -dx as i64,
+                    -dy as i64,
+                );
+                img.save(Path::new(&format!("{}/{}_vege_bit.png", batchoutfolder, laz))).expect("could not save output png");
+                
+                let orig_img = image::open(Path::new(&format!("temp{}/undergrowth_bit.png", thread))).ok().expect("Opening image failed");
+                let mut img = GrayImage::from_pixel(
+                    ((maxx - minx) + 1.0) as u32,
+                    ((maxy - miny) + 1.0) as u32,
+                    Luma([0])
+                );
+                image::imageops::overlay(
+                    &mut img,
+                    &orig_img.to_luma8(),
+                    -dx as i64,
+                    -dy as i64,
+                );
+                img.save(Path::new(&format!("{}/{}_undergrowth_bit.png", batchoutfolder, laz))).expect("could not save output png");
+
+                fs::copy(
+                    Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
+                    Path::new(&format!("{}/{}_vege_bit.pgw", batchoutfolder, laz))
+                ).expect("Could not copy file");
+
+                fs::copy(
+                    Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
+                    Path::new(&format!("{}/{}_undergrowth_bit.pgw", batchoutfolder, laz))
+                ).expect("Could not copy file");
+            }
+            let dxf_files = vec![
+                "out2",
+                "c2g",
+                "c3g",
+                "contours03",
+                "detected",
+                "formlines",
+            ];
+            for dxf_file in dxf_files.iter() {
+                if Path::new(&format!("temp{}/{}.dxf", thread, dxf_file)).exists() {
+                    polylinedxfcrop(
+                        Path::new(&format!("temp{}/{}.dxf", thread, dxf_file)), 
+                        Path::new(&format!("{}/{}_{}.dxf", batchoutfolder, laz, dxf_file)),
+                        minx, miny, maxx, maxy,
+                    ).unwrap();
+                }
+            }
+            if Path::new(&format!("temp{}/dotknolls.dxf", thread)).exists() {
+                pointdxfcrop(
+                    Path::new(&format!("temp{}/dotknolls.dxf", thread)), 
+                    Path::new(&format!("{}/{}_dotknolls.dxf", batchoutfolder, laz)),
+                    minx, miny, maxx, maxy,
+                ).unwrap();
+            }
+        }
+
+        if Path::new(&format!("temp{}/basemap.dxf", thread)).exists() {
+            polylinedxfcrop(
+                Path::new(&format!("temp{}/basemap.dxf", thread)), 
+                Path::new(&format!("{}/{}_basemap.dxf", batchoutfolder, laz)),
+                minx, miny, maxx, maxy,
+            ).unwrap();
+        }
+
+        if savetempfolders {
+            fs::create_dir_all(format!("temp_{}_dir", laz)).expect("Could not create output folder");
+            for element in Path::new(&format!("temp{}", thread)).read_dir().unwrap() {
+                let path = element.unwrap().path();
+                if path.is_file() {
+                    let filename = &path.as_path().file_name().unwrap().to_str().unwrap();
+                    fs::copy(
+                        &path,
+                        Path::new(&format!("temp_{}_dir/{}", laz, filename)
+                    )).unwrap();
+                }
+            }
+        }
+    }
+    return();
 }
