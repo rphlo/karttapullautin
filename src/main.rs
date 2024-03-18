@@ -3362,8 +3362,6 @@ EOF"
                 p[3] = 0;
             }
         }
-        let new_width = (w as f64) * 600.0 / 254.0 / scalefactor;
-        let new_height = (h as f64) * 600.0 / 254.0 / scalefactor;
         let mut blockpurple = image::imageops::crop(&mut blockpurple, 0, 0, w, h).to_image();
         let blockpurple_thumb = image::imageops::resize(
             &mut blockpurple,
@@ -3388,8 +3386,6 @@ EOF"
                 p[3] = 0;
             }
         }
-        let new_width = (w as f64) * 600.0 / 254.0 / scalefactor;
-        let new_height = (h as f64) * 600.0 / 254.0 / scalefactor;
         let mut imgbb = image::imageops::crop(&mut imgbb, 0, 0, w, h).to_image();
         let imgbb_thumb = image::imageops::resize(
             &mut imgbb,
@@ -3592,9 +3588,6 @@ EOF"
                 p[3] = 0;
             }
         }
-        let new_width = (w as f64) * 600.0 / 254.0 / scalefactor;
-        let new_height = (h as f64) * 600.0 / 254.0 / scalefactor;
-        let mut high = image::imageops::crop(&mut high, 0, 0, w, h).to_image();
         let high_thumb = image::imageops::resize(
             &mut high,
             new_width as u32,
