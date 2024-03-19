@@ -677,7 +677,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
         indexcontours = 5.0 * contour_intervall;
     }
 
-    let interval = 2.5 * halfintervall;
+    let interval = halfintervall;
     let path = format!("{}/xyz_knolls.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
     let mut size: f64 = f64::NAN;
