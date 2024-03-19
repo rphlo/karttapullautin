@@ -5715,8 +5715,16 @@ fn batch_process(thread: &String) {
                     Path::new(&format!("{}/{}_undergrowth_bit.pgw", batchoutfolder, laz))
                 ).expect("Could not copy file");
             }
+
+
+            if Path::new(&format!("temp{}/out2.dxf", thread)).exists() {
+                polylinedxfcrop(
+                    Path::new(&format!("temp{}/out2.dxf", thread)), 
+                    Path::new(&format!("{}/{}_contours.dxf", batchoutfolder, laz)),
+                    minx, miny, maxx, maxy,
+                ).unwrap();
+            }
             let dxf_files = vec![
-                "out2",
                 "c2g",
                 "c3g",
                 "contours03",
