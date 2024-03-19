@@ -1,32 +1,23 @@
 # Rusty Kartta Pullautin
 ### ***Rusty Map Generator***
 
-Rusty-Pullauta is a application that is designed to generate highly accurate maps out of LIDAR data input files. Built using the Rust programming language, Rusty-Pullauta is an efficient fork of the Kartta-pullautin Windows software, that takes advantage of Rust's performance to deliver faster and copy conform results on Linux, Mac and Windows.
+Rusty-Pullauta is an application that is designed to generate highly accurate maps out of LiDAR data input files. Built using the Rust programming language, Rusty-Pullauta is an efficient rewrite of the Kartta-pullautin Windows software originally written in perl. It takes advantage of Rust's performance to deliver faster and copy conform results on Linux, Mac and Windows.
 
-With Rusty-Pullauta, users can expect to achieve up to 10 times faster results compared to the previous software it was forked from. This is achieved through the use of Rust's ability to compile to efficient code.
+With Rusty-Pullauta, users can expect to achieve up to 10 times faster results compared to the perl predecessor. This is achieved through the use of Rust's ability to compile to efficient code.
 
-Rusty-Pullauta supports a wide range of LIDAR data input file formats, including LAS, LAZ, and XYZ. The software also includes advanced algorithms for filtering, classification, and feature extraction, ensuring that users can generate highly accurate maps with ease.
+Rusty-Pullauta supports a wide range of LiDAR data input file formats, namely LAS, LAZ, and XYZ. The software uses advanced algorithms for filtering, classification, and feature extraction, ensuring that users can generate highly accurate maps.
 
-In addition to its performance and accuracy, With its powerful features and fast results, Rusty-Pullauta is a must-have tool for anyone working with LIDAR data to generate orienteering maps.
+Due to its performance and accuracy, with its powerful features and fast results, Rusty-Pullauta is the must-have tool to automatically generate orienteering maps from LiDAR data.
 
-***Note: The original perl script has not been yet completly ported to rust and few steps are still executed with the old perl script, however you will be able to use this program to to generate maps from start to finish.***
+***Note: The original perl script has not been yet completly ported to rust, the shape files drawing step is still executed with the a portion of perl script***
 
 ## Usage
+You can download and extract the latest binary of rust-pullauta for your platform from the latest releases.
 
-You can download latest binary for rust-pullauta for your platform from the latest tags.  
-https://github.com/rphlo/rusty-pullauta/releases/latest
-
-Unzip the file and copy the rusty-pullauta file to your $PATH  
-e.g. `cp rusty-pullauta /usr/local/bin/`
+See: https://github.com/rphlo/rusty-pullauta/releases/latest
 
 ### Dependencies
-1. For the script to work you may need to install some perl script dependencies:
-
-    `cpan install GD POSIX Config::Tiny Geo::ShapeFile`
-
-    GD might require you to install libgd on your system
-
-2. You'll also need the las2txt binary that you can compile with:  
+1. You'll need the las2txt binary that you can compile with:  
     ```
     git clone https://github.com/LAStools/LAStools
     cd LAStools
@@ -34,18 +25,23 @@ e.g. `cp rusty-pullauta /usr/local/bin/`
     cp bin/las2txt /usr/local/bin/
     ```
 
+2. If you want to use the shape file drawing step on linux or mac, for the script to work, you will need to install some perl script dependencies:
+
+    `cpan install GD POSIX Config::Tiny Geo::ShapeFile`
+
+    GD might require you to install libgd on your system
+
 ### Converting a LiDAR file
-You can finnaly run perl script with the path to your .LAZ or .XYZ file as argument:  
-`perl pullauta L3323H3.laz`
+You can run the rusty-pullauta executable with the path to your .LAZ, .LAS or .XYZ file as argument:  
+`rusty-pullauta L3323H3.laz`
 
 For more advanced usage read the `readme.txt` file.
 
 ## Development
-
 Make your changes, if you modify the rust script you must run:
 
 `cargo build --release`
 
-Then add the new binary to your $PATH, for example:
+Then copy the executable to your current directory:
 
-`cp target/release/rusty-pullauta /usr/local/bin/`
+`cp target/release/rusty-pullauta .`
