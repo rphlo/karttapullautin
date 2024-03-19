@@ -240,7 +240,7 @@ jarkkos2019=1
 vege_bitmode=0
 vegeonly=0
 yellow_smoothing=0
-contour_intervall=5
+contour_interval=5
 ".as_bytes()).expect("Cannot write file");
     }
 
@@ -607,8 +607,8 @@ fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result
 
     fs::copy(format!("{}/xyz_03.xyz", tmpfolder), format!("{}/xyz2.xyz", tmpfolder)).expect("Could not copy file");
 
-    let contour_intervall: f64 = conf.general_section().get("contour_intervall").unwrap_or("5").parse::<f64>().unwrap_or(5.0);
-    let halfintervall = contour_intervall / 2.0 * scalefactor;
+    let contour_interval: f64 = conf.general_section().get("contour_interval").unwrap_or("5").parse::<f64>().unwrap_or(5.0);
+    let halfinterval = contour_interval / 2.0 * scalefactor;
 	
     if !vegeonly {
         let basemapcontours: f64 = conf.general_section().get("basemapinterval").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
@@ -626,9 +626,9 @@ fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result
         println!("Contour generation part 2");
         if !skipknolldetection {
             // contours 2.5
-            xyz2contours(thread, halfintervall, "xyz_knolls.xyz", "null", "out.dxf", false).unwrap();
+            xyz2contours(thread, halfinterval, "xyz_knolls.xyz", "null", "out.dxf", false).unwrap();
         } else {
-            xyz2contours(thread, halfintervall, "xyztemp.xyz", "null", "out.dxf", true).unwrap();
+            xyz2contours(thread, halfinterval, "xyztemp.xyz", "null", "out.dxf", true).unwrap();
         }
         println!("Contour generation part 3");
         smoothjoin(thread).unwrap();
@@ -671,13 +671,13 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
     let mut indexcontours: f64 = conf.general_section().get("indexcontours").unwrap_or("12.5").parse::<f64>().unwrap_or(12.5);
     let formline: f64 = conf.general_section().get("formline").unwrap_or("2").parse::<f64>().unwrap_or(2.0);
     let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
-    let contour_intervall: f64 = conf.general_section().get("contour_intervall").unwrap_or("5").parse::<f64>().unwrap_or(5.0);
-    let halfintervall = contour_intervall / 2.0 * scalefactor;
+    let contour_interval: f64 = conf.general_section().get("contour_interval").unwrap_or("5").parse::<f64>().unwrap_or(5.0);
+    let halfinterval = contour_interval / 2.0 * scalefactor;
     if formline > 0.0 {
-        indexcontours = 5.0 * contour_intervall;
+        indexcontours = 5.0 * contour_interval;
     }
 
-    let interval = halfintervall;
+    let interval = halfinterval;
     let path = format!("{}/xyz_knolls.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
     let mut size: f64 = f64::NAN;
