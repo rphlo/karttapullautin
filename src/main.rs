@@ -374,6 +374,15 @@ contour_interval=5
         xyzknolls(&thread).unwrap();
     }
 
+    if command == "unzipmtk" {
+        println!("{}", args.join(", "));
+        unzipmtk(&thread, &args).unwrap();
+    }
+
+    if command == "mtkshaperender" {
+        mtkshaperender(&thread).unwrap();
+    }
+
     if command == "xyz2contours" {
         let cinterval: f64 = args[0].parse::<f64>().unwrap();
         let xyzfilein = args[1].clone();
@@ -446,31 +455,57 @@ fn process_zip(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn E
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let pnorthlinesangle: f64 = conf.general_section().get("northlinesangle").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
     let pnorthlineswidth: usize = conf.general_section().get("northlineswidth").unwrap_or("0").parse::<usize>().unwrap_or(0);
-
-    println!("ZIP processing not implemented in rust, switching to perl");
-    if cfg!(target_os = "windows") {
-        Command::new("pullauta.exe")
-            .arg(thread)
-            .arg("unzipmtk")
-            .args(filenames)
-            .stdout(Stdio::inherit())
-            .output()
-            .expect("Failed to run pullauta thread");
-    } else {
-        Command::new("perl")
-            .arg("pullauta")
-            .arg(thread)
-            .arg("unzipmtk")
-            .args(filenames)
-            .stdout(Stdio::inherit())
-            .output()
-            .expect("Failed to run pullauta thread");
-    }
     
+    println!("Rendering  shape files");
+    unzipmtk(thread, filenames).unwrap();
     println!("Rendering png map with depressions");
     render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
     println!("Rendering png map without depressions");
     render(thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+    Ok(())
+}
+
+fn unzipmtk(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn Error>>  {
+    if Path::new(&format!("temp{}/low.png", thread)).exists() {
+        fs::remove_file(format!("temp{}/low.png", thread)).unwrap();
+    }
+    if Path::new(&format!("temp{}/high.png", thread)).exists() {
+        fs::remove_file(format!("temp{}/high.png", thread)).unwrap();
+    }
+
+    for zip_name in filenames.iter() {
+        let fname = Path::new(&zip_name);
+        let file = fs::File::open(fname).unwrap();
+        let mut archive = zip::ZipArchive::new(file).unwrap();
+        archive.extract(Path::new(&format!("temp{}/", thread))).unwrap();
+        mtkshaperender(thread).unwrap();
+    }
+    Ok(())
+}    
+
+fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
+    println!("Shape file processing not implemented in rust, switching to perl");
+    
+    let cmd;
+    let mut args : Vec<String> = vec![];
+    if cfg!(target_os = "windows") {
+        cmd = String::from("pullauta.exe");
+    } else {
+        cmd = String::from("perl");
+        args.push(String::from("pullauta"))
+    }
+    if thread != &"" {
+        args.push(thread.to_string());
+    }
+    args.push(String::from("mtkshaperender"));
+
+    Command::new(cmd)
+        .args(args)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()
+        .expect("Failed to run pullauta thread");
+
     Ok(())
 }
 
