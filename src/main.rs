@@ -263,7 +263,7 @@ contour_interval=5
 
     let accepted_files_re = Regex::new(r"\.(las|laz|xyz)$").unwrap();
     if command == "" || accepted_files_re.is_match(&command.to_lowercase())  {
-        println!("This is rusty karttapulatin... There is no warranty. Use it at your own risk!\n");
+        println!("Rusty Karttapulatin...\nThere is no warranty. Use it at your own risk!\n");
     }
     
     let batch: bool = conf.general_section().get("batch").unwrap() == "1";
@@ -283,7 +283,57 @@ contour_interval=5
     }
 
     if command == "" && !batch {
-        println!("USAGE:\npullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee readme.txt for more details");
+        println!("USAGE:\nrusty-pullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee readme.txt for more details");
+        return();
+    }
+    
+    if command == "cliffgeneralize" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "ground" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "ground2" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "groundfix" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "profile" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "makecliffsold" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "makeheight" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "makevege" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "xyzfixer" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
+        return();
+    }
+
+    if command == "vege" {
+        println!("Not implemented in rusty-pullauta, use the perl version");
         return();
     }
 
@@ -308,22 +358,9 @@ contour_interval=5
         }
         return();
     }
-    
-    if command == "ground" {
-        println!("Not implemented");
-        return();
-    }
 
-    if command == "ground2" {
-        println!("Not implemented");
-        return();
-    }
     if command == "knolldetector" {
         knolldetector(&thread).unwrap();
-        return();
-    }
-    if command == "groundfix" {
-        println!("Not implemented");
         return();
     }
 
@@ -373,11 +410,6 @@ contour_interval=5
         let maxx = args[4].parse::<f64>().unwrap();
         let maxy = args[5].parse::<f64>().unwrap();
         pointdxfcrop(&dxffilein, &dxffileout, minx, miny, maxx, maxy).unwrap();
-        return();
-    }
-
-    if command == "profile" {
-        println!("Not implemented");
         return();
     }
 
