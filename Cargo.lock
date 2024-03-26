@@ -233,6 +233,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef8ae57c4978a2acd8b869ce6b9ca1dfe817bff704c220209fdef2c0b75a01b9"
 
 [[package]]
+name = "dbase"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "847c0b5d4f3a3d80f9c64db3cb60eb00304b3ea1262c7299dd6274a83e714d24"
+dependencies = [
+ "byteorder",
+ "time",
+]
+
+[[package]]
 name = "deranged"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -870,6 +880,7 @@ dependencies = [
  "rand 0.8.5",
  "regex",
  "rust-ini",
+ "shapefile",
  "zip",
 ]
 
@@ -928,6 +939,16 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+]
+
+[[package]]
+name = "shapefile"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79d5472e932503059d02779ad2c1b96258980940c6923e49f427fbe80eb3053c"
+dependencies = [
+ "byteorder",
+ "dbase",
 ]
 
 [[package]]
