@@ -499,7 +499,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>>  {
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
         
         if Path::new(&dxf_filename).exists() && 
-           dxf_filename.ends_with("contours.dxf") {println!("{}", dxf_filename);
+           dxf_filename.ends_with("contours.dxf") {
             let input = Path::new(&dxf_filename);
             let data = fs::read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
