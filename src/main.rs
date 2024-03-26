@@ -4145,6 +4145,9 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Detecting knolls...");
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let contour_interval: f64 = conf.general_section().get("contour_interval").unwrap_or("5").parse::<f64>().unwrap_or(5.0);
+    let halfinterval = contour_interval / 2.0 * scalefactor;
+	
     let interval = 0.3 * scalefactor;
     let tmpfolder = format!("temp{}", thread);
     let path = format!("{}/xyz_03.xyz", tmpfolder);
@@ -4697,7 +4700,7 @@ ENTITIES
         let id = data[0].parse::<u64>().unwrap();
         let topid = data[3].parse::<u64>().unwrap();
         let el = *elevation.get(&id).unwrap();
-        let test = (el / 2.5 + 1.0).floor() * 2.5 - el;
+        let test = (el / halfinterval + 1.0).floor() * halfinterval - el;
         
         if !best.contains_key(&topid) {
             best.insert(topid, id);
