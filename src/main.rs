@@ -10,7 +10,7 @@ use std::fs::File;
 use std::fs;
 use std::io::{self, BufRead};
 use image::{RgbImage, RgbaImage, Rgb, Rgba, GrayImage, Luma};
-use std::process::{Command, Stdio};
+
 use std::io::{BufWriter, Write};
 use std::fs::OpenOptions;
 use std::collections::HashMap;
@@ -20,6 +20,12 @@ use imageproc::rect::Rect;
 use imageproc::filter::median_filter;
 use las::raw::Header;
 use las::{Reader, Read};
+use shapefile::dbase::FieldValue;
+use shapefile::ShapeType;
+
+mod canvas;
+use canvas::Canvas;
+
 
 fn main() {
     let mut thread: String = String::new();
@@ -987,28 +993,1139 @@ fn unzipmtk(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn Erro
 }    
 
 fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
-    println!("Shape file processing not implemented in rust, switching to perl");
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+    let buildingcolor: Vec<&str> = conf.general_section().get("buildingcolor").unwrap_or("0,0,0").split(",").collect();
+    let vectorconf = conf.general_section().get("vectorconf").unwrap_or("");
+    let mtkskip: Vec<&str> = conf.general_section().get("mtkstip").unwrap_or("").split(",").collect();
+    let mut vectorconf_lines: Vec<String> = vec![];
+    if vectorconf != "" {
+        let vectorconf_data = fs::read_to_string(Path::new(&vectorconf)).expect("Can not read input file");
+        vectorconf_lines = vectorconf_data.split("\n").collect::<Vec<&str>>().iter().map(|x| x.to_string()).collect();
+    }
+    let tmpfolder = format!("temp{}", thread);
+    if !Path::new(&format!("{}/vegetation.pgw", &tmpfolder)).exists() {
+        println!("Could not find vegetation file");
+        return Ok(());
+    }
+
+    let pgw = format!("{}/vegetation.pgw", tmpfolder);
+    let input = Path::new(&pgw);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let d: Vec<&str> = data.split("\n").collect();
+
+    let x0 = d[4].trim().parse::<f64>().unwrap();
+    let y0 = d[5].trim().parse::<f64>().unwrap();
+    // let resvege = d[0].trim().parse::<f64>().unwrap();
+
+    let img = image::open(Path::new(&format!("{}/vegetation.png", tmpfolder))).ok().expect("Opening image failed");
+    let w = img.width() as f64;
+    let h = img.height() as f64;
+
+    let outw = w * 600.0 / 254.0 / scalefactor;
+    let outh = h * 600.0 / 254.0 / scalefactor;
     
-    let cmd;
-    let mut args : Vec<String> = vec![];
-    if cfg!(target_os = "windows") {
-        cmd = String::from("pullauta.exe");
-    } else {
-        cmd = String::from("perl");
-        args.push(String::from("pullauta"))
-    }
-    if thread != &"" {
-        args.push(thread.to_string());
-    }
-    args.push(String::from("mtkshaperender"));
+    // let mut img2 = Canvas::new(outw as i32, outh as i32);
+    let mut imgbrown = Canvas::new(outw as i32, outh as i32);
+    let mut imgbrowntop = Canvas::new(outw as i32, outh as i32);
+    let mut imgblack = Canvas::new(outw as i32, outh as i32);
+    let mut imgblacktop = Canvas::new(outw as i32, outh as i32);
+    let mut imgyellow = Canvas::new(outw as i32, outh as i32);
+    let mut imgblue = Canvas::new(outw as i32, outh as i32);
+    let mut imgmarsh = Canvas::new(outw as i32, outh as i32);
+    let mut imgtempblack = Canvas::new(outw as i32, outh as i32);
+    let mut imgtempblacktop = Canvas::new(outw as i32, outh as i32);
+    let mut imgblue2 = Canvas::new(outw as i32, outh as i32);
 
-    Command::new(cmd)
-        .args(args)
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .output()
-        .expect("Failed to run pullauta thread");
+    let white = (255, 255, 255);
+    let unsetcolor = (5, 255, 255);
+    let black = (0, 0, 0);
+    let brown = (255, 150, 80);
 
+    let purple = (
+        buildingcolor[0].parse::<u8>().unwrap_or(0),
+        buildingcolor[1].parse::<u8>().unwrap_or(0),
+        buildingcolor[2].parse::<u8>().unwrap_or(0)
+    );
+    let yellow = (255, 184, 83);
+    let blue = (29, 190, 255);
+    let marsh = (0, 10, 220);
+    let olive = (194, 176, 33);
+    
+    let mut shp_files: Vec<PathBuf> = Vec::new();
+    for element in Path::new(&tmpfolder).read_dir().unwrap() {
+        let path = element.unwrap().path();
+        if let Some(extension) = path.extension() {
+            if extension == "shp" {
+                shp_files.push(path);
+            }
+        }
+    }
+
+    for shp_file in shp_files.iter() {
+        let file = shp_file.as_path().file_name().unwrap().to_str().unwrap();
+        let file = String::from(format!("{}/{}", tmpfolder, file));
+       
+        // drawshape comes here
+        let mut reader = shapefile::Reader::from_path(&file)?;
+        for shape_record in reader.iter_shapes_and_records() {
+            let (shape, record) = shape_record?;
+            //println!("Geometry: {}, Properties {:?}", shape, record);
+
+            let mut area = false;
+            let mut roadedge = 0.0;
+            let mut edgeimage = "black";
+            let mut image = "";
+            let mut thickness = 1.0;
+            let mut vari = unsetcolor;
+            let mut dashedline = false;
+            let mut border = 0.0;
+            
+            if vectorconf == "" {
+                // MML shape file
+                let mut luokka = String::new();
+                if let Some(fv) = record.get("LUOKKA") {
+                    if let FieldValue::Numeric(Some(f_luokka)) = fv {
+                        luokka = format!("{}", f_luokka);
+                    }
+                    if let FieldValue::Character(Some(c_luokka)) = fv {
+                        luokka = format!("{}", c_luokka);
+                    }
+                }
+                let mut versuh = 0.0;
+                if let Some(fv) = record.get("VERSUH") {
+                    if let FieldValue::Numeric(Some(f_versuh)) = fv {
+                        versuh = *f_versuh;
+                    }
+                }
+                // water streams
+                if ["36311", "36312"].contains(&luokka.as_str()) {
+                    thickness = 4.0;
+                    vari = marsh;
+                    image = "blue";
+                }
+
+                // pathes
+                if luokka == "12316" && versuh != -11.0 {
+                    thickness = 12.0;
+                    dashedline = true;
+                    image = "black";
+                    vari = black;
+                    if versuh > 0.0 {
+                        image = "blacktop";
+                    }
+                }
+
+                // large pathes
+                if (luokka == "12141" || luokka == "12314") && versuh != 11.0 {
+                    thickness = 12.0;
+                    image = "black";
+                    vari = black;
+                    if versuh > 0.0 {
+                        image = "blacktop";
+                    }
+                }
+
+                // roads
+                if [
+                    "12111",
+                    "12112",
+                    "12121",
+                    "12122",
+                    "12131",
+                    "12132",
+                ].contains(&luokka.as_str()) && versuh != 11.0 {
+                    imgbrown.set_line_width(20.0);
+                    imgbrowntop.set_line_width(20.0);
+                    thickness = 20.0;
+                    vari = brown;
+                    image = "brown";
+                    roadedge = 26.0;
+                    imgblack.set_line_width(26.0);
+                    if versuh > 0.0 {
+                        edgeimage = "blacktop";
+                        imgbrown.set_line_width(14.0);
+                        imgbrowntop.set_line_width(14.0);
+                        thickness = 14.0;
+                    }
+                }
+
+                // railroads
+                if [
+                    "14110",
+                    "14111",
+                    "14112",
+                    "14121",
+                    "14131"
+                ].contains(&luokka.as_str()) && versuh != 11.0 {
+                    image = "black";
+                    vari = white;
+                    thickness = 3.0;
+                    roadedge = 18.0;
+                    if versuh > 0.0 {
+                        image = "blacktop";
+                        edgeimage = "blacktop";
+                    }
+                }
+                
+                if luokka == "12312" && versuh != 11.0 {
+                    dashedline = true;
+                    thickness = 6.0;
+                    image = "black";
+                    vari = black;
+                    if versuh > 0.0 {
+                        image = "blacktop";
+                    }
+                }
+
+                if luokka == "12313" && versuh != 11.0 {
+                    dashedline = true;
+                    thickness = 5.0;
+                    image = "black";
+                    vari = black;
+                    if versuh > 0.0 {
+                        image = "blacktop";
+                    }
+                }
+
+                // power line
+                if [
+                    "22300",
+                    "22312",
+                    "44500",
+                    "223311"
+                ].contains(&luokka.as_str()) {
+                    imgblacktop.set_line_width(5.0);
+                    thickness = 5.0;
+                    vari = black;
+                    image = "blacktop";
+                }
+
+                // fence
+                if [
+                    "44211",
+                    "44213",
+                ].contains(&luokka.as_str()) {
+                    imgblacktop.set_line_width(7.0);
+                    thickness = 7.0;
+                    vari = black;
+                    image = "blacktop";
+                }
+
+                // Next are polygons
+
+                // fields
+                if luokka == "32611" {
+                    area = true;
+                    vari = yellow;
+                    border = 3.0;
+                    image = "yellow";
+                }
+
+                // lake 
+                if [
+                    "36200",
+                    "36211",
+                    "36313",
+                    "38700",
+                    "44300",
+                    "45111",
+                    "54112"
+                ].contains(&luokka.as_str()) {
+                    area = true;
+                    vari = blue;
+                    border = 5.0;
+                    image = "blue";
+                }
+
+                // impassable marsh 
+                if [
+                    "35421",
+                    "38300",
+                ].contains(&luokka.as_str()) {
+                    area = true;
+                    vari = marsh;
+                    border = 3.0;
+                    image = "marsh";
+                }
+
+                // regular marsh 
+                if [
+                    "35400",
+                    "35411"
+                ].contains(&luokka.as_str()) {
+                    area = true;
+                    vari = marsh;
+                    border = 0.0;
+                    image = "marsh";
+                }
+                
+                // marshy 
+                if [
+                    "35300",
+                    "35412",
+                    "35422"
+                ].contains(&luokka.as_str()) {
+                    area = true;
+                    vari = marsh;
+                    border = 0.0;
+                    image = "marsh";
+                }
+
+                // marshy 
+                if [
+                    "42210",
+                    "42211",
+                    "42212",
+                    "42220",
+                    "42221",
+                    "42222",
+                    "42230",
+                    "42231",
+                    "42232",
+                    "42240",
+                    "42241",
+                    "42242",
+                    "42270",
+                    "42250",
+                    "42251",
+                    "42252",
+                    "42260",
+                    "42261",
+                    "42262"
+                ].contains(&luokka.as_str()) {
+                    area = true;
+                    vari = purple;
+                    border = 0.0;
+                    image = "black";
+                }
+
+                // settlement
+                if ["32000",
+                    "40200",
+                    "62100",
+                    "32410",
+                    "32411",
+                    "32412",
+                    "32413",
+                    "32414",
+                    "32415",
+                    "32416",
+                    "32417",
+                    "32418"
+                ].contains(&luokka.as_str()) {
+                    area = true;
+                    vari = olive;
+                    border = 0.0;
+                    image = "yellow";
+                }
+
+                // airport runway, car parkings
+                if ["32411",
+                    "32412",
+                    "32415",
+                    "32417",
+                    "32421",
+                ].contains(&luokka.as_str()) {
+                    area = true;
+                    vari = brown;
+                    border = 0.0;
+                    image = "yellow";
+                }
+
+                if mtkskip.contains(&luokka.as_str()) {
+                    vari = unsetcolor;
+                }
+
+            } else {
+                // configuration based drawing
+                for conf_row in vectorconf_lines.iter() {
+                    let row_data: Vec<&str> = conf_row.trim().split("|").collect();
+                    if row_data.len() < 3 {
+                        continue;
+                    }
+                    let isom = row_data[1];
+                    let mut keyvals: Vec<(String, String, String)> = vec![];
+                    let params: Vec<&str> = row_data[2].split("&").collect();
+                    for param in params {
+                        let mut operator = "=";
+                        let d: Vec<&str>;
+                        if param.contains("!=") {
+                            d = param.splitn(2, "!=").collect();
+                            operator = "!=";
+                        } else {
+                            d = param.splitn(2, "=").collect();
+                        }
+                        keyvals.push((operator.to_string(), d[0].trim().to_string(), d[1].trim().to_string()))
+                    }
+                    
+                    if isom == "306" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            imgblue.set_line_width(5.0);
+                            thickness = 4.0;
+                            vari = marsh;
+                            image = "blue";
+                        }
+                    }
+
+                    // small path
+                    if isom == "505" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            dashedline = true;
+                            thickness = 12.0;
+                            vari = black;
+                            image = "black";
+                        }
+                    }
+
+                    // small path top
+                    if isom == "505T" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            dashedline = true;
+                            thickness = 12.0;
+                            vari = black;
+                            image = "blacktop";
+                        }
+                    }
+
+                    // large path
+                    if isom == "504" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            imgblack.set_line_width(12.0);
+                            thickness = 12.0;
+                            vari = black;
+                            image = "black";
+                        }
+                    }
+
+                    // large path top
+                    if isom == "504T" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            imgblack.set_line_width(12.0);
+                            thickness = 12.0;
+                            vari = black;
+                            image = "blacktop";
+                        }
+                    }
+
+                    // road
+                    if isom == "503" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            imgbrown.set_line_width(20.0);
+                            imgbrowntop.set_line_width(20.0);
+                            vari = brown;
+                            image = "brown";
+                            roadedge = 26.0;
+                            thickness = 20.0;
+                            imgblack.set_line_width(26.0);
+                        }
+                    }
+
+                    // road, bridges
+                    if isom == "503T" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            edgeimage = "blacktop";
+                            imgbrown.set_line_width(14.0);
+                            imgbrowntop.set_line_width(14.0);
+                            vari = brown;
+                            image = "brown";
+                            roadedge = 26.0;
+                            thickness = 14.0;
+                            imgblack.set_line_width(26.0);
+                        }
+                    }
+
+
+                    // railroads
+                    if isom == "515" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            vari = white;
+                            image = "black";
+                            roadedge = 18.0;
+                            thickness = 3.0;
+                        }
+                    }
+
+                    // railroads top
+                    if isom == "515T" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            vari = white;
+                            image = "blacktop";
+                            edgeimage = "blacktop";
+                            roadedge = 18.0;
+                            thickness = 3.0;
+                        }
+                    }
+
+                    // small path
+                    if isom == "507" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            dashedline = true;
+                            vari = black;
+                            image = "black";
+                            thickness = 6.0;
+                            imgblack.set_line_width(6.0);
+                        }
+                    }
+                    
+                    // small path top
+                    if isom == "507T" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            dashedline = true;
+                            vari = black;
+                            image = "blacktop";
+                            thickness = 6.0;
+                            imgblack.set_line_width(6.0);
+                        }
+                    }
+                    
+                    // powerline
+                    if isom == "516" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            vari = black;
+                            image = "blacktop";
+                            thickness = 5.0;
+                            imgblacktop.set_line_width(5.0);
+                        }
+                    }
+
+
+                    // fence
+                    if isom == "524" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            vari = black;
+                            image = "black";
+                            thickness = 7.0;
+                            imgblacktop.set_line_width(7.0); 
+                        }
+                    }
+                    
+                    // blackline
+                    if isom == "414" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            vari = black;
+                            image = "black";
+                            thickness = 4.0; 
+                        }
+                    }
+
+                    // areas
+
+                    // fields
+                    if isom == "401" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            area = true;
+                            vari = yellow;
+                            border = 3.0; 
+                            image = "yellow";
+                        }
+                    }
+                    // lakes
+                    if isom == "301" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            area = true;
+                            vari = blue;
+                            border = 5.0; 
+                            image = "blue";
+                        }
+                    }
+                    // marshes
+                    if isom == "310" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            area = true;
+                            vari = marsh; 
+                            image = "marsh";
+                        }
+                    }
+                    // buildings
+                    if isom == "526" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            area = true;
+                            vari = purple;
+                            image = "black";
+                        }
+                    }
+                    // settlements
+                    if isom == "527" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            area = true;
+                            vari = olive; 
+                            image = "yellow";
+                        }
+                    }
+                    // car parkings border
+                    if isom == "529.1" || isom == "301.1" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            thickness = 2.0;
+                            vari = black; 
+                            image = "black";
+                        }
+                    }
+                    // car park area
+                    if isom == "529" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            area = true;
+                            vari = brown; 
+                            image = "yellow";
+                        }
+                    }
+                    // car park top
+                    if isom == "529T" {
+                        let mut is_ok = true;
+                        for keyval in keyvals.iter() {
+                             if let Some(recordfv) = record.get(&keyval.1) {
+                                let mut r = String::new();
+                                if let FieldValue::Character(Some(record_str)) = recordfv {
+                                    r = format!("{}", record_str).trim().to_string();
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                        is_ok = false;
+                                }
+                            }  
+                        }
+                        if is_ok {
+                            area = true;
+                            vari = brown; 
+                            image = "brown";
+                        }
+                    }
+                }
+            }
+
+            if vari != unsetcolor {
+                if !area && shape.shapetype() == ShapeType::Polyline {
+                    let mut poly: Vec<(f32, f32)> = vec![];
+                    let polyline = shapefile::Polyline::try_from(shape).unwrap();
+                    for points in polyline.parts().iter() {
+                        for point in points.iter() {
+                            let x = point.x;
+                            let y = point.y;
+                            poly.push((
+                                (600.0 / 254.0 / scalefactor * (x - x0)).floor() as f32,
+                                (600.0 / 254.0 / scalefactor * (y0 - y)).floor() as f32
+                            ));
+                        }
+                    }
+                    if roadedge > 0.0 {
+                        if edgeimage == "blacktop" {
+                            imgblacktop.unset_stroke_cap();
+                            imgblacktop.set_line_width(roadedge);
+                            imgblacktop.set_color(black);
+                            imgblacktop.draw_polyline(&poly);
+                            imgblacktop.set_line_width(thickness);
+                        } else {
+                            imgblack.set_color(black);
+                            imgblack.set_stroke_cap_round();
+                            imgblack.set_line_width(roadedge);
+                            imgblack.draw_polyline(&poly);
+                            imgblack.set_line_width(thickness);
+                            imgblack.unset_stroke_cap();
+                        }
+                    }
+
+                    if !dashedline {
+                        if image == "blacktop" {
+                            imgblacktop.set_line_width(thickness);
+                            imgblacktop.set_color(vari);
+                            if thickness >= 9.0 {
+                                imgblacktop.set_stroke_cap_round();
+                            }
+                            imgblacktop.draw_polyline(&poly);
+                            imgblacktop.unset_stroke_cap();
+                        }
+                        if image == "black" {
+                            imgblack.set_line_width(thickness);
+                            imgblack.set_color(vari);
+                            if thickness >= 9.0 {
+                                imgblack.set_stroke_cap_round();
+                            } else {
+                                imgblack.unset_stroke_cap();
+                            }
+                            imgblack.draw_polyline(&poly); 
+                        }
+                    } else {
+                        if image == "blacktop" {
+                            let interval_on = 1.0 + thickness * 8.0;
+                            if thickness >= 9.0 {
+                                imgtempblacktop.set_dash(interval_on, thickness * 1.6);
+                                imgtempblacktop.set_stroke_cap_round();
+                            }
+                            imgtempblacktop.set_color(vari);
+                            imgtempblacktop.set_line_width(thickness);
+                            imgtempblacktop.draw_polyline(&poly);
+                            imgtempblacktop.unset_dash();
+                            imgtempblacktop.unset_stroke_cap();
+                        }
+                        if image == "black" {
+                            let interval_on = 1.0 + thickness * 8.0;
+                            if thickness >= 9.0 {
+                                imgtempblack.set_dash(interval_on, thickness * 1.6);
+                                imgtempblack.set_stroke_cap_round();
+                            }
+                            imgtempblack.set_color(vari);
+                            imgtempblack.set_line_width(thickness);
+                            imgtempblack.draw_polyline(&poly);
+                            imgtempblack.unset_dash();
+                            imgtempblack.unset_stroke_cap();
+                        }
+                    }
+
+                    if image == "blue" {
+                        imgblue.set_color(vari);
+                        imgblue.set_line_width(thickness);
+                        imgblue.draw_polyline(&poly)
+                    }
+
+                    if image == "brown" {
+                        if edgeimage == "blacktop" {
+                            imgbrowntop.set_line_width(thickness);
+                            imgbrowntop.set_color(brown);
+                            imgbrowntop.draw_polyline(&poly);
+                        } else {
+                            imgbrown.set_stroke_cap_round();
+                            imgbrown.set_line_width(thickness);
+                            imgbrown.set_color(brown);
+                            imgbrown.draw_polyline(&poly);
+                            imgbrown.unset_stroke_cap();
+                        }
+                    }
+                } else if area && shape.shapetype() == ShapeType::Polygon {
+                    let mut polys: Vec<Vec<(f32, f32)>> = vec![];
+                    let polygon = shapefile::Polygon::try_from(shape).unwrap();
+                    for ring in polygon.rings().iter() {
+                        let mut poly: Vec<(f32, f32)> = vec![];
+                        let mut polyborder: Vec<(f32, f32)> = vec![];
+                        for point in ring.points().iter() {
+                            let x = point.x;
+                            let y = point.y;
+                            poly.push((
+                                (600.0 / 254.0 / scalefactor * (x - x0)).floor() as f32,
+                                (600.0 / 254.0 / scalefactor * (y0 - y)).floor() as f32,
+                            ));
+                            polyborder.push((
+                                (600.0 / 254.0 / scalefactor * (x - x0)).floor() as f32,
+                                (600.0 / 254.0 / scalefactor * (y0 - y)).floor() as f32,
+                            ));
+                        }
+                        polys.push(poly);
+                        if border > 0.0 {
+                            imgblack.set_color(black);
+                            imgblack.set_line_width(border);
+                            imgblack.draw_closed_polyline(&polyborder);
+                        }
+                    }
+                    
+                    if image == "black" {
+                        imgblack.set_color(vari);
+                        imgblack.draw_filled_polygon(&polys)
+                    }
+                    if image == "blue" {
+                        imgblue.set_color(vari);
+                        imgblue.draw_filled_polygon(&polys)
+                    }
+                    if image == "yellow" {
+                        imgyellow.set_color(vari);
+                        imgyellow.draw_filled_polygon(&polys)
+                    }
+                    if image == "marsh" {
+                        imgmarsh.set_color(vari);
+                        imgmarsh.draw_filled_polygon(&polys)
+                    }
+                    if image == "brown" {
+                        imgbrown.set_color(vari);
+                        imgbrown.draw_filled_polygon(&polys)
+                    }
+                }
+            }
+        }
+
+        fs::remove_file(&file).unwrap();
+
+        let re = Regex::new(r"\.shp$").unwrap();
+        for ext in [".dbf", ".sbx", ".prj", ".shx", ".sbn", ".cpg"].iter() {
+            let delshp = re.replace(&file, String::from(*ext)).into_owned();
+            if Path::new(&delshp).exists() {
+                fs::remove_file(&delshp).unwrap();
+            }
+        }
+    }
+    imgblue2.overlay(&mut imgblue, 0.0, 0.0);
+    imgblue2.overlay(&mut imgblue, 1.0, 0.0);
+    imgblue2.overlay(&mut imgblue, 0.0, 1.0);
+    imgblue.overlay(&mut imgblue2, 0.0, 0.0);
+
+    let mut i = 0.0 as f32;
+    imgmarsh.set_transparent_color();
+    while i < ((h * 600.0 / 254.0 / scalefactor + 500.0) as f32) {
+        i += 14.0;
+        let wd = (w * 600.0 / 254.0 / scalefactor + 2.0) as f32;
+        imgmarsh.draw_filled_polygon(
+            &vec![vec![(-1.0, i), (wd, i), (wd, i + 10.0), (-1.0, i + 10.0), (-1.0, i)]]
+        )
+    }
+    imgblacktop.overlay(&mut imgtempblacktop, 0.0, 0.0);
+    imgblack.overlay(&mut imgtempblack, 0.0, 0.0);
+
+    imgyellow.overlay(&mut imgmarsh, 0.0, 0.0);
+
+    imgblue.overlay(&mut imgblack, 0.0, 0.0);
+    imgblue.overlay(&mut imgbrown, 0.0, 0.0);
+    imgblue.overlay(&mut imgblacktop, 0.0, 0.0);
+    imgblue.overlay(&mut imgbrowntop, 0.0, 0.0);
+    
+    if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
+        let mut low = Canvas::load_from(&format!("{}/low.png", tmpfolder));
+        imgyellow.overlay(&mut low, 0.0, 0.0)
+
+    }
+    
+    if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
+        let mut high = Canvas::load_from(&format!("{}/high.png", tmpfolder));
+        imgblue.overlay(&mut high, 0.0, 0.0);
+    }
+
+    imgblue.save_as(&format!("{}/high.png", tmpfolder));
+    imgyellow.save_as(&format!("{}/low.png", tmpfolder));
     Ok(())
 }
 
@@ -3746,7 +4863,6 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
                 }
             }
         }
-
 
         let input_filename = &format!("{}/c3g.dxf", tmpfolder);
         let input = Path::new(input_filename);
