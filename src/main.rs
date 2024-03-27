@@ -18,7 +18,8 @@ use rand::prelude::*;
 use imageproc::drawing::{draw_filled_rect_mut, draw_line_segment_mut, draw_filled_circle_mut};
 use imageproc::rect::Rect;
 use imageproc::filter::median_filter;
-
+use las::raw::Header;
+use las::{Reader, Read};
 
 fn main() {
     let mut thread: String = String::new();
@@ -1018,7 +1019,7 @@ fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result
     fs::create_dir_all(&tmpfolder).expect("Could not create tmp folder");
     let pnorthlinesangle: f64 = conf.general_section().get("northlinesangle").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
     let pnorthlineswidth: usize = conf.general_section().get("northlineswidth").unwrap_or("0").parse::<usize>().unwrap_or(0);
-
+    let mut rng = rand::thread_rng();
     let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
     if vegemode {
         println!("vegemode=1 not implemented in rusty-pullauta");
@@ -1045,89 +1046,45 @@ fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result
     }
 
     if !skiplaz2txt {
-        let out = Command::new("las2txt")
-                .arg("-version")
-                .output()
-                .expect("las2txt command failed to start");
-        if out.status.success() {
-            let mut thinfactor: f64 = conf.general_section().get("thinfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-            if thinfactor == 0.0 {
-                thinfactor = 1.0;
-            }
-            if thinfactor != 1.0 {
-                println!("Using thinning factor {}", thinfactor); 
-            }
-
-            let mut xfactor: f64 = conf.general_section().get("coordxfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-            let mut yfactor: f64 = conf.general_section().get("coordyfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-            let mut zfactor: f64 = conf.general_section().get("coordzfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
-            let zoff: f64 = conf.general_section().get("zoffset").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
-            if xfactor == 0.0 {
-                xfactor = 1.0;
-            }
-            if yfactor == 0.0 {
-                yfactor = 1.0;
-            }
-            if zfactor == 0.0 {
-                zfactor = 1.0;
-            }
-
-            if xfactor == 1.0 && yfactor == 1.0 && zfactor == 1.0 && zoff == 0.0 {
-                let _result = Command::new("las2txt")
-                    .arg("-i")
-                    .arg(filename)
-                    .arg("-parse")
-                    .arg("xyzcnri")
-                    .arg("-keep_random_fraction")
-                    .arg(format!("{}", thinfactor))
-                    .arg("-o")
-                    .arg(format!("{}/xyztemp.xyz", tmpfolder))
-                    .output().unwrap();
-            } else {
-                let _result = Command::new("las2txt")
-                .arg("-i")
-                .arg(filename)
-                .arg("-parse")
-                .arg("xyzcnri")
-                .arg("-keep_random_fraction")
-                .arg(format!("{}", thinfactor))
-                .arg("-o")
-                .arg(format!("{}/xyztemp1.xyz", tmpfolder))
-                .output().expect("las2txt command failed");
-
-                println!("Scaling xyz...");
-
-                let path_in = format!("{}/xyztemp1.xyz", tmpfolder);
-                let xyz_file_in = Path::new(&path_in);
-
-                let path_out = format!("{}/xyztemp.xyz", tmpfolder);
-                let xyz_file_out = File::create(&path_out).expect("Unable to create file");
-                let mut xyz_file_out = BufWriter::new(xyz_file_out);
-                
-                if let Ok(lines) = read_lines(&xyz_file_in) {
-                    for line in lines {
-                        let ip = line.unwrap_or(String::new());
-                        let parts = ip.split(" ");
-                        let r = parts.collect::<Vec<&str>>();
-                        let x: f64 = r[0].parse::<f64>().unwrap();
-                        let y: f64 = r[1].parse::<f64>().unwrap();
-                        let z: f64 = r[2].parse::<f64>().unwrap();
-                        let (_xyz, rest) = r.split_at(3);
-                        xyz_file_out.write(format!(
-                            "{} {} {} {}\r\n",
-                            x * xfactor,
-                            y * yfactor,
-                            z * zfactor + zoff,
-                            rest.join(" ")
-                        ).as_bytes()).expect("Cannot write xyz file");
-                    }
-                }
-                fs::remove_file(path_in).unwrap();
-            }
-        } else {
-            println!("Can not find las2txt binary. It is needed if input file is not xyz file with xyzc data. Make sure it is in $PATH");
-            return Ok(());
+        let mut thinfactor: f64 = conf.general_section().get("thinfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+        if thinfactor == 0.0 {
+            thinfactor = 1.0;
         }
+        if thinfactor != 1.0 {
+            println!("Using thinning factor {}", thinfactor); 
+        }
+
+        let mut xfactor: f64 = conf.general_section().get("coordxfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+        let mut yfactor: f64 = conf.general_section().get("coordyfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+        let mut zfactor: f64 = conf.general_section().get("coordzfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
+        let zoff: f64 = conf.general_section().get("zoffset").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
+        if xfactor == 0.0 {
+            xfactor = 1.0;
+        }
+        if yfactor == 0.0 {
+            yfactor = 1.0;
+        }
+        if zfactor == 0.0 {
+            zfactor = 1.0;
+        }
+
+        let tmp_filename = format!("{}/xyztemp.xyz", tmpfolder);
+        let tmp_file = File::create(&tmp_filename).expect("Unable to create file");
+        let mut tmp_fp = BufWriter::new(tmp_file);
+
+        let mut reader = Reader::from_path(filename).expect("Unable to open reader");
+        for ptu in reader.points() {
+            let pt = ptu.unwrap();
+            if thinfactor == 1.0 || thinfactor > rng.gen() {
+                tmp_fp.write(
+                    format!(
+                        "{} {} {} {} {} {} {}\r\n",
+                        pt.x * xfactor, pt.y * yfactor, pt.z * zfactor + zoff, u8::from(pt.classification), pt.number_of_returns, pt.return_number, pt.intensity
+                    ).as_bytes()
+                ).expect("Could not write temp file");
+            }
+        }
+        tmp_fp.flush().unwrap();
     } else {
         fs::copy(Path::new(filename), Path::new(&format!("{}/xyztemp.xyz", tmpfolder))).expect("Could not copy file to tmpfolder");
     }
@@ -5673,6 +5630,7 @@ fn batch_process(thread: &String) {
     let savetempfolders: bool = conf.general_section().get("savetempfolders").unwrap() == "1";
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     let vege_bitmode: bool = conf.general_section().get("vege_bitmode").unwrap_or("0") == "1";
+    let zoff = conf.general_section().get("zoffset").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
 
     fs::create_dir_all(batchoutfolder).expect("Could not create output folder");
         
@@ -5708,91 +5666,39 @@ fn batch_process(thread: &String) {
         if Path::new(&format!("header{}.xyz", thread)).exists() {
             fs::remove_file(format!("header{}.xyz", thread)).unwrap();
         }
-        let _result = Command::new("las2txt")
-            .arg("-i").arg(format!("{}/{}", lazfolder, laz))
-            .arg("-header").arg("pound")
-            .arg("-keep_xy").arg("0").arg("0").arg("0").arg("0")
-            .arg("-o").arg(format!("header{}.xyz", thread))
-            .output().unwrap();
-        let mut old_las2txt = false;
-        if !Path::new(&format!("header{}.xyz", thread)).exists() {
-            old_las2txt = true;
-            println!("las2txt failed, trying old las2txt command line format...");
-            let _result = Command::new("las2txt")
-                .arg("-i").arg(format!("{}/{}", lazfolder, laz))
-                .arg("-header").arg("pound")
-                .arg("-clip").arg("0").arg("0").arg("0").arg("0")
-                .arg("-o").arg(format!("header{}.xyz", thread))
-                .output().expect("las2txt command failed");
-        }
 
-        let header_filename = format!("header{}.xyz", thread);
-        let input = Path::new(&header_filename);
-        let data = fs::read_to_string(input)
-            .expect("Can not read input file");
-        let data: Vec<&str> = data.split("\n").collect();
-
-        let minxyz_re = Regex::new(r"^# min x y z +(-?\d+.?\d*) +(-?\d+.?\d*) +(-?\d+.?\d*)").unwrap();
-        let mut minx = f64::NAN;
-        let mut miny = f64::NAN;
-
-        let maxxyz_re = Regex::new(r"^# max x y z +(-?\d+.?\d*) +(-?\d+.?\d*) +(-?\d+.?\d*)").unwrap();
-        let mut maxx = f64::NAN;
-        let mut maxy = f64::NAN;
-
-        for line in data.iter() {
-            if minxyz_re.is_match(line) {
-                let vals = minxyz_re.captures(line).unwrap();
-                minx = vals.get(1).unwrap().as_str().parse::<f64>().unwrap_or(0.0);
-                miny = vals.get(2).unwrap().as_str().parse::<f64>().unwrap_or(0.0);
-            }
-            if maxxyz_re.is_match(line) {
-                let vals = maxxyz_re.captures(line).unwrap();
-                maxx = vals.get(1).unwrap().as_str().parse::<f64>().unwrap_or(0.0);
-                maxy = vals.get(2).unwrap().as_str().parse::<f64>().unwrap_or(0.0);
-            }
-        }
-
+        let mut file = File::open(format!("{}/{}", lazfolder, laz)).unwrap();
+        let header = Header::read_from(&mut file).unwrap();
+        let minx = header.min_x;
+        let miny = header.min_y;
+        let maxx = header.max_x;
+        let maxy = header.max_y;
+        
         let minx2 = minx - 127.0;
         let miny2 = miny - 127.0;
         let maxx2 = maxx + 127.0;
         let maxy2 = maxy + 127.0;
-
-        let mut args: Vec<String> = Vec::new();
         
-        args.push(String::from("-i"));
+        let tmp_filename = format!("temp{}.xyz", thread);
+        let tmp_file = File::create(&tmp_filename).expect("Unable to create file");
+        let mut tmp_fp = BufWriter::new(tmp_file);
+        
         for x in &laz_files {
-            args.push(x.to_str().unwrap().to_string())
+            let mut reader = Reader::from_path(x).expect("Unable to open reader");
+            for ptu in reader.points() {
+                let pt = ptu.unwrap();
+                if pt.x > minx2 && pt.x < maxx2 && pt.y > miny2 && pt.y < maxy2 {
+                    tmp_fp.write(
+                        format!(
+                            "{} {} {} {} {} {} {}\r\n",
+                            pt.x, pt.y, pt.z + zoff, u8::from(pt.classification), pt.number_of_returns, pt.return_number, pt.intensity
+                        ).as_bytes()
+                    ).expect("Could not write temp file");
+                }
+            }
         }
-        args.push(String::from("-merged"));
-        args.push(String::from("-o"));
-        let argoutput = format!("temp{}.xyz", thread);
-        args.push(argoutput);
-        args.push(String::from("-parse"));
-        args.push(String::from("xyzcnri"));
-
-        if old_las2txt {
-            args.push(String::from("-clip"));
-        } else {
-            args.push(String::from("-inside"));
-        }
-        let argminx = format!("{}", minx2);
-        let argminy = format!("{}", miny2);
-        let argmaxx = format!("{}", maxx2);
-        let argmaxy = format!("{}", maxy2);
-        args.push(argminx);
-        args.push(argminy);
-        args.push(argmaxx);
-        args.push(argmaxy);
-
-        let zoff = conf.general_section().get("zoffset").unwrap_or("");
-        if zoff != "0" {
-            args.push(String::from("-translate_z"));
-            args.push(String::from(zoff));
-        }
-
-        let _result = Command::new("las2txt").args(&args).output().expect("las2txt command failed");
-
+        tmp_fp.flush().unwrap();
+        
         if zip_files.is_empty() {
             process_tile(thread, &format!("temp{}.xyz", thread), false).unwrap();
             println!("OK {}", laz)

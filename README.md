@@ -17,15 +17,7 @@ You can download and extract the latest binary of rust-pullauta for your platfor
 See: https://github.com/rphlo/rusty-pullauta/releases/latest
 
 ### Dependencies
-1. You'll need the las2txt binary that you can compile with:  
-    ```
-    git clone https://github.com/LAStools/LAStools
-    cd LAStools
-    make
-    cp bin/las2txt /usr/local/bin/
-    ```
-
-2. If you want to use the shape file drawing step on linux or mac, for the script to work, you will need to install some perl script dependencies:
+1. If you want to use the shape file drawing step on linux or mac, for the script to work, you will need to install some perl script dependencies:
 
     `cpan install GD POSIX Config::Tiny Geo::ShapeFile`
 
