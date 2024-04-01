@@ -712,7 +712,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>>  {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
         if Path::new(&dxf_filename).exists() && 
-           dxf_filename.ends_with("_formlines.dxf") {
+            dxf_filename.ends_with("_formlines.dxf") {
             let input = Path::new(&dxf_filename);
             let data = fs::read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
@@ -1247,7 +1247,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
             .expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
     let mut dxfheadtmp = data[0];
-    dxfheadtmp = dxfheadtmp.split("ENDSEC\n").collect::<Vec<&str>>()[0];
+    dxfheadtmp = dxfheadtmp.split("ENDSEC").collect::<Vec<&str>>()[0];
     dxfheadtmp = dxfheadtmp.split("HEADER").collect::<Vec<&str>>()[1];
     let dxfhead = &format!("HEADER{}ENDSEC", dxfheadtmp);
     let mut out = String::new();
