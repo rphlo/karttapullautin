@@ -30,7 +30,7 @@ jobs:
         with:
           command: c
           files: |
-            rusty-pullata.exe
+            rusty-pullauta.exe
             LICENSE
             README.md
             osm.txt
