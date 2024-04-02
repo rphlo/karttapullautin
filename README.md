@@ -40,7 +40,7 @@ To print a map at right scale, you download for example IrfanView http://www.irf
 
 ### Fine tuning the output
 
-`rusty-pullauta` creates a `pullauta.ini` file if it doesn't alredy exists. Your settings are there. For the second run you can change settings as you wish. Experiment with small file to find best settings for your taste/terrain/lidar data.
+`rusty-pullauta` creates a `pullauta.ini` file if it doesn't already exists. Your settings are there. For the second run you can change settings as you wish. Experiment with small file to find best settings for your taste/terrain/lidar data.
 
 For Ini file configuration explanation, see ini file comments.
 
