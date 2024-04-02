@@ -1197,7 +1197,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-pullauta"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "geo-types",
  "image",
