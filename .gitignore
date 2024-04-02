@@ -15,3 +15,8 @@ header*.xyz
 lazlist*.txt
 temp*.xyz
 ziplist*.txt
+*.dxf
+*.jpg
+*.jgw
+*.png
+*.pgw

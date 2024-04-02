@@ -4331,13 +4331,7 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
     image::imageops::overlay(&mut img, &imgug, 0, 0);
     
     if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
-        let low = image::open(Path::new(&format!("{}/low.png", tmpfolder))).ok().expect("Opening image failed");
-        let mut low = low.to_rgba8();
-        for p in low.pixels_mut() {
-            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
-                p[3] = 0;
-            }
-        }
+        let mut low = image::open(Path::new(&format!("{}/low.png", tmpfolder))).ok().expect("Opening image failed");
         let low = image::imageops::resize(&mut low, new_width, new_height, image::imageops::FilterType::Nearest);
         image::imageops::overlay(&mut img, &low, 0, 0);
     }
@@ -4950,19 +4944,8 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
     }
     // high -------------
     if Path::new(&format!("{}/high.png", tmpfolder)).exists() {
-        let high = image::open(Path::new(&format!("{}/high.png", tmpfolder))).ok().expect("Opening image failed");
-        let mut high = high.to_rgba8();
-        for p in high.pixels_mut() {
-            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
-                p[3] = 0;
-            }
-        }
-        let high_thumb = image::imageops::resize(
-            &mut high,
-            new_width as u32,
-            new_height as u32,
-            image::imageops::FilterType::Nearest
-        );
+        let mut high = image::open(Path::new(&format!("{}/high.png", tmpfolder))).ok().expect("Opening image failed");
+        let high_thumb = image::imageops::resize(&mut high, new_width as u32, new_height as u32, image::imageops::FilterType::Nearest);
         image::imageops::overlay(&mut img, &high_thumb, 0, 0);
     }
     
