@@ -11,8 +11,14 @@ Rusty-Pullauta supports a wide range of LiDAR data input file formats, namely LA
 Due to its performance and accuracy, with its powerful features and fast results, Rusty-Pullauta is a must-have tool for anyone willing to generate orienteering maps from LiDAR data to generate .
 
 ## Usage
-You can download and extract the latest binary of rusty-pullauta for your platform from the latest releases.
-See: https://github.com/rphlo/rusty-pullauta/releases/latest
+
+Due to issue with the toolchain we cannot provide a binary ready for use. You must compile the code on your machine.  
+If you don't have it, download the rust toolchain. Visit https://rustup.rs  
+
+Then download the latest code for rusty-pullauta at https://github.com/rphlo/rusty-pullauta/releases/latest and compile it.  
+`cargo build --release`
+
+The binary will be accessible in the `target/release/` directory. You can proceed and copy it to your desired directory.
 
 ### Converting a LiDAR file
 

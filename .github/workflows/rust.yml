@@ -1,3 +1,4 @@
+name: "Build and add to release"
 on:
   release:
     types: [created]
@@ -9,7 +10,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [x86_64-pc-windows-gnu, x86_64-unknown-linux-musl, x86_64-apple-darwin]
+        include:
+          - target: x86_64-pc-windows-msvc
+            archive: zip
+          - target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - target: x86_64-apple-darwin
+            archive: zip
     steps:
       - uses: actions/checkout@master
       - name: Compile and release
@@ -18,4 +25,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           RUSTTARGET: ${{ matrix.target }}
+          ARCHIVE_TYPES: ${{ matrix.archive }}
           EXTRA_FILES: README.md LICENSE osm.txt fastighetskartan.txt
+          PRE_BUILD: .github/workflows/deps.sh
