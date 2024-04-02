@@ -965,7 +965,7 @@ fn process_zip(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn E
     let pnorthlinesangle: f64 = conf.general_section().get("northlinesangle").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
     let pnorthlineswidth: usize = conf.general_section().get("northlineswidth").unwrap_or("0").parse::<usize>().unwrap_or(0);
     
-    println!("Rendering  shape files");
+    println!("Rendering shape files");
     unzipmtk(thread, filenames).unwrap();
     println!("Rendering png map with depressions");
     render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
