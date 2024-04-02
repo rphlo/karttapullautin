@@ -1986,8 +1986,8 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
                     } else {
                         if image == "blacktop" {
                             let interval_on = 1.0 + thickness * 8.0;
+                            imgtempblacktop.set_dash(interval_on, thickness * 1.6);
                             if thickness >= 9.0 {
-                                imgtempblacktop.set_dash(interval_on, thickness * 1.6);
                                 imgtempblacktop.set_stroke_cap_round();
                             }
                             imgtempblacktop.set_color(vari);
@@ -1998,8 +1998,8 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
                         }
                         if image == "black" {
                             let interval_on = 1.0 + thickness * 8.0;
+                            imgtempblack.set_dash(interval_on, thickness * 1.6);
                             if thickness >= 9.0 {
-                                imgtempblack.set_dash(interval_on, thickness * 1.6);
                                 imgtempblack.set_stroke_cap_round();
                             }
                             imgtempblack.set_color(vari);
