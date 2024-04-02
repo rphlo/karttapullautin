@@ -8908,7 +8908,7 @@ if ( $command eq 'mtkshaperender' ) {
         $delshp =~ s/\.prj$/\.shx/i;
         unlink $delshp;
         $delshp =~ s/\.shx$/\.sbn/i;
-	unlink $delshp;
+	    unlink $delshp;
         $delshp =~ s/\.sbn$/\.cpg/i;
         unlink $delshp;
     }
@@ -9010,9 +9010,9 @@ sub drawshape {
 
 		for (keys %dbfrec_org){
 	   	   $dbfrec{trim($_)}=$dbfrec_org{$_};
-	   }
+	    }
         #print "#$_#$dbfrec{$_}#\n" for (keys %dbfrec);
-##
+        ##
         $roadedge  = 0;
         $vari      = '';
         $edgeimage = 'black';
@@ -9110,7 +9110,6 @@ sub drawshape {
                 $dashedline = 1;
                 $imgblack->setThickness(6);
                 $thickness = 6;
-                $thickness = 6;
                 $vari      = gdStyled;
                 if ( $dbfrec{'VERSUH'} > 0 ) {
                     $image = 'blacktop';
@@ -9120,7 +9119,6 @@ sub drawshape {
             }
             if ( $dbfrec{'LUOKKA'} eq '12313' && $dbfrec{'VERSUH'} != -11 ) {
                 $dashedline = 1;
-                $thickness  = 6;
                 $imgblack->setThickness(6);
                 $thickness = 5;
                 $vari      = gdStyled;
@@ -9133,6 +9131,8 @@ sub drawshape {
             $border  = 0;
             $area    = 0;
             $stripes = 0;
+            
+            # fields
             if ( $dbfrec{'LUOKKA'} eq '32611' ) {
                 $area   = 1;
                 $vari   = $yellow;
@@ -9184,8 +9184,7 @@ sub drawshape {
             }
 
             #building
-            $options =
-" 42210 42211 42212 42220 42221 42222 42230 42231 42232 42240 42241 42242 42270 42250 42251 42252 42260 42261 42262 ";
+            $options = " 42210 42211 42212 42220 42221 42222 42230 42231 42232 42240 42241 42242 42270 42250 42251 42252 42260 42261 42262 ";
             $search = ' ' . $dbfrec{'LUOKKA'} . ' ';
             if ( $options =~ /$search/ ) {
                 $area   = 1;
@@ -9219,8 +9218,7 @@ sub drawshape {
             }
 
             # settlement
-            $options =
-" 32000 hautausmaa, 40200 taajaan rakennettu alue, 62100 ampuma-alueen reunaviiva alaluokkiin) 32410  32411 32412 32413 32414 32415 32416 32417 32418";
+            $options =" 32000 hautausmaa, 40200 taajaan rakennettu alue, 62100 ampuma-alueen reunaviiva alaluokkiin) 32410  32411 32412 32413 32414 32415 32416 32417 32418";
             $search = ' ' . $dbfrec{'LUOKKA'} . ' ';
             if ( $options =~ /$search/ ) {
                 $area   = 1;
@@ -9228,7 +9226,8 @@ sub drawshape {
                 $border = 0;
                 $image  = 'yellow';
             }
-
+            
+            # kayak
             # airport runway, car parking area
             $options = " 32411 32412 32415 32417 32421 ";
             $search  = ' ' . $dbfrec{'LUOKKA'} . ' ';
@@ -9245,8 +9244,7 @@ sub drawshape {
                 $vari = '';
             }
 
-        }
-        else {
+        } else {
             ## configuration based rendering
 
 
@@ -9283,6 +9281,7 @@ sub drawshape {
                         foreach $ehto (@ehdot) {
                             ( $operator, $ehtoname, $ehtovalue ) =
                               split( /\|/, $ehto, 3 );
+                            
                             if ( $operator eq '=' ) {
                                 if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
                                 {
@@ -9367,15 +9366,18 @@ sub drawshape {
                         foreach $ehto (@ehdot) {
                             ( $operator, $ehtoname, $ehtovalue ) =
                               split( /\|/, $ehto, 3 );
+
                             if ( $operator eq '=' ) {
                                 if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
                                 {
+                                    print $ehtovalue . " != " . $dbfrec{$ehtoname}. "\n";
                                     $ok = 0;
                                 }
                             }
                             else {
                                 if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
                                 {
+                                    print $ehtovalue . " == " . $dbfrec{$ehtoname}. "\n";
                                     $ok = 0;
                                 }
                             }
@@ -9611,6 +9613,95 @@ sub drawshape {
                         }
                     }
 
+                    #power line
+                    if ( $ISOMcode eq '516' ) {
+                        $ok = 1;
+                        foreach $ehto (@ehdot) {
+                            ( $operator, $ehtoname, $ehtovalue ) =
+                              split( /\|/, $ehto, 3 );
+                            if ( $operator eq '=' ) {
+                                if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
+                                {
+                                    $ok = 0;
+                                }
+                            }
+                            else {
+                                if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
+                                {
+                                    $ok = 0;
+                                }
+                            }
+                        }
+                        if ( $ok == 1 ) {
+                            $imgblacktop->setThickness(5);
+                            $thickness = 5;
+                            $area      = 0;
+                            $vari      = $black;
+                            $border    = 0;
+                            $image     = 'blacktop';
+                        }
+                    }
+
+                    # fence
+                    if ( $ISOMcode eq '524' ) {
+                        $ok = 1;
+                        foreach $ehto (@ehdot) {
+                            ( $operator, $ehtoname, $ehtovalue ) =
+                              split( /\|/, $ehto, 3 );
+                            if ( $operator eq '=' ) {
+                                if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
+                                {
+                                    $ok = 0;
+                                }
+                            }
+                            else {
+                                if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
+                                {
+                                    $ok = 0;
+                                }
+                            }
+                        }
+                        if ( $ok == 1 ) {
+                            $imgblacktop->setThickness(7);
+                            $thickness = 7;
+                            $area      = 0;
+                            $vari      = $black;
+                            $border    = 0;
+                            $image     = 'black';
+                        }
+                    }
+
+					# black line
+                    if ( $ISOMcode eq '414' ) {
+                        $ok = 1;
+
+                        foreach $ehto (@ehdot) {
+                            ( $operator, $ehtoname, $ehtovalue ) =
+                              split( /\|/, $ehto, 3 );
+                            if ( $operator eq '=' ) {
+                                if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
+                                {
+                                    $ok = 0;
+                                }
+                            }
+                            else {
+                                if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
+                                {
+                                    $ok = 0;
+                                }
+                            }
+                        }
+                        if ( $ok == 1 ) {
+
+                            $imgblacktop->setThickness(7);
+                            $thickness = 4;
+                            $area      = 0;
+                            $vari      = $black;
+                            $border    = 0;
+                            $image     = 'black';
+                        }
+                    }
+
                     ## areas
                     $border  = 0;
                     $area    = 0;
@@ -9643,7 +9734,7 @@ sub drawshape {
                         }
                     }
 
-## lake
+                    ## lake
                     if ( $ISOMcode eq '301' ) {
                         $ok = 1;
                         foreach $ehto (@ehdot) {
@@ -9726,99 +9817,7 @@ sub drawshape {
                         }
                     }
 
-                    #power line
-                    if ( $ISOMcode eq '516' ) {
-                        $ok = 1;
-                        foreach $ehto (@ehdot) {
-                            ( $operator, $ehtoname, $ehtovalue ) =
-                              split( /\|/, $ehto, 3 );
-                            if ( $operator eq '=' ) {
-                                if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
-                                {
-                                    $ok = 0;
-                                }
-                            }
-                            else {
-                                if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
-                                {
-                                    $ok = 0;
-                                }
-                            }
-                        }
-                        if ( $ok == 1 ) {
-                            $imgblacktop->setThickness(5);
-                            $thickness = 5;
-                            $area      = 0;
-                            $vari      = $black;
-                            $border    = 0;
-                            $image     = 'blacktop';
-                        }
-                    }
-
-                    # fence
-                    if ( $ISOMcode eq '524' ) {
-                        $ok = 1;
-                        foreach $ehto (@ehdot) {
-                            ( $operator, $ehtoname, $ehtovalue ) =
-                              split( /\|/, $ehto, 3 );
-                            if ( $operator eq '=' ) {
-                                if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
-                                {
-                                    $ok = 0;
-                                }
-                            }
-                            else {
-                                if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
-                                {
-                                    $ok = 0;
-                                }
-                            }
-                        }
-                        if ( $ok == 1 ) {
-                            $imgblacktop->setThickness(7);
-                            $thickness = 7;
-                            $area      = 0;
-                            $vari      = $black;
-                            $border    = 0;
-                            $image     = 'black';
-                        }
-                    }
-
-					
-					
-					  # black line
-                    if ( $ISOMcode eq '414' ) {
-                        $ok = 1;
-
-                        foreach $ehto (@ehdot) {
-                            ( $operator, $ehtoname, $ehtovalue ) =
-                              split( /\|/, $ehto, 3 );
-                            if ( $operator eq '=' ) {
-                                if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
-                                {
-                                    $ok = 0;
-                                }
-                            }
-                            else {
-                                if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
-                                {
-                                    $ok = 0;
-                                }
-                            }
-                        }
-                        if ( $ok == 1 ) {
-
-                            $imgblacktop->setThickness(7);
-                            $thickness = 4;
-                            $area      = 0;
-                            $vari      = $black;
-                            $border    = 0;
-                            $image     = 'black';
-                        }
-                    }
-
                     # settlement
-
                     if ( $ISOMcode eq '527' ) {
                         $ok = 1;
                         foreach $ehto (@ehdot) {
@@ -9846,36 +9845,35 @@ sub drawshape {
                     }
 
                     # car parking area
-					
 					if ( $ISOMcode eq '529.1' || $ISOMcode eq '301.1' ) {
-     $ok = 1;
+                        $ok = 1;
 
-     foreach $ehto (@ehdot) {
-         ( $operator, $ehtoname, $ehtovalue ) =
-           split( /\|/, $ehto, 3 );
-         if ( $operator eq '=' ) {
-             if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
-             {
-                 $ok = 0;
-             }
-         }
-         else {
-             if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
-             {
-                 $ok = 0;
-             }
-         }
-     }
-     if ( $ok == 1 ) {
+                        foreach $ehto (@ehdot) {
+                            ( $operator, $ehtoname, $ehtovalue ) =
+                            split( /\|/, $ehto, 3 );
+                            if ( $operator eq '=' ) {
+                                if ( trim( $dbfrec{$ehtoname} ) ne $ehtovalue )
+                                {
+                                    $ok = 0;
+                                }
+                            }
+                            else {
+                                if ( trim( $dbfrec{$ehtoname} ) eq $ehtovalue )
+                                {
+                                    $ok = 0;
+                                }
+                            }
+                        }
+                        if ( $ok == 1 ) {
 
-         $imgblacktop->setThickness(2);
-         $thickness = 2;
-         $area      = 0;
-         $vari      = $black;
-         $border    = 0;
-         $image     = 'black';
-     }
- }
+                            $imgblacktop->setThickness(2);
+                            $thickness = 2;
+                            $area      = 0;
+                            $vari      = $black;
+                            $border    = 0;
+                            $image     = 'black';
+                        }
+                    }
 					
                     if ( $ISOMcode eq '529' ) {
                         $ok = 1;
@@ -9902,10 +9900,9 @@ sub drawshape {
                             $image  = 'yellow';
 							
                         }
-
                     }
 					
-					   # car parking area TOP
+					# car parking area TOP
                     if ( $ISOMcode eq '529T' ) {
                         $ok = 1;
                         foreach $ehto (@ehdot) {
@@ -9939,7 +9936,6 @@ sub drawshape {
         }
 
         if ( $vari ne '' ) {
-
             $rt = 0;
             if ( $area == 1 ) {
                 $polyline = new GD::Polyline;
@@ -9949,16 +9945,13 @@ sub drawshape {
             }
 
             for ( 1 .. $shprec->num_parts ) {
-
-                $pisteet =
-                  [ map( [ $_->X(), $_->Y() ], $shprec->get_part($_) ) ];
+                $pisteet = [ map( [ $_->X(), $_->Y() ], $shprec->get_part($_) ) ];
                 if ( $area == 0 ) {
                     $polyline = new GD::Polyline;
                 }
                 $polylineborder = new GD::Polyline;
 
                 # add some points
-
                 $count = 0;
                 foreach $pist (@$pisteet) {
                     ( $x, $y ) = @$pist;
@@ -9968,8 +9961,6 @@ sub drawshape {
                         $jumpy = 600 / 254/$scalefactor * ( $y0 - $y );
                     }
                     if ( $area == 1 && $count == 0 ) {
-
-                        #$polyline->addPt( floor($jumpx), floor($jumpy) );
                         $startx = 600 / 254/$scalefactor * ( $x - $x0 );
                         $starty = 600 / 254/$scalefactor * ( $y0 - $y );
                     }
@@ -10001,32 +9992,7 @@ sub drawshape {
                             $imgblacktop->setThickness($roadedge);
                             $imgblacktop->polyline( $polyline, $black );
                             $imgblacktop->setThickness($thickness);
-
-   #undef $brush;
-   #		$brush = new GD::Image($roadedge+1,$roadedge+1);
-   #       $bbg = $brush->colorAllocate(255,255,255);
-   #       $bbc = $brush->colorAllocate(0,0,0);
-   #       $brush->transparent($bbg);
-   #		$brush->filledArc($roadedge/2,$roadedge/2,$roadedge,$roadedge,0,360,$bbc);
-   #		  $imgblacktop->setBrush($brush);
-   #		  $imgblacktop->setThickness(1);
-   #		  $imgblacktop->polyline( $polyline, gdBrushed );
-   #$myImage->arc(500,500,700,300,0,360,gdBrushed);
-   #$imgblacktop->setThickness(1);
-   #$vertex_count =$polyline->length;
-   #for($v=0;$v<$vertex_count;$v++){
-   #  ($x,$y) = $polyline->getPt($v);
-   #		$imgblacktop->filledArc($x,$y,$roadedge,$roadedge,0,360, $black);
-   #print "$x,$y\n";
-   #	}
-   #   $imgblacktop->setThickness($thickness);
-
-                        }
-                        else {
-
-                            #$imgblack->setThickness($roadedge);
-                            #$imgblack->polyline( $polyline, $black );
-                            #$imgblack->setThickness($thickness);
+                        } else {
                             undef $brush;
                             $brush =
                               new GD::Image( $roadedge + 1, $roadedge + 1 );
@@ -10043,20 +10009,7 @@ sub drawshape {
                             $imgblack->setBrush($brush);
                             $imgblack->setThickness(1);
                             $imgblack->polyline( $polyline, gdBrushed );
-
-                            # $imgblack->setThickness(1);
-                            # $vertex_count = $polyline->length;
-                            # for ( $v = 0 ; $v < $vertex_count ; $v++ ) {
-                            #     ( $x, $y ) = $polyline->getPt($v);
-                            #     $imgblack->filledArc( $x, $y, $roadedge,
-                            #         $roadedge, 0, 360, $black );
-
-                            #print "$x,$y\n";
-                            # }
-                            # $imgblack->setThickness($thickness);
-
                         }
-
                     }
 
                     if ( $dashedline == 0 ) {
@@ -10084,9 +10037,6 @@ sub drawshape {
                                 $imgblacktop->polyline( $polyline, gdBrushed );
 
                             }
-
-                   #                     $imgblacktop->setThickness($thickness);
-
                         }
 
                         if ( $image eq 'black' ) {
@@ -10115,9 +10065,7 @@ sub drawshape {
 
                             }
                         }
-                    }
-                    else {
-
+                    } else {
                         if ( $image eq 'blacktop' ) {
                             $dashgap = 1 + $thickness * 8;
 
@@ -10150,10 +10098,6 @@ sub drawshape {
                             $vertex_count = $polyline->length;
                             for ( $v = 0 ; $v < $vertex_count ; $v++ ) {
                                 ( $x, $y ) = $polyline->getPt($v);
-
-#if($v==0 || $v==$vertex_count-1){
-#$imgtempblacktop->filledArc( $x, $y, $thickness*.7,$thickness*.7, 0, 360, $tempwhite );
-#}
                                 if ( $v > 0 ) {
                                     $dist =
                                       sqrt( ( $x - $prex ) * ( $x - $prex ) +
@@ -10243,10 +10187,6 @@ sub drawshape {
                             $vertex_count = $polyline->length;
                             for ( $v = 0 ; $v < $vertex_count ; $v++ ) {
                                 ( $x, $y ) = $polyline->getPt($v);
-
-#if($v==0 || $v==$vertex_count-1){
-#$imgtempblack->filledArc( $x, $y, $thickness*.7,$thickness*.7, 0, 360, $tempwhite );
-#}
                                 if ( $v > 0 ) {
                                     $dist =
                                       sqrt( ( $x - $prex ) * ( $x - $prex ) +
@@ -10306,22 +10246,10 @@ sub drawshape {
                             }
                             $imgtempblack->setThickness($thickness);
                         }
-
-#					 if ( $image eq 'blacktop' ) {
-#					        $transp = $imgtempblack->colorClosest( 255, 255, 255 );
-#							$imgtempblack->transparent($transp);
-#                            $imgblacktop->copy( $imgtempblack, 0, 0, 0, 0, $w * 600 / 254, $h * 600 / 254 );
-#					 }
-#					if ( $image eq 'black' ) {
-#                            $transp = $imgtempblack->colorClosest( 255, 255, 255 );
-#							$imgtempblack->transparent($transp);
-#                            $imgblack->copy( $imgtempblack, 0, 0, 0, 0, $w * 600 / 254, $h * 600 / 254 );
-#					 }
-
                     }
+                    
                     if ( $image eq 'blue' ) {
                         $imgblue->polyline( $polyline, $vari );
-
                     }
                     if ( $image eq 'brown' ) {
                         if ( $edgeimage eq 'blacktop' ) {
@@ -10342,27 +10270,10 @@ sub drawshape {
                             $imgbrowntop->setBrush($brush);
                             $imgbrowntop->setThickness(1);
                             $imgbrowntop->polyline( $polyline, gdBrushed );
-
-                            #$imgbrowntop->setThickness(1);
-
-                            #$vertex_count = $polyline->length;
-                            #for ( $v = 0 ; $v < $vertex_count ; $v++ ) {
-                            #   ( $x, $y ) = $polyline->getPt($v);
-                            #  $imgbrowntop->filledArc( $x, $y, $thickness,
-                            #      $thickness, 0, 360, $vari );
-
-                            #print "$x,$y\n";
-                            #}
-
                             $imgbrowntop->setThickness($thickness);
-			    #print "something drew brown\n";
 
-                        }
-                        else {
-
-                            #$imgbrown->polyline( $polyline, $vari );
-                            $brush =
-                              new GD::Image( $thickness + 1, $thickness + 1 );
+                        } else {
+                            $brush = new GD::Image( $thickness + 1, $thickness + 1 );
                             $bbg = $brush->colorAllocate( 255, 255, 255 );
                             $bbc = $brush->colorAllocate( 255, 150, 80 );
                             $brush->transparent($bbg);
@@ -10376,31 +10287,16 @@ sub drawshape {
                             $imgbrown->setBrush($brush);
                             $imgbrown->setThickness(1);
                             $imgbrown->polyline( $polyline, gdBrushed );
-
-                            #    $imgbrown->setThickness(1);
-
-                            #   $vertex_count = $polyline->length;
-                            #  for ( $v = 0 ; $v < $vertex_count ; $v++ ) {
-                            #      ( $x, $y ) = $polyline->getPt($v);
-                            #      $imgbrown->filledArc( $x, $y, $thickness,
-                            #          $thickness, 0, 360, $vari );
-
-                            #print "$x,$y\n";
-                            # }
-
                             $imgbrown->setThickness($thickness);
 
                         }
                     }
-                }
-                else {
+                } else {
                     if ( $border > 0 ) {
                         $imgblack->setThickness($border);
                         $imgblack->polyline( $polylineborder, $black );
-
                     }
                 }
-
                 $rt++;
             }
 
@@ -10431,13 +10327,8 @@ sub drawshape {
                     $imgbrown->filledPolygon( $polyline, $vari );
                 }
             }
-##
-
-##
-
         }
     }
-
 }
 
 sub kaksataa() {
