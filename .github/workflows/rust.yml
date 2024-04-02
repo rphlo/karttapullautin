@@ -18,4 +18,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           RUSTTARGET: ${{ matrix.target }}
-          EXTRA_FILES: README.md original-perl-readme.txt LICENSE osm.txt fastighetskartan.txt
+          EXTRA_FILES: README.md LICENSE osm.txt fastighetskartan.txt
