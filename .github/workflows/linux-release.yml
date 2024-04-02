@@ -43,7 +43,7 @@ jobs:
         with:
           allowUpdates: true
           replacesArtifacts: true
-          artifacts: '${{ runner.temp }}/rusty-pullauta-x86-64-linux.tar.gz'
+          artifacts: '${{ runner.temp }}/rusty-pullauta-x86_64-linux.tar.gz'
           token: ${{ secrets.GITHUB_TOKEN }}
           artifactErrorsFailBuild: true
           prerelease: true
