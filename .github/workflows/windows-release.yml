@@ -7,16 +7,7 @@ jobs:
   release:
     name: release windows
     runs-on: windows-2022
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-pc-windows-msvc
-            archive: zip
-          - target: x86_64-unknown-linux-gnu
-            archive: tar.gz
-          - target: x86_64-apple-darwin
-            archive: zip
+
     steps:
       - uses: actions/checkout@v3
 
@@ -31,7 +22,7 @@ jobs:
           cargo clean
           cargo build --release
 
-      - run: copy target/release/rusty-pullata.exe .
+      - run: copy target/release/rusty-pullauta.exe .
 
       - name: 'Compress binaries'
         if: true
