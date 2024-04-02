@@ -12,10 +12,16 @@ Due to its performance and accuracy, with its powerful features and fast results
 
 ## Usage
 
-Due to issue with the toolchain we cannot provide a binary ready for use. You must compile the code on your machine.  
-If you don't have it, download the rust toolchain. Visit https://rustup.rs  
+Download the latest binary for your platform from https://github.com/rphlo/rusty-pullauta/releases/latest and extract the rusty-pullauta binary where you want to use it.
 
-Then download the latest code for rusty-pullauta at https://github.com/rphlo/rusty-pullauta/releases/latest and compile it.  
+### compiling code from source
+
+If your platform is not listed you must compile the binary
+
+You'll need to install the rust toolchain. See https://rustup.rs  
+
+Then download the latest code for rusty-pullauta at https://github.com/rphlo/rusty-pullauta/releases/latest and compile it.
+
 `cargo build --release`
 
 The binary will be accessible in the `target/release/` directory. You can proceed and copy it to your desired directory.

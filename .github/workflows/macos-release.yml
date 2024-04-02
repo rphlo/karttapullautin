@@ -1,12 +1,12 @@
-name: "Build for windows"
+name: "Build for macos"
 on:
   release:
     types: [created]
 
 jobs:
   release:
-    name: release windows
-    runs-on: windows-2022
+    name: release macos
+    runs-on: macos-13
 
     steps:
       - uses: actions/checkout@v3
@@ -22,7 +22,7 @@ jobs:
           cargo clean
           cargo build --release
 
-      - run: copy target/release/rusty-pullauta.exe .
+      - run: cp target/release/rusty-pullauta .
 
       - name: 'Compress binaries'
         if: true
@@ -30,12 +30,12 @@ jobs:
         with:
           command: c
           files: |
-            rusty-pullauta.exe
+            rusty-pullauta
             LICENSE
             README.md
             osm.txt
             fastighetskartan.txt
-          outPath: '${{ runner.temp }}/rusty-pullauta-x86_64-win.tar.gz'
+          outPath: '${{ runner.temp }}/rusty-pullauta-x86_64-macos.tar.gz'
 
       - name: 'Release binaries'
         if: true
@@ -43,7 +43,7 @@ jobs:
         with:
           allowUpdates: true
           replacesArtifacts: true
-          artifacts: '${{ runner.temp }}/rusty-pullauta-x86_64-win.tar.gz'
+          artifacts: '${{ runner.temp }}/rusty-pullauta-x86_64-macos.tar.gz'
           token: ${{ secrets.GITHUB_TOKEN }}
           artifactErrorsFailBuild: true
           prerelease: true
