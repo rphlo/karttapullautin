@@ -1,0 +1,58 @@
+name: "Build for windows"
+on:
+  release:
+    types: [created]
+
+jobs:
+  release:
+    name: release windows
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            archive: zip
+          - target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - target: x86_64-apple-darwin
+            archive: zip
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: hecrj/setup-rust-action@v1.4.0
+        with:
+          rust-version: stable
+
+      - name: Compile
+        shell: bash
+        run: |
+          cargo clean
+          cargo build --release
+
+      - run: copy target/release/rusty-pullata.exe .
+
+      - name: 'Compress binaries'
+        if: true
+        uses: a7ul/tar-action@v1.1.2
+        with:
+          command: c
+          files: |
+            rusty-pullata.exe
+            LICENSE
+            README.md
+            osm.txt
+            fastighetskartan.txt
+          outPath: '${{ runner.temp }}/rusty-pullauta-win.tar.gz'
+
+      - name: 'Release binaries'
+        if: true
+        uses: pragmatrix/release-action@v1.11.1-rs
+        with:
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: '${{ runner.temp }}/rusty-pullauta-win.tar.gz'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifactErrorsFailBuild: true
+          prerelease: true
