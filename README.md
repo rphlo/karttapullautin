@@ -14,7 +14,7 @@ Due to its performance and accuracy, with its powerful features and fast results
 
 Download the latest binary for your platform from https://github.com/rphlo/rusty-pullauta/releases/latest and extract the rusty-pullauta binary where you want to use it.
 
-### compiling code from source
+### Compiling code from source
 
 If your platform is not listed you must compile the binary
 
