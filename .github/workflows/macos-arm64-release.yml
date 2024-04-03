@@ -1,0 +1,49 @@
+name: "Build for macos"
+on:
+  release:
+    types: [created]
+
+jobs:
+  release:
+    name: release macos
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: hecrj/setup-rust-action@v1.4.0
+        with:
+          rust-version: stable
+
+      - name: Compile
+        shell: bash
+        run: |
+          cargo clean
+          cargo build --release
+
+      - run: cp target/release/rusty-pullauta .
+
+      - name: 'Compress binaries'
+        if: true
+        uses: a7ul/tar-action@v1.1.2
+        with:
+          command: c
+          files: |
+            rusty-pullauta
+            LICENSE
+            README.md
+            osm.txt
+            fastighetskartan.txt
+          outPath: '${{ runner.temp }}/rusty-pullauta-arm64-macos.tar.gz'
+
+      - name: 'Release binaries'
+        if: true
+        uses: pragmatrix/release-action@v1.11.1-rs
+        with:
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: '${{ runner.temp }}/rusty-pullauta-arm64-macos.tar.gz'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifactErrorsFailBuild: true
+          prerelease: true
