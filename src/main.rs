@@ -1070,7 +1070,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
         let mut reader = shapefile::Reader::from_path(&file)?;
         for shape_record in reader.iter_shapes_and_records() {
             let (shape, record) = shape_record.unwrap_or_else(|_err: shapefile::Error| {(Shape::NullShape, Record::default())});
-            
+
             let mut area = false;
             let mut roadedge = 0.0;
             let mut edgeimage = "black";
@@ -2141,7 +2141,11 @@ fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result
         println!("vegemode=1 not implemented in rusty-pullauta");
         return Ok(());
     }
-    println!("Preparing input file");
+    let mut thread_name = String::new();
+    if thread != "" {
+        thread_name = format!("Thread {}: ", thread);
+    }
+    println!("{}Preparing input file", thread_name);
     let mut skiplaz2txt: bool = false;
     if Regex::new(r".xyz$").unwrap().is_match(&filename.to_lowercase()) {
         if let Ok(lines) = read_lines(Path::new(filename)) {
@@ -2167,7 +2171,7 @@ fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result
             thinfactor = 1.0;
         }
         if thinfactor != 1.0 {
-            println!("Using thinning factor {}", thinfactor); 
+            println!("{}Using thinning factor {}", thread_name, thinfactor);
         }
 
         let mut xfactor: f64 = conf.general_section().get("coordxfactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
@@ -2204,8 +2208,8 @@ fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result
     } else {
         fs::copy(Path::new(filename), Path::new(&format!("{}/xyztemp.xyz", tmpfolder))).expect("Could not copy file to tmpfolder");
     }
-    println!("Done");
-    println!("Knoll detection part 1");
+    println!("{}Done", thread_name);
+    println!("{}Knoll detection part 1", thread_name);
     let scalefactor: f64 = conf.general_section().get("scalefactor").unwrap_or("1").parse::<f64>().unwrap_or(1.0);
     let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
 
@@ -2223,50 +2227,50 @@ fn process_tile(thread: &String, filename: &str, skip_rendering: bool) -> Result
     if !vegeonly {
         let basemapcontours: f64 = conf.general_section().get("basemapinterval").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
         if basemapcontours != 0.0 {
-            println!("Basemap contours");
+            println!("{}Basemap contours", thread_name);
             xyz2contours(thread, basemapcontours, "xyz2.xyz", "", "basemap.dxf", false).expect("contour generation failed");
         }
         if !skipknolldetection {
-            println!("Knoll detection part 2");
+            println!("{}Knoll detection part 2", thread_name);
             knolldetector(thread).unwrap();
         }
-        println!("Contour generation part 1");
+        println!("{}Contour generation part 1", thread_name);
         xyzknolls(thread).unwrap();
 
-        println!("Contour generation part 2");
+        println!("{}Contour generation part 2", thread_name);
         if !skipknolldetection {
             // contours 2.5
             xyz2contours(thread, halfinterval, "xyz_knolls.xyz", "null", "out.dxf", false).unwrap();
         } else {
             xyz2contours(thread, halfinterval, "xyztemp.xyz", "null", "out.dxf", true).unwrap();
         }
-        println!("Contour generation part 3");
+        println!("{}Contour generation part 3", thread_name);
         smoothjoin(thread).unwrap();
-        println!("Contour generation part 4");
+        println!("{}Contour generation part 4", thread_name);
         dotknolls(thread).unwrap();
     }
 
-    println!("Vegetation generation");
+    println!("{}Vegetation generation", thread_name);
     makevegenew(thread).unwrap();
 
     if !vegeonly {
-        println!("Cliff generation");
+        println!("{}Cliff generation", thread_name);
         makecliffs(thread).unwrap();
     }
     let detectbuildings: bool = conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
     if detectbuildings {
-        println!("Detecting buildings");
+        println!("{}Detecting buildings", thread_name);
         blocks(thread).unwrap();
     }
     if !skip_rendering {
-        println!("Rendering png map with depressions");
+        println!("{}Rendering png map with depressions", thread_name);
         render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
-        println!("Rendering png map without depressions");
+        println!("{}Rendering png map without depressions", thread_name);
         render(thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
     } else {
-        println!("Skipped rendering");
+        println!("{}Skipped rendering", thread_name);
     }
-    println!("\n\nAll done!");
+    println!("\n\n{}All done!", thread_name);
     Ok(())
 }
 
@@ -6730,6 +6734,11 @@ fn batch_process(thread: &String) {
     let vege_bitmode: bool = conf.general_section().get("vege_bitmode").unwrap_or("0") == "1";
     let zoff = conf.general_section().get("zoffset").unwrap_or("0").parse::<f64>().unwrap_or(0.0);
 
+    let mut thread_name = String::new();
+    if thread != "" {
+        thread_name = format!("Thread {}: ", thread);
+    }
+
     fs::create_dir_all(batchoutfolder).expect("Could not create output folder");
         
     let mut zip_files: Vec<String> = Vec::new();
@@ -6752,14 +6761,14 @@ fn batch_process(thread: &String) {
         }
     }
 
-    for laz in &laz_files {
-        let laz = laz.as_path().file_name().unwrap().to_str().unwrap();
+    for laz_path in &laz_files {
+        let laz = laz_path.as_path().file_name().unwrap().to_str().unwrap();
         if Path::new(&format!("{}/{}.png", batchoutfolder, laz)).exists() {
-            // println!("Skipping {}.png it exists already in output folder.", laz);
+            println!("Skipping {}.png it exists already in output folder.", laz);
             continue;
         }
 
-        println!("{} -> {}.png", laz, laz);
+        println!("{}{} -> {}.png", thread_name, laz, laz);
         File::create(format!("{}/{}.png", batchoutfolder, laz)).unwrap();
         if Path::new(&format!("header{}.xyz", thread)).exists() {
             fs::remove_file(format!("header{}.xyz", thread)).unwrap();
@@ -6781,25 +6790,22 @@ fn batch_process(thread: &String) {
         let tmp_file = File::create(&tmp_filename).expect("Unable to create file");
         let mut tmp_fp = BufWriter::new(tmp_file);
         
-        for x in &laz_files {
-            let mut reader = Reader::from_path(x).expect("Unable to open reader");
-            for ptu in reader.points() {
-                let pt = ptu.unwrap();
-                if pt.x > minx2 && pt.x < maxx2 && pt.y > miny2 && pt.y < maxy2 {
-                    tmp_fp.write(
-                        format!(
-                            "{} {} {} {} {} {} {}\r\n",
-                            pt.x, pt.y, pt.z + zoff, u8::from(pt.classification), pt.number_of_returns, pt.return_number, pt.intensity
-                        ).as_bytes()
-                    ).expect("Could not write temp file");
-                }
+        let mut reader = Reader::from_path(laz_path).expect("Unable to open reader");
+        for ptu in reader.points() {
+            let pt = ptu.unwrap();
+            if pt.x > minx2 && pt.x < maxx2 && pt.y > miny2 && pt.y < maxy2 {
+                tmp_fp.write(
+                    format!(
+                        "{} {} {} {} {} {} {}\r\n",
+                        pt.x, pt.y, pt.z + zoff, u8::from(pt.classification), pt.number_of_returns, pt.return_number, pt.intensity
+                    ).as_bytes()
+                ).expect("Could not write temp file");
             }
         }
         tmp_fp.flush().unwrap();
         
         if zip_files.is_empty() {
             process_tile(thread, &format!("temp{}.xyz", thread), false).unwrap();
-            println!("OK {}", laz)
         } else {
             process_tile(thread, &format!("temp{}.xyz", thread), true).unwrap();
             process_zip(thread, &zip_files).unwrap();
