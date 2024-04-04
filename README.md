@@ -129,6 +129,6 @@ If you need to run one of those, you must use the original perl script https://w
 
 Make your changes, then youd run:
 
-`cargo build --release`
+    cargo build --release
 
 The new binary will be accessible in the `target/release/` directory
