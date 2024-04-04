@@ -104,18 +104,22 @@ You can also merge dxf files (if saved, there is parameter for saving there)
 `./rusty-pullauta dxfmerge`
 
 ### Note:
-Some commands from the original kartta pullata that are not necessary for the map generation are not supported by rusty-pullauta:  
+
+Some commands from the original kartta pullata that are either obsolete or not necessary for the map generation are not supported by rusty-pullauta:  
+
 They are:
-  - cliffgeneralize
-  - ground
-  - ground2
-  - groundfix
-  - makecliffsold
-  - makeheight
-  - makevege
-  - vege
-  - profile
-  - xyzfixer
+  - `cliffgeneralize`
+  - `ground`
+  - `ground2`
+  - `groundfix`
+  - `makecliffsold`
+  - `makeheight`
+  - `makevege`
+  - `vege`
+  - `profile`
+  - `xyzfixer`
+
+If you need to run one of those, you must use the original perl script https://www.routegadget.net/karttapullautin/ or https://github.com/linville/kartta-pack for mac and linux
 
 ## Development
 
