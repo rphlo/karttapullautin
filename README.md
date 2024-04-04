@@ -8,7 +8,7 @@ This is achieved through the use of Rust's ability to compile to efficient code.
 
 Rusty-Pullauta supports a wide range of LiDAR data input file formats, namely LAS, LAZ, and XYZ files. The software includes advanced algorithms for filtering, classification, and feature extraction, ensuring that users can generate highly accurate maps with ease.
 
-Due to its performance and accuracy, with its powerful features and fast results, Rusty-Pullauta is a must-have tool for anyone willing to generate orienteering maps from LiDAR data to generate .
+Due to its performance and accuracy, with its powerful features and fast results, Rusty-Pullauta is a must-have tool for anyone willing to generate orienteering maps from LiDAR data.
 
 ## Usage
 
@@ -16,9 +16,11 @@ Download the latest binary for your platform from https://github.com/rphlo/rusty
 
 ### Compiling code from source
 
-If your platform is not listed you must compile the binary
+If your platform is not listed you must compile the binary.
 
-You'll need to install the rust toolchain. See https://rustup.rs  
+You'll need to install the rust toolchain.
+
+See https://rustup.rs  
 
 Then download the latest code for rusty-pullauta at https://github.com/rphlo/rusty-pullauta/releases/latest and compile it.
 
@@ -35,11 +37,13 @@ You can run the rusty-pullauta executable with the path to your file as argument
 
 As output Karttapullautin writes two 600 dpi png map images. One without depressions and one with purple depressions. It also writes contours and cliffs as dxf files to temp folder to be post processed, for example using Open Orienteering Mapper or OCAD.
 
-You can re-render png map files (like with changed north line settings) by running the binary without argumemts.  
+You can re-render png map files (like with changed north line settings) by running the binary without arguments.  
 `./rusty-pullauta`
 
 Karttapullautin can also render zip files containing shape files downloaded from differents sources. After normal process just run the binary with the zip(s) as arguments you must define your configuration file describing the shape file content, in the ini file, parameter `vectorconf` (see osm.txt and fastighetskartan.txt).
+
 `./rusty-pullauta yourzipfile1.zip yourzipfile2.zip yourzipfile3.zip yourzipfile4.zip` 
+
 For Finns: Karttapullautin render Maastotietokanta zip files (shape files) downloaded from the download site of Maanmittauslaitos without setting a configuration file. Just leave `vectorconf` parameter empty.
 
 To print a map at right scale, you download for example IrfanView http://www.irfanview.com/ open png map, Image -> Information, set resolution 600 x 600 DPI and push "change" button and save.  Then crop map if needed (Select area with mouse and Edit -> crop selection). Print using "Print size: Original Size srom DPI". Like this your map should end up 1:10000 scale on paper.
@@ -53,12 +57,14 @@ For Ini file configuration explanation, see ini file comments.
 ### Re-processing steps again
 
 When the process is done and you find there is too much green or too small cliffs, you can make parts of the process again with different parameters without having to do it all again. To re-generate only vegetation type from command line:
+
 '''
 ./rusty-pullauta makevegenew
 ./rusty-pullauta 
 '''
 
 To make cliffs again:
+
 '''
 ./rusty-pullauta makecliffs xyztemp.xyz 1.0 1.15
 ./rusty-pullauta
