@@ -24,7 +24,7 @@ See https://rustup.rs
 
 Then download the latest code for rusty-pullauta at https://github.com/rphlo/rusty-pullauta/releases/latest and compile it.
 
-`cargo build --release`
+    cargo build --release
 
 The binary will be accessible in the `target/release/` directory. You can proceed and copy it to your desired directory.
 
@@ -33,16 +33,18 @@ The binary will be accessible in the `target/release/` directory. You can procee
 Rusty Karttapullautin accepts .LAS, .LAZ or .XYZ file with classification (xyzc).
 
 You can run the rusty-pullauta executable with the path to your file as argument:  
-`./rusty-pullauta L3323H3.laz`
+    
+    ./rusty-pullauta L3323H3.laz
 
 As output Karttapullautin writes two 600 dpi png map images. One without depressions and one with purple depressions. It also writes contours and cliffs as dxf files to temp folder to be post processed, for example using Open Orienteering Mapper or OCAD.
 
 You can re-render png map files (like with changed north line settings) by running the binary without arguments.  
-`./rusty-pullauta`
+    
+    ./rusty-pullauta
 
 Karttapullautin can also render zip files containing shape files downloaded from differents sources. After normal process just run the binary with the zip(s) as arguments you must define your configuration file describing the shape file content, in the ini file, parameter `vectorconf` (see osm.txt and fastighetskartan.txt).
 
-`./rusty-pullauta yourzipfile1.zip yourzipfile2.zip yourzipfile3.zip yourzipfile4.zip` 
+    ./rusty-pullauta yourzipfile1.zip yourzipfile2.zip yourzipfile3.zip yourzipfile4.zip
 
 For Finns: Karttapullautin render Maastotietokanta zip files (shape files) downloaded from the download site of Maanmittauslaitos without setting a configuration file. Just leave `vectorconf` parameter empty.
 
@@ -58,17 +60,13 @@ For Ini file configuration explanation, see ini file comments.
 
 When the process is done and you find there is too much green or too small cliffs, you can make parts of the process again with different parameters without having to do it all again. To re-generate only vegetation type from command line:
 
-'''
-./rusty-pullauta makevegenew
-./rusty-pullauta 
-'''
+    ./rusty-pullauta makevegenew
+    ./rusty-pullauta 
 
 To make cliffs again:
 
-'''
-./rusty-pullauta makecliffs xyztemp.xyz 1.0 1.15
-./rusty-pullauta
-'''
+    ./rusty-pullauta makecliffs xyztemp.xyz 1.0 1.15
+    ./rusty-pullauta
 
 ### Vectors
 
@@ -91,15 +89,15 @@ You can merge png files in output folder with Karttapullautin.
 
 Without the depressions
 
-`./rusty-pullauta pngmerge 1`
+    ./rusty-pullauta pngmerge 1
 
 and depression versions
 
-`./rusty-pullauta pngmergedepr 1`
+    ./rusty-pullauta pngmergedepr 1
 
 vegetation backround images (if saved, there is parameter for saving there)
 
-`./rusty-pullauta pngmergevege`
+    ./rusty-pullauta pngmergevege
 
 
 The last paramameter (number) is scale factor. 2 reduces size to 50%, 4 to 25%, 20 to 5% and so on. Command writes out jpg and png versions. 
@@ -107,7 +105,7 @@ Note, you easily run out of memory if you try merging together too large area wi
 
 You can also merge dxf files (if saved, there is parameter for saving there)
 
-`./rusty-pullauta dxfmerge`
+    ./rusty-pullauta dxfmerge
 
 ### Note:
 
