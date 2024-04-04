@@ -20,8 +20,8 @@ use imageproc::rect::Rect;
 use imageproc::filter::median_filter;
 use las::raw::Header;
 use las::{Reader, Read};
-use shapefile::dbase::FieldValue;
-use shapefile::ShapeType;
+use shapefile::dbase::{FieldValue, Record};
+use shapefile::{ShapeType, Shape};
 
 mod canvas;
 use canvas::Canvas;
@@ -1069,9 +1069,8 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
         // drawshape comes here
         let mut reader = shapefile::Reader::from_path(&file)?;
         for shape_record in reader.iter_shapes_and_records() {
-            let (shape, record) = shape_record?;
-            //println!("Geometry: {}, Properties {:?}", shape, record);
-
+            let (shape, record) = shape_record.unwrap_or_else(|_err: shapefile::Error| {(Shape::NullShape, Record::default())});
+            
             let mut area = false;
             let mut roadedge = 0.0;
             let mut edgeimage = "black";
