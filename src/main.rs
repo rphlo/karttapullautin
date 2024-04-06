@@ -1357,575 +1357,576 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
                         }
                         keyvals.push((operator.to_string(), d[0].trim().to_string(), d[1].trim().to_string()))
                     }
-                    
-                    if isom == "306" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                    if vari == unsetcolor {
+                        if isom == "306" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                imgblue.set_line_width(5.0);
+                                thickness = 4.0;
+                                vari = marsh;
+                                image = "blue";
+                            }
                         }
-                        if is_ok {
-                            imgblue.set_line_width(5.0);
-                            thickness = 4.0;
-                            vari = marsh;
-                            image = "blue";
-                        }
-                    }
 
-                    // small path
-                    if isom == "505" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // small path
+                        if isom == "505" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                dashedline = true;
+                                thickness = 12.0;
+                                vari = black;
+                                image = "black";
+                            }
                         }
-                        if is_ok {
-                            dashedline = true;
-                            thickness = 12.0;
-                            vari = black;
-                            image = "black";
-                        }
-                    }
 
-                    // small path top
-                    if isom == "505T" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // small path top
+                        if isom == "505T" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                dashedline = true;
+                                thickness = 12.0;
+                                vari = black;
+                                image = "blacktop";
+                            }
                         }
-                        if is_ok {
-                            dashedline = true;
-                            thickness = 12.0;
-                            vari = black;
-                            image = "blacktop";
-                        }
-                    }
 
-                    // large path
-                    if isom == "504" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // large path
+                        if isom == "504" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                imgblack.set_line_width(12.0);
+                                thickness = 12.0;
+                                vari = black;
+                                image = "black";
+                            }
                         }
-                        if is_ok {
-                            imgblack.set_line_width(12.0);
-                            thickness = 12.0;
-                            vari = black;
-                            image = "black";
-                        }
-                    }
 
-                    // large path top
-                    if isom == "504T" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // large path top
+                        if isom == "504T" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                imgblack.set_line_width(12.0);
+                                thickness = 12.0;
+                                vari = black;
+                                image = "blacktop";
+                            }
                         }
-                        if is_ok {
-                            imgblack.set_line_width(12.0);
-                            thickness = 12.0;
-                            vari = black;
-                            image = "blacktop";
-                        }
-                    }
 
-                    // road
-                    if isom == "503" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // road
+                        if isom == "503" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                imgbrown.set_line_width(20.0);
+                                imgbrowntop.set_line_width(20.0);
+                                vari = brown;
+                                image = "brown";
+                                roadedge = 26.0;
+                                thickness = 20.0;
+                                imgblack.set_line_width(26.0);
+                            }
                         }
-                        if is_ok {
-                            imgbrown.set_line_width(20.0);
-                            imgbrowntop.set_line_width(20.0);
-                            vari = brown;
-                            image = "brown";
-                            roadedge = 26.0;
-                            thickness = 20.0;
-                            imgblack.set_line_width(26.0);
-                        }
-                    }
 
-                    // road, bridges
-                    if isom == "503T" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
+                        // road, bridges
+                        if isom == "503T" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
                                 let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                edgeimage = "blacktop";
+                                imgbrown.set_line_width(14.0);
+                                imgbrowntop.set_line_width(14.0);
+                                vari = brown;
+                                image = "brown";
+                                roadedge = 26.0;
+                                thickness = 14.0;
+                                imgblack.set_line_width(26.0);
+                            }
                         }
-                        if is_ok {
-                            edgeimage = "blacktop";
-                            imgbrown.set_line_width(14.0);
-                            imgbrowntop.set_line_width(14.0);
-                            vari = brown;
-                            image = "brown";
-                            roadedge = 26.0;
-                            thickness = 14.0;
-                            imgblack.set_line_width(26.0);
-                        }
-                    }
-
-
-                    // railroads
-                    if isom == "515" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
-                                }
-                                if keyval.0 == "=" {
-                                    if r != keyval.2 {
-                                        is_ok = false;
-                                    }
-                                } else if r == keyval.2 {
-                                        is_ok = false;
-                                }
-                            }  
-                        }
-                        if is_ok {
-                            vari = white;
-                            image = "black";
-                            roadedge = 18.0;
-                            thickness = 3.0;
-                        }
-                    }
-
-                    // railroads top
-                    if isom == "515T" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
-                                }
-                                if keyval.0 == "=" {
-                                    if r != keyval.2 {
-                                        is_ok = false;
-                                    }
-                                } else if r == keyval.2 {
-                                        is_ok = false;
-                                }
-                            }  
-                        }
-                        if is_ok {
-                            vari = white;
-                            image = "blacktop";
-                            edgeimage = "blacktop";
-                            roadedge = 18.0;
-                            thickness = 3.0;
-                        }
-                    }
-
-                    // small path
-                    if isom == "507" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
-                                }
-                                if keyval.0 == "=" {
-                                    if r != keyval.2 {
-                                        is_ok = false;
-                                    }
-                                } else if r == keyval.2 {
-                                        is_ok = false;
-                                }
-                            }  
-                        }
-                        if is_ok {
-                            dashedline = true;
-                            vari = black;
-                            image = "black";
-                            thickness = 6.0;
-                            imgblack.set_line_width(6.0);
-                        }
-                    }
-                    
-                    // small path top
-                    if isom == "507T" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
-                                }
-                                if keyval.0 == "=" {
-                                    if r != keyval.2 {
-                                        is_ok = false;
-                                    }
-                                } else if r == keyval.2 {
-                                        is_ok = false;
-                                }
-                            }  
-                        }
-                        if is_ok {
-                            dashedline = true;
-                            vari = black;
-                            image = "blacktop";
-                            thickness = 6.0;
-                            imgblack.set_line_width(6.0);
-                        }
-                    }
-                    
-                    // powerline
-                    if isom == "516" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
-                                }
-                                if keyval.0 == "=" {
-                                    if r != keyval.2 {
-                                        is_ok = false;
-                                    }
-                                } else if r == keyval.2 {
-                                        is_ok = false;
-                                }
-                            }  
-                        }
-                        if is_ok {
-                            vari = black;
-                            image = "blacktop";
-                            thickness = 5.0;
-                            imgblacktop.set_line_width(5.0);
-                        }
-                    }
 
 
-                    // fence
-                    if isom == "524" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // railroads
+                        if isom == "515" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                vari = white;
+                                image = "black";
+                                roadedge = 18.0;
+                                thickness = 3.0;
+                            }
                         }
-                        if is_ok {
-                            vari = black;
-                            image = "black";
-                            thickness = 7.0;
-                            imgblacktop.set_line_width(7.0); 
-                        }
-                    }
-                    
-                    // blackline
-                    if isom == "414" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
-                                }
-                                if keyval.0 == "=" {
-                                    if r != keyval.2 {
-                                        is_ok = false;
-                                    }
-                                } else if r == keyval.2 {
-                                        is_ok = false;
-                                }
-                            }  
-                        }
-                        if is_ok {
-                            vari = black;
-                            image = "black";
-                            thickness = 4.0; 
-                        }
-                    }
 
-                    // areas
+                        // railroads top
+                        if isom == "515T" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                    is_ok = false;
+                                }
+                            }
+                            if is_ok {
+                                vari = white;
+                                image = "blacktop";
+                                edgeimage = "blacktop";
+                                roadedge = 18.0;
+                                thickness = 3.0;
+                            }
+                        }
 
-                    // fields
-                    if isom == "401" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // small path
+                        if isom == "507" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                dashedline = true;
+                                vari = black;
+                                image = "black";
+                                thickness = 6.0;
+                                imgblack.set_line_width(6.0);
+                            }
                         }
-                        if is_ok {
-                            area = true;
-                            vari = yellow;
-                            border = 3.0; 
-                            image = "yellow";
-                        }
-                    }
-                    // lakes
-                    if isom == "301" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        
+                        // small path top
+                        if isom == "507T" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                dashedline = true;
+                                vari = black;
+                                image = "blacktop";
+                                thickness = 6.0;
+                                imgblack.set_line_width(6.0);
+                            }
                         }
-                        if is_ok {
-                            area = true;
-                            vari = blue;
-                            border = 5.0; 
-                            image = "blue";
-                        }
-                    }
-                    // marshes
-                    if isom == "310" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        
+                        // powerline
+                        if isom == "516" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                vari = black;
+                                image = "blacktop";
+                                thickness = 5.0;
+                                imgblacktop.set_line_width(5.0);
+                            }
                         }
-                        if is_ok {
-                            area = true;
-                            vari = marsh; 
-                            image = "marsh";
-                        }
-                    }
-                    // buildings
-                    if isom == "526" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+
+
+                        // fence
+                        if isom == "524" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                vari = black;
+                                image = "black";
+                                thickness = 7.0;
+                                imgblacktop.set_line_width(7.0); 
+                            }
                         }
-                        if is_ok {
-                            area = true;
-                            vari = purple;
-                            image = "black";
-                        }
-                    }
-                    // settlements
-                    if isom == "527" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        
+                        // blackline
+                        if isom == "414" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                vari = black;
+                                image = "black";
+                                thickness = 4.0; 
+                            }
                         }
-                        if is_ok {
-                            area = true;
-                            vari = olive; 
-                            image = "yellow";
-                        }
-                    }
-                    // car parkings border
-                    if isom == "529.1" || isom == "301.1" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+
+                        // areas
+
+                        // fields
+                        if isom == "401" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                area = true;
+                                vari = yellow;
+                                border = 3.0; 
+                                image = "yellow";
+                            }
                         }
-                        if is_ok {
-                            thickness = 2.0;
-                            vari = black; 
-                            image = "black";
-                        }
-                    }
-                    // car park area
-                    if isom == "529" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // lakes
+                        if isom == "301" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                area = true;
+                                vari = blue;
+                                border = 5.0; 
+                                image = "blue";
+                            }
                         }
-                        if is_ok {
-                            area = true;
-                            vari = brown; 
-                            image = "yellow";
-                        }
-                    }
-                    // car park top
-                    if isom == "529T" {
-                        let mut is_ok = true;
-                        for keyval in keyvals.iter() {
-                             if let Some(recordfv) = record.get(&keyval.1) {
-                                let mut r = String::new();
-                                if let FieldValue::Character(Some(record_str)) = recordfv {
-                                    r = format!("{}", record_str).trim().to_string();
+                        // marshes
+                        if isom == "310" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
                                 } else if r == keyval.2 {
-                                        is_ok = false;
+                                    is_ok = false;
                                 }
-                            }  
+                            }
+                            if is_ok {
+                                area = true;
+                                vari = marsh; 
+                                image = "marsh";
+                            }
                         }
-                        if is_ok {
-                            area = true;
-                            vari = brown; 
-                            image = "brown";
+                        // buildings
+                        if isom == "526" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                    is_ok = false;
+                                }
+                            }
+                            if is_ok {
+                                area = true;
+                                vari = purple;
+                                image = "black";
+                            }
+                        }
+                        // settlements
+                        if isom == "527" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                    is_ok = false;
+                                }
+                            }
+                            if is_ok {
+                                area = true;
+                                vari = olive; 
+                                image = "yellow";
+                            }
+                        }
+                        // car parkings border
+                        if isom == "529.1" || isom == "301.1" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                    is_ok = false;
+                                }
+                            }
+                            if is_ok {
+                                thickness = 2.0;
+                                vari = black; 
+                                image = "black";
+                            }
+                        }
+                        // car park area
+                        if isom == "529" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                    is_ok = false;
+                                }
+                            }
+                            if is_ok {
+                                area = true;
+                                vari = brown; 
+                                image = "yellow";
+                            }
+                        }
+                        // car park top
+                        if isom == "529T" {
+                            let mut is_ok = true;
+                            for keyval in keyvals.iter() {
+                                let mut r = String::from("");
+                                if let Some(recordfv) = record.get(&keyval.1) {
+                                    if let FieldValue::Character(Some(record_str)) = recordfv {
+                                        r = format!("{}", record_str).trim().to_string();
+                                    }
+                                }
+                                if keyval.0 == "=" {
+                                    if r != keyval.2 {
+                                        is_ok = false;
+                                    }
+                                } else if r == keyval.2 {
+                                    is_ok = false;
+                                }
+                            }
+                            if is_ok {
+                                area = true;
+                                vari = brown; 
+                                image = "brown";
+                            }
                         }
                     }
                 }
