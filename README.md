@@ -42,7 +42,7 @@ You can re-render png map files (like with changed north line settings) by runni
     
     ./rusty-pullauta
 
-Karttapullautin can also render zip files containing shape files downloaded from differents sources. After normal process just run the binary with the zip(s) as arguments you must define your configuration file describing the shape file content, in the ini file, parameter `vectorconf` (see osm.txt and fastighetskartan.txt).
+Karttapullautin can also render zip files containing shape files downloaded from differents sources. After normal process just run the binary with the zip(s) as arguments. You must define your configuration file describing the shape file content, in the ini file, parameter `vectorconf` (see osm.txt and fastighetskartan.txt).
 
     ./rusty-pullauta yourzipfile1.zip yourzipfile2.zip yourzipfile3.zip yourzipfile4.zip
 
