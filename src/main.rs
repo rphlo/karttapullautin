@@ -1018,7 +1018,9 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
     let y0 = d[5].trim().parse::<f64>().unwrap();
     // let resvege = d[0].trim().parse::<f64>().unwrap();
 
-    let img = image::open(Path::new(&format!("{}/vegetation.png", tmpfolder))).ok().expect("Opening image failed");
+    let mut img_reader = image::io::Reader::open(Path::new(&format!("{}/vegetation.png", tmpfolder))).expect("Opening vegetation image failed");
+    img_reader.no_limits();
+    let img = img_reader.decode().unwrap();
     let w = img.width() as f64;
     let h = img.height() as f64;
 
@@ -4318,8 +4320,13 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
     let y0 = lines.nth(0).expect("no 5 line").expect("Could not read line 6").parse::<f64>().unwrap();
     
     
-    let mut img = image::open(Path::new(&format!("{}/vegetation.png", tmpfolder))).ok().expect("Opening image failed");
-    let mut imgug = image::open(Path::new(&format!("{}/undergrowth.png", tmpfolder))).ok().expect("Opening image failed");
+    let mut img_reader = image::io::Reader::open(Path::new(&format!("{}/vegetation.png", tmpfolder))).expect("Opening vegetation image failed");
+    img_reader.no_limits();
+    let mut img = img_reader.decode().unwrap();
+
+    let mut imgug_reader = image::io::Reader::open(Path::new(&format!("{}/undergrowth.png", tmpfolder))).expect("Opening undergrowth image failed");
+    imgug_reader.no_limits();
+    let mut imgug = imgug_reader.decode().unwrap();
     
     let w = img.width();
     let h = img.height();
@@ -4335,7 +4342,9 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
     image::imageops::overlay(&mut img, &imgug, 0, 0);
     
     if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
-        let mut low = image::open(Path::new(&format!("{}/low.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut low_reader = image::io::Reader::open(Path::new(&format!("{}/low.png", tmpfolder))).expect("Opening low image failed");
+        low_reader.no_limits();
+        let mut low = low_reader.decode().unwrap();
         let low = image::imageops::resize(&mut low, new_width, new_height, image::imageops::FilterType::Nearest);
         image::imageops::overlay(&mut img, &low, 0, 0);
     }
@@ -6900,7 +6909,9 @@ fn batch_process(thread: &String) {
             ).expect("Unable to write to file");
             pgw_file_out.flush().unwrap();
 
-            let orig_img = image::open(Path::new(&format!("temp{}/undergrowth.png", thread))).ok().expect("Opening image failed");
+            let mut orig_img_reader = image::io::Reader::open(Path::new(&format!("temp{}/undergrowth.png", thread))).expect("Opening undergrowth image failed");
+            orig_img_reader.no_limits();
+            let orig_img = orig_img_reader.decode().unwrap();
             let mut img = RgbaImage::from_pixel(
                 ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
                 ((maxy - miny) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
@@ -6914,7 +6925,9 @@ fn batch_process(thread: &String) {
             );
             img.save(Path::new(&format!("{}/{}_undergrowth.png", batchoutfolder, laz))).expect("could not save output png");
 
-            let orig_img = image::open(Path::new(&format!("temp{}/vegetation.png", thread))).ok().expect("Opening image failed");
+            let mut orig_img_reader = image::io::Reader::open(Path::new(&format!("temp{}/vegetation.png", thread))).expect("Opening vegetation image failed");
+            orig_img_reader.no_limits();
+            let orig_img = orig_img_reader.decode().unwrap();
             let mut img = RgbImage::from_pixel(
                 ((maxx - minx) + 1.0) as u32,
                 ((maxy - miny) + 1.0) as u32,
@@ -6939,7 +6952,9 @@ fn batch_process(thread: &String) {
             pgw_file_out.flush().unwrap();
 
             if vege_bitmode {
-                let orig_img = image::open(Path::new(&format!("temp{}/vegetation_bit.png", thread))).ok().expect("Opening image failed");
+                let mut orig_img_reader = image::io::Reader::open(Path::new(&format!("temp{}/vegetation_bit.png", thread))).expect("Opening vegetation bit image failed");
+                orig_img_reader.no_limits();
+                let orig_img = orig_img_reader.decode().unwrap();
                 let mut img = GrayImage::from_pixel(
                     ((maxx - minx) + 1.0) as u32,
                     ((maxy - miny) + 1.0) as u32,
@@ -6953,7 +6968,9 @@ fn batch_process(thread: &String) {
                 );
                 img.save(Path::new(&format!("{}/{}_vege_bit.png", batchoutfolder, laz))).expect("could not save output png");
                 
-                let orig_img = image::open(Path::new(&format!("temp{}/undergrowth_bit.png", thread))).ok().expect("Opening image failed");
+                let mut orig_img_reader = image::io::Reader::open(Path::new(&format!("temp{}/undergrowth_bit.png", thread))).expect("Opening undergrowth bit image failed");
+                orig_img_reader.no_limits();
+                let orig_img = orig_img_reader.decode().unwrap();
                 let mut img = GrayImage::from_pixel(
                     ((maxx - minx) + 1.0) as u32,
                     ((maxy - miny) + 1.0) as u32,
