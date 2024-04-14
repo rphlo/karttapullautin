@@ -4730,7 +4730,9 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
     }
     // blocks -------------
     if Path::new(&format!("{}/blocks.png", tmpfolder)).exists() {
-        let blockpurple = image::open(Path::new(&format!("{}/blocks.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut blockpurple_reader = image::io::Reader::open(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("Opening blocks image failed");
+        blockpurple_reader.no_limits();
+        let blockpurple = blockpurple_reader.decode().unwrap();
         let mut blockpurple = blockpurple.to_rgba8();
         for p in blockpurple.pixels_mut() {
             if p[0] == 255 && p[1] == 255 && p[2] == 255 {
@@ -4754,7 +4756,9 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
     }
     // blueblack -------------
     if Path::new(&format!("{}/blueblack.png", tmpfolder)).exists() {
-        let imgbb = image::open(Path::new(&format!("{}/blueblack.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut imgbb_reader = image::io::Reader::open(Path::new(&format!("{}/blueblack.png", tmpfolder))).expect("Opening blueblack image failed");
+        imgbb_reader.no_limits();
+        let imgbb = imgbb_reader.decode().unwrap();
         let mut imgbb = imgbb.to_rgba8();
         for p in imgbb.pixels_mut() {
             if p[0] == 255 && p[1] == 255 && p[2] == 255 {
@@ -4957,7 +4961,9 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
     }
     // high -------------
     if Path::new(&format!("{}/high.png", tmpfolder)).exists() {
-        let mut high = image::open(Path::new(&format!("{}/high.png", tmpfolder))).ok().expect("Opening image failed");
+        let mut high_reader = image::io::Reader::open(Path::new(&format!("{}/high.png", tmpfolder))).expect("Opening high image failed");
+        high_reader.no_limits();
+        let mut high = high_reader.decode().unwrap();
         let high_thumb = image::imageops::resize(&mut high, new_width as u32, new_height as u32, image::imageops::FilterType::Nearest);
         image::imageops::overlay(&mut img, &high_thumb, 0, 0);
     }
