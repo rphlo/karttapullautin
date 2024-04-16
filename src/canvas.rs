@@ -1,6 +1,6 @@
 use std::mem;
 use std::fs::File;
-use std::io::{Write, BufReader};
+use std::io::{Write};
 use skia_safe::{surfaces, PathEffect, PaintCap, Color, Data, EncodedImageFormat, Paint, PaintStyle, Path, Surface, Image};
 
 pub struct Canvas {
@@ -17,7 +17,7 @@ impl Canvas {
         paint.set_color(Color::BLACK);
         paint.set_anti_alias(false);
         paint.set_stroke_width(1.0);
-        surface.canvas().clear(0x00ffffff);
+        surface.canvas().clear(0x00000000);
         Canvas {
             surface,
             path,
@@ -137,10 +137,8 @@ impl Canvas {
 
     #[inline]
     pub fn load_from(filename: &str) -> Canvas  {
-        let mut buf = BufReader::new(File::open(filename).unwrap());
-        let dec = skia_safe::codec::png_decoder::decoder();
-        let mut content = dec.from_stream(&mut buf).unwrap();
-        let image = content.get_image(None, None).unwrap();
+        let data = Data::from_filename(filename).unwrap();
+        let image = Image::from_encoded(data).unwrap();
         let mut c = Canvas::new(image.width(), image.height());
         c.draw_image(image);
         c
@@ -160,7 +158,7 @@ impl Canvas {
         self.surface.canvas().draw_image(
             other_canvas.image(),
             (x, y),
-            None
+            None,
         );
     }
 }

@@ -2119,15 +2119,13 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>>  {
     
     if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
         let mut low = Canvas::load_from(&format!("{}/low.png", tmpfolder));
-        imgyellow.overlay(&mut low, 0.0, 0.0)
-
+        imgyellow.overlay(&mut low, 0.0, 0.0);
     }
     
-    if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
+    if Path::new(&format!("{}/high.png", tmpfolder)).exists() {
         let mut high = Canvas::load_from(&format!("{}/high.png", tmpfolder));
         imgblue.overlay(&mut high, 0.0, 0.0);
     }
-
     imgblue.save_as(&format!("{}/high.png", tmpfolder));
     imgyellow.save_as(&format!("{}/low.png", tmpfolder));
     Ok(())
