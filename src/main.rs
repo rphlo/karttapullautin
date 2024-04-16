@@ -2291,7 +2291,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
     let formline: f64 = conf.general_section().get("formline").unwrap_or("2").parse::<f64>().unwrap_or(2.0);
     let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
     let contour_interval: f64 = conf.general_section().get("contour_interval").unwrap_or("5").parse::<f64>().unwrap_or(5.0);
-    let depression_length: f64 = conf.general_section().get("depression_length").unwrap_or("181").parse::<f64>().unwrap_or(181.0);
+    let depression_length: usize = conf.general_section().get("depression_length").unwrap_or("181").parse::<usize>().unwrap_or(181);
     let halfinterval = contour_interval / 2.0 * scalefactor;
     if formline > 0.0 {
         indexcontours = 5.0 * contour_interval;
