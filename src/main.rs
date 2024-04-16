@@ -248,6 +248,8 @@ vege_bitmode=0
 vegeonly=0
 yellow_smoothing=0
 contour_interval=5
+# depression_length will set a limit to how long contours that are checked for being a depression or not. Original KP-value was 181. Set a very large number if all depressions should be captured. 
+depression_length=181
 ".as_bytes()).expect("Cannot write file");
     }
 
@@ -2289,6 +2291,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
     let formline: f64 = conf.general_section().get("formline").unwrap_or("2").parse::<f64>().unwrap_or(2.0);
     let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
     let contour_interval: f64 = conf.general_section().get("contour_interval").unwrap_or("5").parse::<f64>().unwrap_or(5.0);
+    let depression_length: f64 = conf.general_section().get("depression_length").unwrap_or("181").parse::<f64>().unwrap_or(181.0);
     let halfinterval = contour_interval / 2.0 * scalefactor;
     if formline > 0.0 {
         indexcontours = 5.0 * contour_interval;
@@ -2582,7 +2585,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
                     }
                 }
             }
-            if !skip && el_x_len < 181 && el_x[l].first() == el_x[l].last() && el_y[l].first() == el_y[l].last() {
+            if !skip && el_x_len < depression_length && el_x[l].first() == el_x[l].last() && el_y[l].first() == el_y[l].last() {
                 let mut mm: isize = (((el_x_len - 1) as f64) / 3.0).floor() as isize - 1;
                 if mm < 0 {
                     mm = 0;
