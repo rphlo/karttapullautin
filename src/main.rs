@@ -2434,6 +2434,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
             let yl = y.last().unwrap();
             let head = format!("{}x{}", x0, y0);
             let tail = format!("{}x{}", xl, yl);
+
             heads.push(head);
             tails.push(tail);
 
@@ -2730,7 +2731,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
                     el_x[l].append(&mut newx);
                     el_y[l].clear();
                     el_y[l].append(&mut newy);
-                    el_x_len = el_x[l].len()
+                    el_x_len = el_x[l].len();
                 }
                 // Smoothing
                 let mut dx: Vec<f64> = vec![f64::NAN; el_x_len];
@@ -2766,7 +2767,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
                              el_y[l][k + 1]) / (2.0 + 1.0 / (0.01 + smoothing));
                 }
 
-                if el_x[l].first() == el_x[l].last() && el_x[l].first() == el_x[l].last() {
+                if el_x[l].first() == el_x[l].last() && el_y[l].first() == el_y[l].last() {
                     let vx = (el_x[l][1] +
                               el_x[l][0] / (0.01 + smoothing) + 
                               el_x[l][el_x_len - 2]) / (2.0 + 1.0 / (0.01 + smoothing));
@@ -2817,7 +2818,8 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
                              el_y[l][k] / (0.01 + smoothing) +
                              el_y[l][k + 1]) / (2.0 + 1.0 / (0.01 + smoothing));
                 }
-                if el_x[l].first() == el_x[l].last() && el_x[l].first() == el_x[l].last() {
+
+                if el_x[l].first() == el_x[l].last() && el_y[l].first() == el_y[l].last() {
                     let vx = (el_x[l][1] +
                               el_x[l][0] / (0.01 + smoothing) + 
                               el_x[l][el_x_len - 2]) / (2.0 + 1.0 / (0.01 + smoothing));
@@ -2865,6 +2867,8 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>>  {
                     el_x[l][k] = vx;
                     el_y[l][k] = vy;
                 }
+    
+
 
                 let mut layer = String::from("contour");
                 if depression == -1 {
@@ -3801,7 +3805,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
             }
         }
     }
-    
+
     if xyzfileout != "" && xyzfileout != "null" {
         let path = format!("{}/{}", tmpfolder, xyzfileout);
         let xyz_file_out = Path::new(&path);
@@ -3849,8 +3853,7 @@ fn xyz2contours(thread: &String, cinterval: f64, xyzfilein: &str, xyzfileout: &s
                     let mut c = avg_alt[i + 1][j];
                     let mut d = avg_alt[i + 1][j + 1];
                     
-                    if (a < level && b < level && c < level && d < level)
-                    || (a > level && b > level && c > level && d > level) {
+                    if a < level && b < level && c < level && d < level || a > level && b > level && c > level && d > level {
                         // skip
                     } else {
                         let temp: f64 = (a / v + 0.5).floor() * v;
@@ -4134,9 +4137,7 @@ fn check_obj_in (obj: &mut Vec<String>, curves: &mut HashMap<String, String>, x1
     let x2 = (x2 * 100.0).floor() / 100.0;
     let y1 = (y1 * 100.0).floor() / 100.0;
     let y2 = (y2 * 100.0).floor() / 100.0;
-    if x1 == x2 && y1 == y2 {
-
-    } else {
+    if x1 != x2 || y1 != y2 {
         let mut key: String = format!("{}_{}_1", x1, y1);
         if !curves.contains_key(&key) {
             curves.insert(key.clone(), format!("{}_{}", x2, y2));
