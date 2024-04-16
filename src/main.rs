@@ -822,7 +822,6 @@ fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(
     let mut xmax = f64::MIN;
     let mut ymax = f64::MIN;
     let mut res = f64::NAN;
-
     for png in png_files.iter() {
         let filename = png.as_path().file_name().unwrap().to_str().unwrap();
         let full_filename = format!("{}/{}", batchoutfolder, filename);
@@ -923,7 +922,6 @@ fn pngmergevege(scale: f64) -> Result<(), Box<dyn Error>>  {
             png_files.push(path);
         }
     }
-
     if png_files.is_empty() {
         println!("No _vege.png files found in output directory");
         return Ok(());
@@ -6810,16 +6808,23 @@ fn batch_process(thread: &String) {
         let tmp_file = File::create(&tmp_filename).expect("Unable to create file");
         let mut tmp_fp = BufWriter::new(tmp_file);
         
-        let mut reader = Reader::from_path(laz_path).expect("Unable to open reader");
-        for ptu in reader.points() {
-            let pt = ptu.unwrap();
-            if pt.x > minx2 && pt.x < maxx2 && pt.y > miny2 && pt.y < maxy2 {
-                tmp_fp.write(
-                    format!(
-                        "{} {} {} {} {} {} {}\r\n",
-                        pt.x, pt.y, pt.z + zoff, u8::from(pt.classification), pt.number_of_returns, pt.return_number, pt.intensity
-                    ).as_bytes()
-                ).expect("Could not write temp file");
+        for laz_p in &laz_files {
+            let laz = laz_p.as_path().file_name().unwrap().to_str().unwrap();
+            let mut file = File::open(format!("{}/{}", lazfolder, laz)).unwrap();
+            let header = Header::read_from(&mut file).unwrap();
+            if header.max_x > minx2 && header.min_x < maxx2 && header.max_y > miny2 && header.min_y < maxy2 {
+                let mut reader = Reader::from_path(laz_p).expect("Unable to open reader");
+                for ptu in reader.points() {
+                    let pt = ptu.unwrap();
+                    if pt.x > minx2 && pt.x < maxx2 && pt.y > miny2 && pt.y < maxy2 {
+                        tmp_fp.write(
+                            format!(
+                                "{} {} {} {} {} {} {}\r\n",
+                                pt.x, pt.y, pt.z + zoff, u8::from(pt.classification), pt.number_of_returns, pt.return_number, pt.intensity
+                            ).as_bytes()
+                        ).expect("Could not write temp file");
+                    }
+                }
             }
         }
         tmp_fp.flush().unwrap();
