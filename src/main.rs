@@ -248,8 +248,10 @@ vege_bitmode=0
 vegeonly=0
 yellow_smoothing=0
 contour_interval=5
+label_formlines_depressions=0
 # depression_length will set a limit to how long contours that are checked for being a depression or not. Original KP-value was 181. Set a very large number if all depressions should be captured. 
 depression_length=181
+
 ".as_bytes()).expect("Cannot write file");
     }
 
@@ -4171,6 +4173,8 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
     let dashlength: f64 = conf.general_section().get("dashlength").unwrap_or("60").parse::<f64>().unwrap_or(60.0);
     let gaplength: f64 = conf.general_section().get("gaplength").unwrap_or("12").parse::<f64>().unwrap_or(12.0);
     let minimumgap: u32 = conf.general_section().get("minimumgap").unwrap_or("30").parse::<u32>().unwrap_or(30);
+    let label_depressions: bool = conf.general_section().get("label_formlines_depressions").unwrap_or("0") == "1";
+
     let tmpfolder = format!("temp{}", thread);
     let angle = - angle_deg / 180.0 * 3.14159265358;
 
@@ -4552,16 +4556,29 @@ fn render(thread: &String, angle_deg: f64, nwidth: usize, nodepressions: bool) -
                 let mut gap = 0.0;
                 let mut formlinestart = false;
                 
+                let f_label;
+                if layer.contains("depression") && label_depressions { 
+                    f_label = "formline_depression";
+                } else { 
+                    f_label = "formline" 
+                };
+                
                 for i in 1..x.len() {
                     if curvew != 1.5 || formline == 0.0 || help2[i] || smallringtest {
                         if formline == 2.0 && !nodepressions && curvew == 1.5 {
                             if !formlinestart {
-                                formline_out.push_str("POLYLINE\r\n 66\r\n1\r\n  8\r\nformline\r\n  0\r\n");
+                                formline_out.push_str(
+                                    format!(
+                                        "POLYLINE\r\n 66\r\n1\r\n  8\r\n{}\r\n  0\r\n",
+                                        f_label
+                                    ).as_str()
+                                );
                                 formlinestart = true;
                             }
                             formline_out.push_str(
                                 format!(
-                                    "VERTEX\r\n  8\r\nformline\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
+                                    "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
+                                    f_label,
                                     x[i] / 600.0 * 254.0 * scalefactor + x0, 
                                     -y[i] / 600.0 * 254.0 * scalefactor + y0
                                 ).as_str()
