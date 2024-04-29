@@ -37,7 +37,8 @@ fn main() {
 #----------------------------------------------------- #
 
 ################## PARAMETERS #############################
-# vegetation mode. New mode =0, old original (pre 20130613) mode =1 
+# vegetation mode. New mode =0, old original (pre 20130613) mode =1
+# rusty-pullata does not support =1
 vegemode=0
 
 ### New vegetation mapping mode parameters (vegemode 0)##
@@ -118,8 +119,6 @@ yellowheight=0.9
 
 ### how big part or the points must be below yellowheight to trigger yellow
 yellowthresold=0.9
-    
-
 
 #############################################
 ## cliff maker min height values for each cliff type. vertical drop per 1 meter horisontal distance
@@ -206,8 +205,8 @@ lazfolder=./in
 
 # If you can't get relative paths work, try absolute paths like c:/yourfolder/lasfiles
 
-# Karttapullautin can render vector shape files. Maastotietokanta by National land survey of Finland
-# does not nee configuraiton file. For rendering those leave this parameter empty.
+# Karttapullautin can render vector shape files.
+# Maastotietokanta by National land survey of Finland does not need configuration file. For rendering those leave this parameter empty.
 # For other datasets like Fastighetskartan from Lantmateriet (Sweden) configuration file is needed.
 
 vectorconf=
