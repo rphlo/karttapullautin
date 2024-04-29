@@ -242,16 +242,30 @@ scalefactor=1
 zoffset=0
 #skipknolldetection=0
 
-# Settings specific to rusty-pullauta
+##############################################################################################################
+# Settings specific to rusty-pullauta, default values are meant to be fidel to original Perl Karttapullautin #
+##############################################################################################################
+# jarkkos2019, set to 0 to fix the obvious bugs of the Perl KarttaPullautin found in the source code of the 20190203 version, 1 reproduce the buggy behaviours
 jarkkos2019=1
-vege_bitmode=0
-vegeonly=0
-yellow_smoothing=0
+
+# contour_interval sets the contours interval in meters for the output map
 contour_interval=5
-label_formlines_depressions=0
-# depression_length will set a limit to how long contours that are checked for being a depression or not. Original KP-value was 181. Set a very large number if all depressions should be captured. 
+
+# depression_length sets the maximum length of the depressions to be marked. Original from Perl version is hardcoded to 181.
+# set a very large number if all depressions should be marked. 
 depression_length=181
 
+# yellow_smoothing, set to 1 to apply a smoothing effect on the yellow areas matching the smoothing of the green areas
+yellow_smoothing=0
+
+# vege_bitmode, set to 1 to output a bit
+vege_bitmode=0
+
+# label_formlines_depressions, set to 1 to add a seperate label on the depressions in the formlines vector file
+label_formlines_depressions=0
+
+# vegeonly, set to 1 to only process the vegetation and skip the contour processing
+vegeonly=0
 ".as_bytes()).expect("Cannot write file");
     }
 
