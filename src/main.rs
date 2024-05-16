@@ -4816,13 +4816,13 @@ fn render(
         image::io::Reader::open(Path::new(&format!("{}/vegetation.png", tmpfolder)))
             .expect("Opening vegetation image failed");
     img_reader.no_limits();
-    let mut img = img_reader.decode().unwrap();
+    let img = img_reader.decode().unwrap();
 
     let mut imgug_reader =
         image::io::Reader::open(Path::new(&format!("{}/undergrowth.png", tmpfolder)))
             .expect("Opening undergrowth image failed");
     imgug_reader.no_limits();
-    let mut imgug = imgug_reader.decode().unwrap();
+    let imgug = imgug_reader.decode().unwrap();
 
     let w = img.width();
     let h = img.height();
@@ -4835,14 +4835,14 @@ fn render(
     let new_width = (w as f64 * 600.0 / 254.0 / scalefactor) as u32;
     let new_height = (h as f64 * 600.0 / 254.0 / scalefactor) as u32;
     let mut img = image::imageops::resize(
-        &mut img,
+        &img,
         new_width,
         new_height,
         image::imageops::FilterType::Nearest,
     );
 
     let imgug = image::imageops::resize(
-        &mut imgug,
+        &imgug,
         new_width,
         new_height,
         image::imageops::FilterType::Nearest,
@@ -4854,9 +4854,9 @@ fn render(
         let mut low_reader = image::io::Reader::open(Path::new(&format!("{}/low.png", tmpfolder)))
             .expect("Opening low image failed");
         low_reader.no_limits();
-        let mut low = low_reader.decode().unwrap();
+        let low = low_reader.decode().unwrap();
         let low = image::imageops::resize(
-            &mut low,
+            &low,
             new_width,
             new_height,
             image::imageops::FilterType::Nearest,
@@ -5278,9 +5278,9 @@ fn render(
                 p[3] = 0;
             }
         }
-        let mut blockpurple = image::imageops::crop(&mut blockpurple, 0, 0, w, h).to_image();
+        let blockpurple = image::imageops::crop(&mut blockpurple, 0, 0, w, h).to_image();
         let blockpurple_thumb = image::imageops::resize(
-            &mut blockpurple,
+            &blockpurple,
             new_width as u32,
             new_height as u32,
             image::imageops::FilterType::Nearest,
@@ -5311,9 +5311,9 @@ fn render(
                 p[3] = 0;
             }
         }
-        let mut imgbb = image::imageops::crop(&mut imgbb, 0, 0, w, h).to_image();
+        let imgbb = image::imageops::crop(&mut imgbb, 0, 0, w, h).to_image();
         let imgbb_thumb = image::imageops::resize(
-            &mut imgbb,
+            &imgbb,
             new_width as u32,
             new_height as u32,
             image::imageops::FilterType::Nearest,
@@ -5517,9 +5517,9 @@ fn render(
             image::io::Reader::open(Path::new(&format!("{}/high.png", tmpfolder)))
                 .expect("Opening high image failed");
         high_reader.no_limits();
-        let mut high = high_reader.decode().unwrap();
+        let high = high_reader.decode().unwrap();
         let high_thumb = image::imageops::resize(
-            &mut high,
+            &high,
             new_width as u32,
             new_height as u32,
             image::imageops::FilterType::Nearest,
