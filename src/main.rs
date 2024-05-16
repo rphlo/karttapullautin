@@ -29,7 +29,7 @@ use canvas::Canvas;
 fn main() {
     let mut thread: String = String::new();
     if !Path::new("pullauta.ini").exists() {
-        let f = File::create(&Path::new(&format!("pullauta.ini"))).expect("Unable to create file");
+        let f = File::create(Path::new(&"pullauta.ini".to_string())).expect("Unable to create file");
         let mut f = BufWriter::new(f);
         f.write("#------------------------------------------------------#
 # Parameters for the Karttapullautin pullautus process #
@@ -285,7 +285,7 @@ vegeonly=0
     }
 
     let accepted_files_re = Regex::new(r"\.(las|laz|xyz)$").unwrap();
-    if command == "" || accepted_files_re.is_match(&command.to_lowercase()) {
+    if command.is_empty() || accepted_files_re.is_match(&command.to_lowercase()) {
         println!("Rusty Karttapulatin...\nThere is no warranty. Use it at your own risk!\n");
     }
 
@@ -306,100 +306,100 @@ vegeonly=0
         .parse::<usize>()
         .unwrap_or(0);
 
-    if command == "" && Path::new(&format!("{}/vegetation.png", tmpfolder)).exists() && !batch {
+    if command.is_empty() && Path::new(&format!("{}/vegetation.png", tmpfolder)).exists() && !batch {
         println!("Rendering png map with depressions");
         render(&thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
         println!("Rendering png map without depressions");
         render(&thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
         println!("\nAll done!");
-        return ();
+        return ;
     }
 
-    if command == "" && !batch {
+    if command.is_empty() && !batch {
         println!("USAGE:\nrusty-pullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee readme.txt for more details");
-        return ();
+        return ;
     }
 
     if command == "cliffgeneralize" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "ground" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "ground2" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "groundfix" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "profile" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "makecliffsold" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "makeheight" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "makevege" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "xyzfixer" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "vege" {
         println!("Not implemented in rusty-pullauta, use the perl version");
-        return ();
+        return ;
     }
 
     if command == "blocks" {
         blocks(&thread).unwrap();
-        return ();
+        return ;
     }
 
     if command == "dotknolls" {
         dotknolls(&thread).unwrap();
-        return ();
+        return ;
     }
 
     if command == "dxfmerge" || command == "merge" {
         dxfmerge().unwrap();
         if command == "merge" {
             let mut scale = 1.0;
-            if args.len() > 0 {
+            if !args.is_empty() {
                 scale = args[0].parse::<f64>().unwrap();
             }
             pngmergevege(scale).unwrap();
         }
-        return ();
+        return ;
     }
 
     if command == "knolldetector" {
         knolldetector(&thread).unwrap();
-        return ();
+        return ;
     }
 
     if command == "makecliffs" {
         makecliffs(&thread).unwrap();
-        return ();
+        return ;
     }
 
     if command == "makevegenew" {
@@ -408,20 +408,20 @@ vegeonly=0
 
     if command == "pngmerge" || command == "pngmergedepr" {
         let mut scale = 4.0;
-        if args.len() > 0 {
+        if !args.is_empty() {
             scale = args[0].parse::<f64>().unwrap();
         }
         pngmerge(scale, command == "pngmergedepr").unwrap();
-        return ();
+        return ;
     }
 
     if command == "pngmergevege" {
         let mut scale = 1.0;
-        if args.len() > 0 {
+        if !args.is_empty() {
             scale = args[0].parse::<f64>().unwrap();
         }
         pngmergevege(scale).unwrap();
-        return ();
+        return ;
     }
 
     if command == "polylinedxfcrop" {
@@ -431,8 +431,8 @@ vegeonly=0
         let miny = args[3].parse::<f64>().unwrap();
         let maxx = args[4].parse::<f64>().unwrap();
         let maxy = args[5].parse::<f64>().unwrap();
-        polylinedxfcrop(&dxffilein, &dxffileout, minx, miny, maxx, maxy).unwrap();
-        return ();
+        polylinedxfcrop(dxffilein, dxffileout, minx, miny, maxx, maxy).unwrap();
+        return ;
     }
 
     if command == "pointdxfcrop" {
@@ -442,8 +442,8 @@ vegeonly=0
         let miny = args[3].parse::<f64>().unwrap();
         let maxx = args[4].parse::<f64>().unwrap();
         let maxy = args[5].parse::<f64>().unwrap();
-        pointdxfcrop(&dxffilein, &dxffileout, minx, miny, maxx, maxy).unwrap();
-        return ();
+        pointdxfcrop(dxffilein, dxffileout, minx, miny, maxx, maxy).unwrap();
+        return ;
     }
 
     if command == "smoothjoin" {
@@ -480,7 +480,7 @@ vegeonly=0
             ground,
         )
         .unwrap();
-        return ();
+        return ;
     }
 
     if command == "render" {
@@ -488,7 +488,7 @@ vegeonly=0
         let nwidth: usize = args[1].parse::<usize>().unwrap();
         let nodepressions: bool = args.len() > 2 && args[2] == "nodepressions";
         render(&thread, angle, nwidth, nodepressions).unwrap();
-        return ();
+        return ;
     }
 
     let proc: u64 = conf
@@ -497,7 +497,7 @@ vegeonly=0
         .unwrap()
         .parse::<u64>()
         .unwrap();
-    if command == "" && batch && proc > 1 {
+    if command.is_empty() && batch && proc > 1 {
         let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
         for i in 0..proc {
             let handle = thread::spawn(move || {
@@ -511,13 +511,13 @@ vegeonly=0
         for handle in handles {
             handle.join().unwrap();
         }
-        return ();
+        return ;
     }
 
-    if (command == "" && batch && proc < 2) || (command == "startthread" && batch) {
+    if (command.is_empty() && batch && proc < 2) || (command == "startthread" && batch) {
         thread = String::from("0");
         if !args.is_empty() {
-            thread = args[0].clone();
+            thread.clone_from(&args[0]);
         }
         if thread == "0" {
             thread = String::from("");
@@ -530,7 +530,7 @@ vegeonly=0
         let mut zips: Vec<String> = vec![command];
         zips.extend(args);
         process_zip(&thread, &zips).unwrap();
-        return ();
+        return ;
     }
 
     if accepted_files_re.is_match(&command.to_lowercase()) {
@@ -539,7 +539,7 @@ vegeonly=0
             norender = args[1].clone() == "norender";
         }
         process_tile(&thread, &command, norender).unwrap();
-        return ();
+        
     }
 }
 
@@ -562,9 +562,9 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    let out2_file = File::create(&"merged.dxf").expect("Unable to create file");
+    let out2_file = File::create("merged.dxf").expect("Unable to create file");
     let mut out2 = BufWriter::new(out2_file);
-    let out_file = File::create(&"merged_contours.dxf").expect("Unable to create file");
+    let out_file = File::create("merged_contours.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     let mut headprinted = false;
@@ -588,16 +588,16 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
 
                 if !headprinted {
                     headout = String::from(head);
-                    out.write(&head.as_bytes())
+                    out.write(head.as_bytes())
                         .expect("Could not write to file");
-                    out2.write(&head.as_bytes())
+                    out2.write(head.as_bytes())
                         .expect("Could not write to file");
                     headprinted = true;
                 }
 
                 out.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out.write(&body.as_bytes())
+                out.write(body.as_bytes())
                     .expect("Could not write to file");
 
                 let plines: Vec<&str> = body.split("POLYLINE").collect();
@@ -605,18 +605,18 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                     if !pl.contains("_intermed") {
                         out2.write("POLYLINE".as_bytes())
                             .expect("Could not write to file");
-                        out2.write(&pl.as_bytes()).expect("Could not write to file");
+                        out2.write(pl.as_bytes()).expect("Could not write to file");
                     }
                 }
             }
         }
     }
-    out.write(&format!("ENDSEC{}", &footer).as_bytes())
+    out.write(format!("ENDSEC{}", &footer).as_bytes())
         .expect("Could not write to file");
 
     headprinted = false;
 
-    let out_file = File::create(&"merged_c2f.dxf").expect("Unable to create file");
+    let out_file = File::create("merged_c2f.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
@@ -633,29 +633,29 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                 footer = String::from(d[1]);
 
                 if !headprinted {
-                    out.write(&headout.as_bytes())
+                    out.write(headout.as_bytes())
                         .expect("Could not write to file");
                     headprinted = true;
                 }
 
                 out.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out.write(&body.as_bytes())
+                out.write(body.as_bytes())
                     .expect("Could not write to file");
 
                 out2.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out2.write(&body.as_bytes())
+                out2.write(body.as_bytes())
                     .expect("Could not write to file");
             }
         }
     }
-    out.write(&format!("ENDSEC{}", &footer).as_bytes())
+    out.write(format!("ENDSEC{}", &footer).as_bytes())
         .expect("Could not write to file");
 
     headprinted = false;
 
-    let out_file = File::create(&"merged_c2.dxf").expect("Unable to create file");
+    let out_file = File::create("merged_c2.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
@@ -672,24 +672,24 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                 footer = String::from(d[1]);
 
                 if !headprinted {
-                    out.write(&headout.as_bytes())
+                    out.write(headout.as_bytes())
                         .expect("Could not write to file");
                     headprinted = true;
                 }
 
                 out.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out.write(&body.as_bytes())
+                out.write(body.as_bytes())
                     .expect("Could not write to file");
 
                 out2.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out2.write(&body.as_bytes())
+                out2.write(body.as_bytes())
                     .expect("Could not write to file");
             }
         }
     }
-    out.write(&format!("ENDSEC{}", &footer).as_bytes())
+    out.write(format!("ENDSEC{}", &footer).as_bytes())
         .expect("Could not write to file");
 
     headprinted = false;
@@ -701,7 +701,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
         .parse::<f64>()
         .unwrap_or(0.0);
     if basemapcontours > 0.0 {
-        let out_file = File::create(&"merged_basemap.dxf").expect("Unable to create file");
+        let out_file = File::create("merged_basemap.dxf").expect("Unable to create file");
         let mut out = BufWriter::new(out_file);
 
         for dx in dxf_files.iter() {
@@ -718,30 +718,30 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                     footer = String::from(d[1]);
 
                     if !headprinted {
-                        out.write(&headout.as_bytes())
+                        out.write(headout.as_bytes())
                             .expect("Could not write to file");
                         headprinted = true;
                     }
 
                     out.write("POLYLINE".as_bytes())
                         .expect("Could not write to file");
-                    out.write(&body.as_bytes())
+                    out.write(body.as_bytes())
                         .expect("Could not write to file");
 
                     out2.write("POLYLINE".as_bytes())
                         .expect("Could not write to file");
-                    out2.write(&body.as_bytes())
+                    out2.write(body.as_bytes())
                         .expect("Could not write to file");
                 }
             }
         }
-        out.write(&format!("ENDSEC{}", &footer).as_bytes())
+        out.write(format!("ENDSEC{}", &footer).as_bytes())
             .expect("Could not write to file");
 
         headprinted = false;
     }
 
-    let out_file = File::create(&"merged_c3.dxf").expect("Unable to create file");
+    let out_file = File::create("merged_c3.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
@@ -758,29 +758,29 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                 footer = String::from(d[1]);
 
                 if !headprinted {
-                    out.write(&headout.as_bytes())
+                    out.write(headout.as_bytes())
                         .expect("Could not write to file");
                     headprinted = true;
                 }
 
                 out.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out.write(&body.as_bytes())
+                out.write(body.as_bytes())
                     .expect("Could not write to file");
 
                 out2.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out2.write(&body.as_bytes())
+                out2.write(body.as_bytes())
                     .expect("Could not write to file");
             }
         }
     }
-    out.write(&format!("ENDSEC{}", &footer).as_bytes())
+    out.write(format!("ENDSEC{}", &footer).as_bytes())
         .expect("Could not write to file");
 
     headprinted = false;
 
-    let out_file = File::create(&"formlines.dxf").expect("Unable to create file");
+    let out_file = File::create("formlines.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
@@ -797,29 +797,29 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                 footer = String::from(d[1]);
 
                 if !headprinted {
-                    out.write(&headout.as_bytes())
+                    out.write(headout.as_bytes())
                         .expect("Could not write to file");
                     headprinted = true;
                 }
 
                 out.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out.write(&body.as_bytes())
+                out.write(body.as_bytes())
                     .expect("Could not write to file");
 
                 out2.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out2.write(&body.as_bytes())
+                out2.write(body.as_bytes())
                     .expect("Could not write to file");
             }
         }
     }
-    out.write(&format!("ENDSEC{}", &footer).as_bytes())
+    out.write(format!("ENDSEC{}", &footer).as_bytes())
         .expect("Could not write to file");
 
     headprinted = false;
 
-    let out_file = File::create(&"merged_dotknolls.dxf").expect("Unable to create file");
+    let out_file = File::create("merged_dotknolls.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
@@ -836,29 +836,29 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                 footer = String::from(d[1]);
 
                 if !headprinted {
-                    out.write(&headout.as_bytes())
+                    out.write(headout.as_bytes())
                         .expect("Could not write to file");
                     headprinted = true;
                 }
 
                 out.write("POINT".as_bytes())
                     .expect("Could not write to file");
-                out.write(&body.as_bytes())
+                out.write(body.as_bytes())
                     .expect("Could not write to file");
 
                 out2.write("POINT".as_bytes())
                     .expect("Could not write to file");
-                out2.write(&body.as_bytes())
+                out2.write(body.as_bytes())
                     .expect("Could not write to file");
             }
         }
     }
-    out.write(&format!("ENDSEC{}", &footer).as_bytes())
+    out.write(format!("ENDSEC{}", &footer).as_bytes())
         .expect("Could not write to file");
 
     headprinted = false;
 
-    let out_file = File::create(&"merged_detected.dxf").expect("Unable to create file");
+    let out_file = File::create("merged_detected.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
@@ -875,21 +875,21 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                 footer = String::from(d[1]);
 
                 if !headprinted {
-                    out.write(&headout.as_bytes())
+                    out.write(headout.as_bytes())
                         .expect("Could not write to file");
                     headprinted = true;
                 }
 
                 out.write("POLYLINE".as_bytes())
                     .expect("Could not write to file");
-                out.write(&body.as_bytes())
+                out.write(body.as_bytes())
                     .expect("Could not write to file");
             }
         }
     }
-    out.write(&format!("ENDSEC{}", &footer).as_bytes())
+    out.write(format!("ENDSEC{}", &footer).as_bytes())
         .expect("Could not write to file");
-    out2.write(&format!("ENDSEC{}", &footer).as_bytes())
+    out2.write(format!("ENDSEC{}", &footer).as_bytes())
         .expect("Could not write to file");
     Ok(())
 }
@@ -915,7 +915,7 @@ fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(
         if Path::new(&pgw).exists() {
             let input = Path::new(&pgw);
             let data = fs::read_to_string(input).expect("Can not read input file");
-            let d: Vec<&str> = data.split("\n").collect();
+            let d: Vec<&str> = data.split('\n').collect();
             let tfw0 = d[0].trim().parse::<f64>().unwrap();
             let tfw4 = d[4].trim().parse::<f64>().unwrap();
             let tfw5 = d[5].trim().parse::<f64>().unwrap();
@@ -956,7 +956,7 @@ fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(
 
             let input = Path::new(&pgw);
             let data = fs::read_to_string(input).expect("Can not read input file");
-            let d: Vec<&str> = data.split("\n").collect();
+            let d: Vec<&str> = data.split('\n').collect();
             let tfw4 = d[4].trim().parse::<f64>().unwrap();
             let tfw5 = d[5].trim().parse::<f64>().unwrap();
 
@@ -1109,21 +1109,21 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
         .general_section()
         .get("buildingcolor")
         .unwrap_or("0,0,0")
-        .split(",")
+        .split(',')
         .collect();
     let vectorconf = conf.general_section().get("vectorconf").unwrap_or("");
     let mtkskip: Vec<&str> = conf
         .general_section()
         .get("mtkstip")
         .unwrap_or("")
-        .split(",")
+        .split(',')
         .collect();
     let mut vectorconf_lines: Vec<String> = vec![];
-    if vectorconf != "" {
+    if !vectorconf.is_empty() {
         let vectorconf_data =
             fs::read_to_string(Path::new(&vectorconf)).expect("Can not read input file");
         vectorconf_lines = vectorconf_data
-            .split("\n")
+            .split('\n')
             .collect::<Vec<&str>>()
             .iter()
             .map(|x| x.to_string())
@@ -1138,7 +1138,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
     let pgw = format!("{}/vegetation.pgw", tmpfolder);
     let input = Path::new(&pgw);
     let data = fs::read_to_string(input).expect("Can not read input file");
-    let d: Vec<&str> = data.split("\n").collect();
+    let d: Vec<&str> = data.split('\n').collect();
 
     let x0 = d[4].trim().parse::<f64>().unwrap();
     let y0 = d[5].trim().parse::<f64>().unwrap();
@@ -1194,7 +1194,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
 
     for shp_file in shp_files.iter() {
         let file = shp_file.as_path().file_name().unwrap().to_str().unwrap();
-        let file = String::from(format!("{}/{}", tmpfolder, file));
+        let file = format!("{}/{}", tmpfolder, file);
 
         // drawshape comes here
         let mut reader = shapefile::Reader::from_path(&file)?;
@@ -1211,7 +1211,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
             let mut dashedline = false;
             let mut border = 0.0;
 
-            if vectorconf == "" {
+            if vectorconf.is_empty() {
                 // MML shape file
                 let mut luokka = String::new();
                 if let Some(fv) = record.get("LUOKKA") {
@@ -1219,7 +1219,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                         luokka = format!("{}", f_luokka);
                     }
                     if let FieldValue::Character(Some(c_luokka)) = fv {
-                        luokka = format!("{}", c_luokka);
+                        luokka = c_luokka.to_string();
                     }
                 }
                 let mut versuh = 0.0;
@@ -1412,13 +1412,13 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
             } else {
                 // configuration based drawing
                 for conf_row in vectorconf_lines.iter() {
-                    let row_data: Vec<&str> = conf_row.trim().split("|").collect();
+                    let row_data: Vec<&str> = conf_row.trim().split('|').collect();
                     if row_data.len() < 3 {
                         continue;
                     }
                     let isom = row_data[1];
                     let mut keyvals: Vec<(String, String, String)> = vec![];
-                    let params: Vec<&str> = row_data[2].split("&").collect();
+                    let params: Vec<&str> = row_data[2].split('&').collect();
                     for param in params {
                         let mut operator = "=";
                         let d: Vec<&str>;
@@ -1426,7 +1426,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                             d = param.splitn(2, "!=").collect();
                             operator = "!=";
                         } else {
-                            d = param.splitn(2, "=").collect();
+                            d = param.splitn(2, '=').collect();
                         }
                         keyvals.push((
                             operator.to_string(),
@@ -1441,7 +1441,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1467,7 +1467,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1493,7 +1493,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1519,7 +1519,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1545,7 +1545,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1571,7 +1571,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1600,7 +1600,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::new();
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1630,7 +1630,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1656,7 +1656,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1683,7 +1683,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1710,7 +1710,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1737,7 +1737,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1763,7 +1763,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1789,7 +1789,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1816,7 +1816,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1841,7 +1841,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1866,7 +1866,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1890,7 +1890,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1914,7 +1914,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1938,7 +1938,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1962,7 +1962,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -1986,7 +1986,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                                 let mut r = String::from("");
                                 if let Some(recordfv) = record.get(&keyval.1) {
                                     if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = format!("{}", record_str).trim().to_string();
+                                        r = record_str.to_string().trim().to_string();
                                     }
                                 }
                                 if keyval.0 == "=" {
@@ -2169,7 +2169,7 @@ fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
     imgblue2.overlay(&mut imgblue, 0.0, 1.0);
     imgblue.overlay(&mut imgblue2, 0.0, 0.0);
 
-    let mut i = 0.0 as f32;
+    let mut i = 0.0_f32;
     imgmarsh.set_transparent_color();
     while i < ((h * 600.0 / 254.0 / scalefactor + 500.0) as f32) {
         i += 14.0;
@@ -2238,7 +2238,7 @@ fn process_tile(
         return Ok(());
     }
     let mut thread_name = String::new();
-    if thread != "" {
+    if !thread.is_empty() {
         thread_name = format!("Thread {}: ", thread);
     }
     println!("{}Preparing input file", thread_name);
@@ -2252,7 +2252,7 @@ fn process_tile(
             for line in lines {
                 if i == 2 {
                     let ip = line.unwrap_or(String::new());
-                    let parts = ip.split(" ");
+                    let parts = ip.split(' ');
                     let r = parts.collect::<Vec<&str>>();
                     if r.len() == 7 {
                         skiplaz2txt = true;
@@ -2313,7 +2313,7 @@ fn process_tile(
         }
 
         let tmp_filename = format!("{}/xyztemp.xyz", tmpfolder);
-        let tmp_file = File::create(&tmp_filename).expect("Unable to create file");
+        let tmp_file = File::create(tmp_filename).expect("Unable to create file");
         let mut tmp_fp = BufWriter::new(tmp_file);
 
         let mut reader = Reader::from_path(filename).expect("Unable to open reader");
@@ -2527,10 +2527,10 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -2548,10 +2548,10 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmax: u64 = u64::MIN;
     let mut ymax: u64 = u64::MIN;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -2578,7 +2578,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
             let mut high: f64 = f64::MIN;
             for ii in i - 1..i + 2 {
                 for jj in j - 1..j + 2 {
-                    let tmp = *xyz.get(&(ii as u64, jj as u64)).unwrap_or(&0.0);
+                    let tmp = *xyz.get(&(ii, jj)).unwrap_or(&0.0);
                     if tmp < low {
                         low = tmp;
                     }
@@ -2600,7 +2600,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
     let dxfhead = &format!("HEADER{}ENDSEC", dxfheadtmp);
     let mut out = String::new();
     out.push_str("  0\r\nSECTION\r\n  2\r\n");
-    out.push_str(&dxfhead);
+    out.push_str(dxfhead);
     out.push_str("\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n");
 
     let depr_filename = &format!("{}/depressions.txt", tmpfolder);
@@ -2636,7 +2636,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
         if j > 0 {
             let r = rec.split("VERTEX").collect::<Vec<&str>>();
             let apu = r[1];
-            let val = apu.split("\n").collect::<Vec<&str>>();
+            let val = apu.split('\n').collect::<Vec<&str>>();
             for (i, v) in val.iter().enumerate() {
                 let vt = v.trim();
                 if vt == "10" {
@@ -2648,7 +2648,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
             }
             for (i, v) in r.iter().enumerate() {
                 if i > 0 {
-                    let val = v.trim_end().split("\n").collect::<Vec<&str>>();
+                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
                     x.push(val[xline].trim().parse::<f64>().unwrap());
                     y.push(val[yline].trim().parse::<f64>().unwrap());
                 }
@@ -2708,21 +2708,21 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                 }
                 if !end_loop {
                     if tails[l] == heads[to_join] {
-                        let tmp = format!("{}", tails[l]);
+                        let tmp = tails[l].to_string();
                         heads2.insert(tmp, 0);
-                        let tmp = format!("{}", tails[l]);
+                        let tmp = tails[l].to_string();
                         heads1.insert(tmp, 0);
                         let mut to_append = el_x[to_join].to_vec();
                         el_x[l].append(&mut to_append);
                         let mut to_append = el_y[to_join].to_vec();
                         el_y[l].append(&mut to_append);
-                        let tmp = format!("{}", tails[to_join]);
+                        let tmp = tails[to_join].to_string();
                         tails[l] = tmp;
                         el_x[to_join].clear();
                     } else if tails[l] == tails[to_join] {
-                        let tmp = format!("{}", tails[l]);
+                        let tmp = tails[l].to_string();
                         heads2.insert(tmp, 0);
-                        let tmp = format!("{}", tails[l]);
+                        let tmp = tails[l].to_string();
                         heads1.insert(tmp, 0);
                         let mut to_append = el_x[to_join].to_vec();
                         to_append.reverse();
@@ -2730,25 +2730,25 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                         let mut to_append = el_y[to_join].to_vec();
                         to_append.reverse();
                         el_y[l].append(&mut to_append);
-                        let tmp = format!("{}", heads[to_join]);
+                        let tmp = heads[to_join].to_string();
                         tails[l] = tmp;
                         el_x[to_join].clear();
                     } else if heads[l] == tails[to_join] {
-                        let tmp = format!("{}", heads[l]);
+                        let tmp = heads[l].to_string();
                         heads2.insert(tmp, 0);
-                        let tmp = format!("{}", heads[l]);
+                        let tmp = heads[l].to_string();
                         heads1.insert(tmp, 0);
                         let to_append = el_x[to_join].to_vec();
                         el_x[l].splice(0..0, to_append);
                         let to_append = el_y[to_join].to_vec();
                         el_y[l].splice(0..0, to_append);
-                        let tmp = format!("{}", heads[to_join]);
+                        let tmp = heads[to_join].to_string();
                         heads[l] = tmp;
                         el_x[to_join].clear();
                     } else if heads[l] == heads[to_join] {
-                        let tmp = format!("{}", heads[l]);
+                        let tmp = heads[l].to_string();
                         heads2.insert(tmp, 0);
-                        let tmp = format!("{}", heads[l]);
+                        let tmp = heads[l].to_string();
                         heads1.insert(tmp, 0);
                         let mut to_append = el_x[to_join].to_vec();
                         to_append.reverse();
@@ -2756,7 +2756,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                         let mut to_append = el_y[to_join].to_vec();
                         to_append.reverse();
                         el_y[l].splice(0..0, to_append);
-                        let tmp = format!("{}", tails[to_join]);
+                        let tmp = tails[to_join].to_string();
                         heads[l] = tmp;
                         el_x[to_join].clear();
                     }
@@ -2783,27 +2783,27 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                 while m < el_x_len {
                     let xm = el_x[l][m];
                     let ym = el_y[l][m];
-                    if (xm - xstart) as f64 / size as f64
-                        == ((xm - xstart) as f64 / size as f64).floor()
+                    if (xm - xstart) / size
+                        == ((xm - xstart) / size).floor()
                     {
-                        let xx = ((xm - xstart) as f64 / size as f64).floor() as u64;
-                        let yy = ((ym - ystart) as f64 / size as f64).floor() as u64;
+                        let xx = ((xm - xstart) / size).floor() as u64;
+                        let yy = ((ym - ystart) / size).floor() as u64;
                         let h1 = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
                         let h2 = *xyz.get(&(xx, yy + 1)).unwrap_or(&0.0);
-                        let h3 = h1 * (yy as f64 + 1.0 - (ym - ystart) as f64 / size as f64)
-                            + h2 * ((ym - ystart) as f64 / size as f64 - yy as f64);
+                        let h3 = h1 * (yy as f64 + 1.0 - (ym - ystart) / size)
+                            + h2 * ((ym - ystart) / size - yy as f64);
                         h = (h3 / interval + 0.5).floor() * interval;
                         m += el_x_len;
                     } else if m < el_x_len - 1
-                        && (el_y[l][m] - ystart) as f64 / size as f64
-                            == ((el_y[l][m] - ystart) as f64 / size as f64).floor()
+                        && (el_y[l][m] - ystart) / size
+                            == ((el_y[l][m] - ystart) / size).floor()
                     {
-                        let xx = ((xm - xstart) as f64 / size as f64).floor() as u64;
-                        let yy = ((ym - ystart) as f64 / size as f64).floor() as u64;
+                        let xx = ((xm - xstart) / size).floor() as u64;
+                        let yy = ((ym - ystart) / size).floor() as u64;
                         let h1 = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
                         let h2 = *xyz.get(&(xx + 1, yy)).unwrap_or(&0.0);
-                        let h3 = h1 * (xx as f64 + 1.0 - (xm - xstart) as f64 / size as f64)
-                            + h2 * ((xm - xstart) as f64 / size as f64 - xx as f64);
+                        let h3 = h1 * (xx as f64 + 1.0 - (xm - xstart) / size)
+                            + h2 * ((xm - xstart) / size - xx as f64);
                         h = (h3 / interval + 0.5).floor() * interval;
                         m += el_x_len;
                     } else {
@@ -2824,13 +2824,13 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                 let mut x_avg = el_x[l][m];
                 let mut y_avg = el_y[l][m];
                 while m < el_x_len {
-                    let xm = (el_x[l][m] - xstart) as f64 / size as f64;
-                    let ym = (el_y[l][m] - ystart) as f64 / size as f64;
+                    let xm = (el_x[l][m] - xstart) / size;
+                    let ym = (el_y[l][m] - ystart) / size;
                     if m < el_x_len - 3
                         && ym == ym.floor()
                         && (xm - xm.floor()).abs() > 0.5
-                        && ym.floor() != ((el_y[l][0] - ystart) as f64 / size as f64).floor()
-                        && xm.floor() != ((el_x[l][0] - xstart) as f64 / size as f64).floor()
+                        && ym.floor() != ((el_y[l][0] - ystart) / size).floor()
+                        && xm.floor() != ((el_x[l][0] - xstart) / size).floor()
                     {
                         x_avg = xm.floor() * size + xstart;
                         y_avg = el_y[l][m].floor();
@@ -2853,12 +2853,8 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                 for n in 0..el_x[l].len() {
                     let x1 = el_x[l][n];
                     let y1 = el_y[l][n];
-                    if n > 0 {
-                        if ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0))
-                            && (xtest < (x1 - x0) * (ytest - y0) / (y1 - y0) + x0)
-                        {
-                            hit += 1;
-                        }
+                    if n > 0 && ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0)) && (xtest < (x1 - x0) * (ytest - y0) / (y1 - y0) + x0) {
+                        hit += 1;
                     }
                     x0 = x1;
                     y0 = y1;
@@ -2898,20 +2894,16 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                         }
                     }
 
-                    if (steepcounter as f64) < 0.4 * (el_x_len as f64 - 1.0)
-                        && (jarkkos_bug || el_x_len < 41)
-                    {
-                        if depression as f64 * h_center - 1.9 < minele {
-                            if maxele - 0.45 * scalefactor * inidotknolls < minele {
-                                skip = true;
-                            }
-                            if el_x_len < 33 && maxele - 0.75 * scalefactor * inidotknolls < minele
-                            {
-                                skip = true;
-                            }
-                            if el_x_len < 19 && maxele - 0.9 * scalefactor * inidotknolls < minele {
-                                skip = true;
-                            }
+                    if (steepcounter as f64) < 0.4 * (el_x_len as f64 - 1.0) && (jarkkos_bug || el_x_len < 41) && depression as f64 * h_center - 1.9 < minele {
+                        if maxele - 0.45 * scalefactor * inidotknolls < minele {
+                            skip = true;
+                        }
+                        if el_x_len < 33 && maxele - 0.75 * scalefactor * inidotknolls < minele
+                        {
+                            skip = true;
+                        }
+                        if el_x_len < 19 && maxele - 0.9 * scalefactor * inidotknolls < minele {
+                            skip = true;
                         }
                     }
                     if (steepcounter as f64) < inidotknolls * (el_x_len - 1) as f64 && el_x_len < 15
@@ -3106,21 +3098,13 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                 if depression == -1 {
                     layer = String::from("depression");
                 }
-                if indexcontours != 0.0 {
-                    if (((h / interval + 0.5).floor() * interval) / indexcontours).floor()
-                        - ((h / interval + 0.5).floor() * interval) / indexcontours
-                        == 0.0
-                    {
-                        layer.push_str("_index");
-                    }
+                if indexcontours != 0.0 && (((h / interval + 0.5).floor() * interval) / indexcontours).floor()
+                        - ((h / interval + 0.5).floor() * interval) / indexcontours == 0.0 {
+                    layer.push_str("_index");
                 }
-                if formline > 0.0 {
-                    if (((h / interval + 0.5).floor() * interval) / (2.0 * interval)).floor()
-                        - ((h / interval + 0.5).floor() * interval) / (2.0 * interval)
-                        != 0.0
-                    {
-                        layer.push_str("_intermed");
-                    }
+                if formline > 0.0 && (((h / interval + 0.5).floor() * interval) / (2.0 * interval)).floor()
+                        - ((h / interval + 0.5).floor() * interval) / (2.0 * interval) != 0.0 {
+                    layer.push_str("_intermed");
                 }
                 out.push_str(
                     format!(
@@ -3218,10 +3202,10 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     let path = format!("{}/xyztemp.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3258,10 +3242,10 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ystart: f64 = f64::NAN;
     let mut sxmax: usize = usize::MIN;
     let mut symax: usize = usize::MIN;
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3280,10 +3264,10 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
         vec![f64::NAN; ((ymax - ystart) / size).ceil() as usize + 1];
         ((xmax - xstart) / size).ceil() as usize + 1
     ];
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3341,11 +3325,11 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     let xyz_file_in = Path::new(&path);
 
     let mut rng = rand::thread_rng();
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             if cliff_thin > rng.gen() {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
+                let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
                 let x: f64 = r[0].parse::<f64>().unwrap();
                 let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3362,13 +3346,13 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     let h = ((ymax - ymin).floor() / 3.0) as usize;
 
     let f2 =
-        File::create(&Path::new(&format!("{}/c2g.dxf", tmpfolder))).expect("Unable to create file");
+        File::create(Path::new(&format!("{}/c2g.dxf", tmpfolder))).expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
     f2.write(format!("  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n", xmin, ymin, xmax, ymax).as_bytes()).expect("Cannot write dxf file");
 
     let f3 =
-        File::create(&Path::new(&format!("{}/c3g.dxf", tmpfolder))).expect("Unable to create file");
+        File::create(Path::new(&format!("{}/c3g.dxf", tmpfolder))).expect("Unable to create file");
     let mut f3 = BufWriter::new(f3);
 
     f3.write(
@@ -3380,7 +3364,7 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
 
     for x in 0..w + 1 {
         for y in 0..h + 1 {
-            if list_alt[x][y].len() != 0 {
+            if !list_alt[x][y].is_empty() {
                 let mut t = Vec::<(f64, f64, f64)>::new();
                 if x >= 1 {
                     if y >= 1 {
@@ -3484,38 +3468,32 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
                         let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
                         if dist > 0.0 {
                             if steep < no_small_ciffs
-                                && temp > limit
-                                && temp > (limit + (dist - limit) * 0.85)
-                            {
-                                if (((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32) < img.width()
-                                    && (((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32)
-                                        < img.height()
-                                {
-                                    let p = img.get_pixel(
+                                && temp > limit && temp > (limit + (dist - limit) * 0.85) && (((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32) < img.width() && (((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32)
+                                        < img.height() {
+                                let p = img.get_pixel(
+                                    ((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32,
+                                    ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32,
+                                );
+                                if p[0] == 255 {
+                                    img.put_pixel(
                                         ((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32,
                                         ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32,
+                                        Rgb([0, 0, 0]),
                                     );
-                                    if p[0] == 255 {
-                                        img.put_pixel(
-                                            ((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32,
-                                            ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32,
-                                            Rgb([0, 0, 0]),
-                                        );
-                                        f2.write(
-                                            "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff2\r\n  0\r\n"
-                                                .as_bytes(),
-                                        )
-                                        .expect("Cannot write dxf file");
-                                        f2.write(
-                                            format!(
-                                                "VERTEX\r\n  8\r\ncliff2\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff2\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
-                                                (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
-                                                (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
-                                                (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
-                                                (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
-                                            ).as_bytes()
-                                        ).expect("Cannot write dxf file");
-                                    }
+                                    f2.write(
+                                        "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff2\r\n  0\r\n"
+                                            .as_bytes(),
+                                    )
+                                    .expect("Cannot write dxf file");
+                                    f2.write(
+                                        format!(
+                                            "VERTEX\r\n  8\r\ncliff2\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff2\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
+                                            (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
+                                            (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
+                                            (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
+                                            (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
+                                        ).as_bytes()
+                                    ).expect("Cannot write dxf file");
                                 }
                             }
 
@@ -3552,11 +3530,11 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
             (((xmax - xmin) / 3.0).ceil() + 1.0) as usize
         ];
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             if cliff_thin > rng.gen() {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
+                let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
                 let x: f64 = r[0].parse::<f64>().unwrap();
                 let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3569,7 +3547,7 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
 
     for x in 0..w + 1 {
         for y in 0..h + 1 {
-            if list_alt[x][y].len() != 0 {
+            if !list_alt[x][y].is_empty() {
                 let mut t = Vec::<(f64, f64, f64)>::new();
                 if x >= 1 {
                     if y >= 1 {
@@ -3611,22 +3589,20 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
                         let ht = rec2.2;
                         let temp = h0 - ht;
                         let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
-                        if dist > 0.0 {
-                            if temp > limit && temp > (limit + (dist - limit) * 0.85) {
-                                f3.write(
-                                    "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff4\r\n  0\r\n".as_bytes(),
-                                )
-                                .expect("Cannot write dxf file");
-                                f3.write(
-                                    format!(
-                                        "VERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
-                                        (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
-                                        (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
-                                        (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
-                                        (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
-                                    ).as_bytes()
-                                ).expect("Cannot write dxf file");
-                            }
+                        if dist > 0.0 && temp > limit && temp > (limit + (dist - limit) * 0.85) {
+                            f3.write(
+                                "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff4\r\n  0\r\n".as_bytes(),
+                            )
+                            .expect("Cannot write dxf file");
+                            f3.write(
+                                format!(
+                                    "VERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
+                                    (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
+                                    (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
+                                    (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
+                                    (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
+                                ).as_bytes()
+                            ).expect("Cannot write dxf file");
                         }
                     }
                 }
@@ -3652,10 +3628,10 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ystartxyz: f64 = f64::NAN;
     let mut xmax: u64 = u64::MIN;
     let mut ymax: u64 = u64::MIN;
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3671,10 +3647,10 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     }
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3700,10 +3676,10 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let path = format!("{}/xyztemp.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3779,10 +3755,10 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -3799,10 +3775,10 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmax = 0.0;
     let mut ymax = 0.0;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             if r.len() >= 2 {
                 let x: f64 = r[0].parse::<f64>().unwrap();
@@ -3828,7 +3804,7 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         Luma([0xff]),
     );
 
-    let f = File::create(&Path::new(&format!("{}/dotknolls.dxf", tmpfolder)))
+    let f = File::create(Path::new(&format!("{}/dotknolls.dxf", tmpfolder)))
         .expect("Unable to create file");
     let mut f = BufWriter::new(f);
     f.write(
@@ -3850,7 +3826,7 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         if j > 0 {
             let r = rec.split("VERTEX").collect::<Vec<&str>>();
             let apu = r[1];
-            let val = apu.split("\n").collect::<Vec<&str>>();
+            let val = apu.split('\n').collect::<Vec<&str>>();
             for (i, v) in val.iter().enumerate() {
                 let vt = v.trim();
                 if vt == "10" {
@@ -3862,7 +3838,7 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
             }
             for (i, v) in r.iter().enumerate() {
                 if i > 0 {
-                    let val = v.trim_end().split("\n").collect::<Vec<&str>>();
+                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
                     x.push(val[xline].trim().parse::<f64>().unwrap());
                     y.push(val[yline].trim().parse::<f64>().unwrap());
                 }
@@ -3886,10 +3862,10 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let input_filename = &format!("{}/dotknolls.txt", tmpfolder);
     let input = Path::new(input_filename);
-    if let Ok(lines) = read_lines(&input) {
+    if let Ok(lines) = read_lines(input) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             if r.len() >= 3 {
                 let depression: bool = r[0] == "1";
@@ -3974,10 +3950,10 @@ fn xyz2contours(
     let path = format!("{}/{}", tmpfolder, xyzfilein);
     let xyz_file_in = Path::new(&path);
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             if (r.len() > 3 && (r[3] == "2" || r[3] == water_class)) || !ground {
                 let x: f64 = r[0].parse::<f64>().unwrap();
@@ -4017,10 +3993,10 @@ fn xyz2contours(
     let h: usize = ((ymax - ymin).ceil() / 2.0 / scalefactor) as usize;
 
     let mut list_alt = vec![vec![Vec::new(); h + 2]; w + 2];
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             if (r.len() > 3 && (r[3] == "2" || r[3] == water_class)) || !ground {
                 let x: f64 = r[0].parse::<f64>().unwrap();
@@ -4099,9 +4075,9 @@ fn xyz2contours(
                 let mut val: f64 = 0.0;
                 let mut c = 0;
                 for i in 0..3 {
-                    let ii: i32 = i as i32 - 1;
+                    let ii: i32 = i - 1;
                     for j in 0..3 {
-                        let jj: i32 = j as i32 - 1;
+                        let jj: i32 = j - 1;
                         if y as i32 + jj >= 0 && x as i32 + ii >= 0 {
                             let x_idx = (x as i32 + ii) as usize;
                             let y_idx = (y as i32 + jj) as usize;
@@ -4151,29 +4127,29 @@ fn xyz2contours(
         }
     }
 
-    if xyzfileout != "" && xyzfileout != "null" {
+    if !xyzfileout.is_empty() && xyzfileout != "null" {
         let path = format!("{}/{}", tmpfolder, xyzfileout);
         let xyz_file_out = Path::new(&path);
-        let f = File::create(&xyz_file_out).expect("Unable to create file");
+        let f = File::create(xyz_file_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
         for x in 0..w + 1 {
             for y in 0..h + 1 {
                 let ele = avg_alt[x][y];
-                let xx = x as f64 * 2.0 * scalefactor + xmin as f64;
-                let yy = y as f64 * 2.0 * scalefactor + ymin as f64;
+                let xx = x as f64 * 2.0 * scalefactor + xmin;
+                let yy = y as f64 * 2.0 * scalefactor + ymin;
                 f.write(format!("{} {} {}\r\n", xx, yy, ele).as_bytes())
                     .expect("Cannot write to output file");
             }
         }
     }
-    if dxffile != "" && dxffile != "null" {
+    if !dxffile.is_empty() && dxffile != "null" {
         let v = cinterval;
 
         let mut level: f64 = (hmin / v).floor() * v;
         let path = format!("{}/temp_polylines.txt", tmpfolder);
         let polyline_out = Path::new(&path);
 
-        let f = File::create(&polyline_out).expect("Unable to create file");
+        let f = File::create(polyline_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
         f.write(b"").expect("Unable to create file");
 
@@ -4185,8 +4161,8 @@ fn xyz2contours(
             let mut obj = Vec::<String>::new();
             let mut curves: HashMap<String, String> = HashMap::new();
 
-            for i in 1..(w - 1) as usize {
-                for j in 2..(h - 1) as usize {
+            for i in 1..(w - 1) {
+                for j in 2..(h - 1) {
                     let mut a = avg_alt[i][j];
                     let mut b = avg_alt[i][j + 1];
                     let mut c = avg_alt[i + 1][j];
@@ -4247,19 +4223,17 @@ fn xyz2contours(
                                     check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                                 }
                             }
-                        } else if b < a {
-                            if level < a && level > b {
-                                let x1: f64 = i as f64;
-                                let y1: f64 = j as f64 + (a - level) / (a - b);
-                                if level < c {
-                                    let x2: f64 = i as f64 + (level - b) / (c - b);
-                                    let y2: f64 = j as f64 + (c - level) / (c - b);
-                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                                } else if level > c {
-                                    let x2: f64 = i as f64 + (a - level) / (a - c);
-                                    let y2: f64 = j as f64;
-                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                                }
+                        } else if b < a && level < a && level > b {
+                            let x1: f64 = i as f64;
+                            let y1: f64 = j as f64 + (a - level) / (a - b);
+                            if level < c {
+                                let x2: f64 = i as f64 + (level - b) / (c - b);
+                                let y2: f64 = j as f64 + (c - level) / (c - b);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            } else if level > c {
+                                let x2: f64 = i as f64 + (a - level) / (a - c);
+                                let y2: f64 = j as f64;
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                             }
                         }
 
@@ -4273,15 +4247,13 @@ fn xyz2contours(
                                     check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                                 }
                             }
-                        } else if a > c {
-                            if level < a && level > c {
-                                let x1: f64 = i as f64 + (a - level) / (a - c);
-                                let y1: f64 = j as f64;
-                                if level < b {
-                                    let x2: f64 = i as f64 + (b - level) / (b - c);
-                                    let y2: f64 = j as f64 + (level - c) / (b - c);
-                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                                }
+                        } else if a > c && level < a && level > c {
+                            let x1: f64 = i as f64 + (a - level) / (a - c);
+                            let y1: f64 = j as f64;
+                            if level < b {
+                                let x2: f64 = i as f64 + (b - level) / (b - c);
+                                let y2: f64 = j as f64 + (level - c) / (b - c);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                             }
                         }
 
@@ -4299,19 +4271,17 @@ fn xyz2contours(
                                     check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                                 }
                             }
-                        } else if c > d {
-                            if level < c && level > d {
-                                let x1: f64 = i as f64 + 1.0;
-                                let y1: f64 = j as f64 + (c - level) / (c - d);
-                                if level > b {
-                                    let x2: f64 = i as f64 + (level - b) / (c - b);
-                                    let y2: f64 = j as f64 + (c - level) / (c - b);
-                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                                } else if level < b {
-                                    let x2: f64 = i as f64 + (b - level) / (b - d);
-                                    let y2: f64 = j as f64 + 1.0;
-                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                                }
+                        } else if c > d && level < c && level > d {
+                            let x1: f64 = i as f64 + 1.0;
+                            let y1: f64 = j as f64 + (c - level) / (c - d);
+                            if level > b {
+                                let x2: f64 = i as f64 + (level - b) / (c - b);
+                                let y2: f64 = j as f64 + (c - level) / (c - b);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
+                            } else if level < b {
+                                let x2: f64 = i as f64 + (b - level) / (b - d);
+                                let y2: f64 = j as f64 + 1.0;
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                             }
                         }
 
@@ -4325,15 +4295,13 @@ fn xyz2contours(
                                     check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                                 }
                             }
-                        } else if b < d {
-                            if level < d && level > b {
-                                let x1: f64 = i as f64 + (level - b) / (d - b);
-                                let y1: f64 = j as f64 + 1.0;
-                                if level < c {
-                                    let x2: f64 = i as f64 + (level - b) / (c - b);
-                                    let y2: f64 = j as f64 + (c - level) / (c - b);
-                                    check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
-                                }
+                        } else if b < d && level < d && level > b {
+                            let x1: f64 = i as f64 + (level - b) / (d - b);
+                            let y1: f64 = j as f64 + 1.0;
+                            if level < c {
+                                let x2: f64 = i as f64 + (level - b) / (c - b);
+                                let y2: f64 = j as f64 + (c - level) / (c - b);
+                                check_obj_in(&mut obj, &mut curves, x1, x2, y1, y2);
                             }
                         }
                     }
@@ -4342,7 +4310,7 @@ fn xyz2contours(
 
             let f = OpenOptions::new()
                 .append(true)
-                .open(&polyline_out)
+                .open(polyline_out)
                 .expect("Unable to create file");
             let mut f = BufWriter::new(f);
 
@@ -4376,7 +4344,7 @@ fn xyz2contours(
                         if curves.contains_key(&format!("{}_1", head))
                             && curves.get(&format!("{}_1", head)).unwrap() != &res
                         {
-                            res = head.clone();
+                            res.clone_from(&head);
 
                             let parts = curves
                                 .get(&format!("{}_1", head))
@@ -4398,39 +4366,37 @@ fn xyz2contours(
                             {
                                 curves.remove(&format!("{}_2", head));
                             }
-                        } else {
-                            if curves.contains_key(&format!("{}_2", head))
-                                && curves.get(&format!("{}_2", head)).unwrap() != &res
+                        } else if curves.contains_key(&format!("{}_2", head))
+                            && curves.get(&format!("{}_2", head)).unwrap() != &res
+                        {
+                            res.clone_from(&head);
+
+                            let parts = curves
+                                .get(&format!("{}_2", head))
+                                .unwrap()
+                                .split(&separator);
+                            let r = parts.collect::<Vec<&str>>();
+                            let x: f64 = r[0].parse::<f64>().unwrap();
+                            let y: f64 = r[1].parse::<f64>().unwrap();
+                            f.write(format!("{},{};", x, y).as_bytes())
+                                .expect("Cannot write to output file");
+                            curves.remove(&format!("{}_2", head));
+
+                            head = format!("{}_{}", x, y);
+                            if curves.get(&format!("{}_1", head)).unwrap_or(&String::new())
+                                == &res
                             {
-                                res = head.clone();
-
-                                let parts = curves
-                                    .get(&format!("{}_2", head))
-                                    .unwrap()
-                                    .split(&separator);
-                                let r = parts.collect::<Vec<&str>>();
-                                let x: f64 = r[0].parse::<f64>().unwrap();
-                                let y: f64 = r[1].parse::<f64>().unwrap();
-                                f.write(format!("{},{};", x, y).as_bytes())
-                                    .expect("Cannot write to output file");
-                                curves.remove(&format!("{}_2", head));
-
-                                head = format!("{}_{}", x, y);
-                                if curves.get(&format!("{}_1", head)).unwrap_or(&String::new())
-                                    == &res
-                                {
-                                    curves.remove(&format!("{}_1", head));
-                                }
-                                if curves.get(&format!("{}_2", head)).unwrap_or(&String::new())
-                                    == &res
-                                {
-                                    curves.remove(&format!("{}_2", head));
-                                }
-                            } else {
-                                f.write("\r\n".as_bytes())
-                                    .expect("Cannot write to output file");
-                                break;
+                                curves.remove(&format!("{}_1", head));
                             }
+                            if curves.get(&format!("{}_2", head)).unwrap_or(&String::new())
+                                == &res
+                            {
+                                curves.remove(&format!("{}_2", head));
+                            }
+                        } else {
+                            f.write("\r\n".as_bytes())
+                                .expect("Cannot write to output file");
+                            break;
                         }
                     }
                 }
@@ -4438,7 +4404,7 @@ fn xyz2contours(
             f.flush().expect("Cannot flush");
             level += v;
         }
-        let f = File::create(&Path::new(&format!("{}/{}", tmpfolder, dxffile)))
+        let f = File::create(Path::new(&format!("{}/{}", tmpfolder, dxffile)))
             .expect("Unable to create file");
         let mut f = BufWriter::new(f);
 
@@ -4449,10 +4415,10 @@ fn xyz2contours(
             ).as_bytes()
         ).expect("Cannot write dxf file");
 
-        if let Ok(lines) = read_lines(&polyline_out) {
+        if let Ok(lines) = read_lines(polyline_out) {
             for line in lines {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(";");
+                let parts = ip.split(';');
                 let r = parts.collect::<Vec<&str>>();
                 f.write("POLYLINE\r\n 66\r\n1\r\n  8\r\ncont\r\n  0\r\n".as_bytes())
                     .expect("Cannot write dxf file");
@@ -4463,7 +4429,7 @@ fn xyz2contours(
                         if ii > 5 && ii < ldata - 5 && ldata > 12 && ii % 2 == 0 {
                             continue;
                         }
-                        let xy_raw = d.split(",");
+                        let xy_raw = d.split(',');
                         let xy = xy_raw.collect::<Vec<&str>>();
                         let x: f64 = xy[0].parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
                         let y: f64 = xy[1].parse::<f64>().unwrap() * 2.0 * scalefactor + ymin;
@@ -4606,10 +4572,10 @@ fn render(
         let path = format!("{}/xyz2.xyz", tmpfolder);
         let xyz_file_in = Path::new(&path);
 
-        if let Ok(lines) = read_lines(&xyz_file_in) {
+        if let Ok(lines) = read_lines(xyz_file_in) {
             for (i, line) in lines.enumerate() {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
+                let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
                 let x: f64 = r[0].parse::<f64>().unwrap();
                 let y: f64 = r[1].parse::<f64>().unwrap();
@@ -4629,10 +4595,10 @@ fn render(
 
         let mut xyz: HashMap<(usize, usize), f64> = HashMap::new();
 
-        if let Ok(lines) = read_lines(&xyz_file_in) {
+        if let Ok(lines) = read_lines(xyz_file_in) {
             for line in lines {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
+                let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
                 let x: f64 = r[0].parse::<f64>().unwrap();
                 let y: f64 = r[1].parse::<f64>().unwrap();
@@ -4825,15 +4791,14 @@ fn render(
     let path = format!("{}/vegetation.pgw", tmpfolder);
     let tfw_in = Path::new(&path);
 
-    let mut lines = read_lines(&tfw_in).expect("PGW file does not exist");
+    let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
     let x0 = lines
         .nth(4)
         .expect("no 4 line")
         .expect("Could not read line 5")
         .parse::<f64>()
         .unwrap();
-    let y0 = lines
-        .nth(0)
+    let y0 = lines.next()
         .expect("no 5 line")
         .expect("Could not read line 6")
         .parse::<f64>()
@@ -4933,7 +4898,7 @@ fn render(
             if j > 0 {
                 let r = rec.split("VERTEX").collect::<Vec<&str>>();
                 let apu = r[1];
-                let val = apu.split("\n").collect::<Vec<&str>>();
+                let val = apu.split('\n').collect::<Vec<&str>>();
                 layer = val[2].trim();
                 for (i, v) in val.iter().enumerate() {
                     let vt = v.trim();
@@ -4946,7 +4911,7 @@ fn render(
                 }
                 for (i, v) in r.iter().enumerate() {
                     if i > 0 {
-                        let val = v.trim_end().split("\n").collect::<Vec<&str>>();
+                        let val = v.trim_end().split('\n').collect::<Vec<&str>>();
                         x.push(
                             (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
                                 / 254.0
@@ -5240,11 +5205,9 @@ fn render(
                                 n += 1.0;
                             }
                         }
-                    } else {
-                        if formline == 2.0 && formlinestart && !nodepressions {
-                            formline_out.push_str("SEQEND\r\n  0\r\n");
-                            formlinestart = false;
-                        }
+                    } else if formline == 2.0 && formlinestart && !nodepressions {
+                        formline_out.push_str("SEQEND\r\n  0\r\n");
+                        formlinestart = false;
                     }
                 }
                 if formline == 2.0 && formlinestart && !nodepressions {
@@ -5271,7 +5234,7 @@ fn render(
             let mut x: f64 = 0.0;
             let mut y: f64 = 0.0;
             if j > 0 {
-                let val = rec.split("\n").collect::<Vec<&str>>();
+                let val = rec.split('\n').collect::<Vec<&str>>();
                 let layer = val[2].trim();
                 for (i, v) in val.iter().enumerate() {
                     let vt = v.trim();
@@ -5380,7 +5343,7 @@ fn render(
             if j > 0 {
                 let r = rec.split("VERTEX").collect::<Vec<&str>>();
                 let apu = r[1];
-                let val = apu.split("\n").collect::<Vec<&str>>();
+                let val = apu.split('\n').collect::<Vec<&str>>();
                 layer = val[2].trim();
                 for (i, v) in val.iter().enumerate() {
                     let vt = v.trim();
@@ -5393,7 +5356,7 @@ fn render(
                 }
                 for (i, v) in r.iter().enumerate() {
                     if i > 0 {
-                        let val = v.trim_end().split("\n").collect::<Vec<&str>>();
+                        let val = v.trim_end().split('\n').collect::<Vec<&str>>();
                         x.push(
                             (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
                                 / 254.0
@@ -5468,7 +5431,7 @@ fn render(
             if j > 0 {
                 let r = rec.split("VERTEX").collect::<Vec<&str>>();
                 let apu = r[1];
-                let val = apu.split("\n").collect::<Vec<&str>>();
+                let val = apu.split('\n').collect::<Vec<&str>>();
                 layer = val[2].trim();
                 for (i, v) in val.iter().enumerate() {
                     let vt = v.trim();
@@ -5481,7 +5444,7 @@ fn render(
                 }
                 for (i, v) in r.iter().enumerate() {
                     if i > 0 {
-                        let val = v.trim_end().split("\n").collect::<Vec<&str>>();
+                        let val = v.trim_end().split('\n').collect::<Vec<&str>>();
                         x.push(
                             (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
                                 / 254.0
@@ -5565,10 +5528,10 @@ fn render(
 
     let path_in = format!("{}/vegetation.pgw", tmpfolder);
     let file_in = Path::new(&path_in);
-    let pgw_file_out = File::create(&format!("{}.pgw", filename)).expect("Unable to create file");
+    let pgw_file_out = File::create(format!("{}.pgw", filename)).expect("Unable to create file");
     let mut pgw_file_out = BufWriter::new(pgw_file_out);
 
-    if let Ok(lines) = read_lines(&file_in) {
+    if let Ok(lines) = read_lines(file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
             let x: f64 = ip.parse::<f64>().unwrap();
@@ -5613,10 +5576,10 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -5636,10 +5599,10 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmin: u64 = u64::MAX;
     let mut ymin: u64 = u64::MAX;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -5667,7 +5630,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     let data = fs::read_to_string(Path::new(&format!("{}/contours03.dxf", tmpfolder)))
         .expect("Should have been able to read the file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
-    let f = File::create(&Path::new(&format!("{}/detected.dxf", tmpfolder)))
+    let f = File::create(Path::new(&format!("{}/detected.dxf", tmpfolder)))
         .expect("Unable to create file");
     let mut f = BufWriter::new(f);
     f.write(
@@ -5695,7 +5658,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         if j > 0 {
             let r = rec.split("VERTEX").collect::<Vec<&str>>();
             let apu = r[1];
-            let val = apu.split("\n").collect::<Vec<&str>>();
+            let val = apu.split('\n').collect::<Vec<&str>>();
             for (i, v) in val.iter().enumerate() {
                 let vt = v.trim();
                 if vt == "10" {
@@ -5708,7 +5671,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             if r.len() < 201 {
                 for (i, v) in r.iter().enumerate() {
                     if i > 0 {
-                        let val = v.trim_end().split("\n").collect::<Vec<&str>>();
+                        let val = v.trim_end().split('\n').collect::<Vec<&str>>();
                         x.push(val[xline].trim().parse::<f64>().unwrap());
                         y.push(val[yline].trim().parse::<f64>().unwrap());
                     }
@@ -5777,22 +5740,22 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                 }
                 if !end_loop {
                     if tails[l] == heads[to_join] {
-                        let tmp = format!("{}", tails[l]);
+                        let tmp = tails[l].to_string();
                         heads2.insert(tmp, 0);
-                        let tmp = format!("{}", tails[l]);
+                        let tmp = tails[l].to_string();
                         heads1.insert(tmp, 0);
                         let mut to_append = el_x[to_join].to_vec();
                         el_x[l].append(&mut to_append);
                         let mut to_append = el_y[to_join].to_vec();
                         el_y[l].append(&mut to_append);
-                        let tmp = format!("{}", tails[to_join]);
+                        let tmp = tails[to_join].to_string();
                         tails[l] = tmp;
                         el_x[to_join].clear();
                         el_y[to_join].clear();
                     } else if tails[l] == tails[to_join] {
-                        let tmp = format!("{}", tails[l]);
+                        let tmp = tails[l].to_string();
                         heads2.insert(tmp, 0);
-                        let tmp = format!("{}", tails[l]);
+                        let tmp = tails[l].to_string();
                         heads1.insert(tmp, 0);
                         let mut to_append = el_x[to_join].to_vec();
                         to_append.reverse();
@@ -5800,27 +5763,27 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                         let mut to_append = el_y[to_join].to_vec();
                         to_append.reverse();
                         el_y[l].append(&mut to_append);
-                        let tmp = format!("{}", heads[to_join]);
+                        let tmp = heads[to_join].to_string();
                         tails[l] = tmp;
                         el_x[to_join].clear();
                         el_y[to_join].clear();
                     } else if heads[l] == tails[to_join] {
-                        let tmp = format!("{}", heads[l]);
+                        let tmp = heads[l].to_string();
                         heads2.insert(tmp, 0);
-                        let tmp = format!("{}", heads[l]);
+                        let tmp = heads[l].to_string();
                         heads1.insert(tmp, 0);
                         let to_append = el_x[to_join].to_vec();
                         el_x[l].splice(0..0, to_append);
                         let to_append = el_y[to_join].to_vec();
                         el_y[l].splice(0..0, to_append);
-                        let tmp = format!("{}", heads[to_join]);
+                        let tmp = heads[to_join].to_string();
                         heads[l] = tmp;
                         el_x[to_join].clear();
                         el_y[to_join].clear();
                     } else if heads[l] == heads[to_join] {
-                        let tmp = format!("{}", heads[l]);
+                        let tmp = heads[l].to_string();
                         heads2.insert(tmp, 0);
-                        let tmp = format!("{}", heads[l]);
+                        let tmp = heads[l].to_string();
                         heads1.insert(tmp, 0);
                         let mut to_append = el_x[to_join].to_vec();
                         to_append.reverse();
@@ -5828,7 +5791,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                         let mut to_append = el_y[to_join].to_vec();
                         to_append.reverse();
                         el_y[l].splice(0..0, to_append);
-                        let tmp = format!("{}", tails[to_join]);
+                        let tmp = tails[to_join].to_string();
                         heads[l] = tmp;
                         el_x[to_join].clear();
                         el_y[to_join].clear();
@@ -5949,12 +5912,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                 while n < (el_x_len - 1) {
                     let x1 = el_x[l][n];
                     let y1 = el_y[l][n];
-                    if n > 0 {
-                        if ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0))
-                            && (xtest < ((x1 - x0) * (ytest - y0) / (y1 - y0) + x0))
-                        {
-                            hit += 1;
-                        }
+                    if n > 0 && ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0)) && (xtest < ((x1 - x0) * (ytest - y0) / (y1 - y0) + x0)) {
+                        hit += 1;
                     }
                     n += 1;
                     x0 = x1;
@@ -5992,7 +5951,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    let heads = temp.split("\n").collect::<Vec<&str>>();
+    let heads = temp.split('\n').collect::<Vec<&str>>();
     let mut temp = String::new();
     let mut bb: HashMap<usize, String> = HashMap::new();
     for l in 0..data.len() {
@@ -6029,10 +5988,10 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
 
             for head in heads.iter() {
                 let headt = head.trim();
-                if headt == "" {
+                if headt.is_empty() {
                     break;
                 }
-                let data = headt.split(",").collect::<Vec<&str>>();
+                let data = headt.split(',').collect::<Vec<&str>>();
                 let id = data[0].parse::<u64>().unwrap();
                 let xtest = data[2].parse::<f64>().unwrap();
                 let ytest = data[3].parse::<f64>().unwrap();
@@ -6052,12 +6011,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                         let x1 = x[n];
                         let y1 = y[n];
 
-                        if n > 0 {
-                            if ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0))
-                                && (xtest < ((x1 - x0) * (ytest - y0) / (y1 - y0) + x0))
-                            {
-                                hit += 1;
-                            }
+                        if n > 0 && ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0)) && (xtest < ((x1 - x0) * (ytest - y0) / (y1 - y0) + x0)) {
+                            hit += 1;
                         }
                         x0 = x1;
                         y0 = y1;
@@ -6074,7 +6029,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    let tops = temp.split("\n").collect::<Vec<&str>>();
+    let tops = temp.split('\n').collect::<Vec<&str>>();
     let mut temp = String::new();
 
     for l in 0..data.len() {
@@ -6088,8 +6043,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             let taily = *el_y[l].first().unwrap();
             y.push(taily);
 
-            let box_raw = &*bb.get(&l).unwrap();
-            let box_data = box_raw.split(",").collect::<Vec<&str>>();
+            let box_raw = bb.get(&l).unwrap();
+            let box_data = box_raw.split(',').collect::<Vec<&str>>();
             let minx = box_data[0].parse::<f64>().unwrap();
             let maxx = box_data[1].parse::<f64>().unwrap();
             let miny = box_data[2].parse::<f64>().unwrap();
@@ -6097,10 +6052,10 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             let mut topid = 0;
             for head in tops.iter() {
                 let headt = head.trim();
-                if headt == "" {
+                if headt.is_empty() {
                     continue;
                 }
-                let data = headt.split(",").collect::<Vec<&str>>();
+                let data = headt.split(',').collect::<Vec<&str>>();
                 let id = data[0].parse::<u64>().unwrap();
                 let xtest = data[1].parse::<f64>().unwrap();
                 let ytest = data[2].parse::<f64>().unwrap();
@@ -6123,12 +6078,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                         let x1 = x[n];
                         let y1 = y[n];
 
-                        if n > 0 {
-                            if ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0))
-                                && (xtest < ((x1 - x0) * (ytest - y0) / (y1 - y0) + x0))
-                            {
-                                hit += 1;
-                            }
+                        if n > 0 && ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0)) && (xtest < ((x1 - x0) * (ytest - y0) / (y1 - y0) + x0)) {
+                            hit += 1;
                         }
                         x0 = x1;
                         y0 = y1;
@@ -6151,17 +6102,17 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let canditates = temp.split("\n").collect::<Vec<&str>>();
+    let canditates = temp.split('\n').collect::<Vec<&str>>();
 
     let mut best: HashMap<u64, u64> = HashMap::new();
     let mut mov: HashMap<u64, f64> = HashMap::new();
 
     for head in canditates.iter() {
         let headt = head.trim();
-        if headt == "" {
+        if headt.is_empty() {
             continue;
         }
-        let data = headt.split(",").collect::<Vec<&str>>();
+        let data = headt.split(',').collect::<Vec<&str>>();
         let id = data[0].parse::<u64>().unwrap();
         let topid = data[3].parse::<u64>().unwrap();
         let el = *elevation.get(&id).unwrap();
@@ -6177,21 +6128,19 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                     < 0.2
             {
                 // no action
-            } else {
-                if *mov.get(&tid).unwrap() > test {
-                    best.insert(topid, id);
-                    mov.insert(id, test);
-                }
+            } else if *mov.get(&tid).unwrap() > test {
+                best.insert(topid, id);
+                mov.insert(id, test);
             }
         }
     }
     let mut temp = String::new();
     for head in canditates.iter() {
         let headt = head.trim();
-        if headt == "" {
+        if headt.is_empty() {
             continue;
         }
-        let data = headt.split(",").collect::<Vec<&str>>();
+        let data = headt.split(',').collect::<Vec<&str>>();
         let id = data[0].parse::<u64>().unwrap();
         let xtest = data[1].parse::<f64>().unwrap();
         let ytest = data[2].parse::<f64>().unwrap();
@@ -6212,7 +6161,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let canditates = temp.split("\n").collect::<Vec<&str>>();
+    let canditates = temp.split('\n').collect::<Vec<&str>>();
     let mut pin = String::new();
 
     for l in 0..data.len() {
@@ -6228,8 +6177,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             let taily = *el_y[l].first().unwrap();
             y.push(taily);
 
-            let box_raw = &*bb.get(&l).unwrap();
-            let box_data = box_raw.split(",").collect::<Vec<&str>>();
+            let box_raw = bb.get(&l).unwrap();
+            let box_data = box_raw.split(',').collect::<Vec<&str>>();
             let minx = box_data[0].parse::<f64>().unwrap();
             let maxx = box_data[1].parse::<f64>().unwrap();
             let miny = box_data[2].parse::<f64>().unwrap();
@@ -6237,10 +6186,10 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
 
             for head in canditates.iter() {
                 let headt = head.trim();
-                if headt == "" {
+                if headt.is_empty() {
                     continue;
                 }
-                let data = headt.split(",").collect::<Vec<&str>>();
+                let data = headt.split(',').collect::<Vec<&str>>();
                 let id = data[0].parse::<u64>().unwrap();
                 let xtest = data[1].parse::<f64>().unwrap();
                 let ytest = data[2].parse::<f64>().unwrap();
@@ -6257,12 +6206,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                         let x1 = x[n];
                         let y1 = y[n];
 
-                        if n > 0 {
-                            if ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0))
-                                && (xtest < ((x1 - x0) * (ytest - y0) / (y1 - y0) + x0))
-                            {
-                                hit += 1;
-                            }
+                        if n > 0 && ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0)) && (xtest < ((x1 - x0) * (ytest - y0) / (y1 - y0) + x0)) {
+                            hit += 1;
                         }
                         x0 = x1;
                         y0 = y1;
@@ -6326,7 +6271,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     f.write("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
         .expect("Can not write to file");
 
-    let f = File::create(&Path::new(&format!("{}/pins.txt", tmpfolder)))
+    let f = File::create(Path::new(&format!("{}/pins.txt", tmpfolder)))
         .expect("Unable to create file");
     let mut f = BufWriter::new(f);
     f.write_all(pin.as_bytes()).expect("Unable to write data");
@@ -6355,10 +6300,10 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -6376,10 +6321,10 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ymax: u64 = 0;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
     let mut xyz2: HashMap<(u64, u64), f64> = HashMap::new();
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -6430,21 +6375,21 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let pins_file_in = Path::new(&path);
 
     let mut dist: HashMap<usize, f64> = HashMap::new();
-    if let Ok(lines) = read_lines(&pins_file_in) {
+    if let Ok(lines) = read_lines(pins_file_in) {
         for (l, line) in lines.enumerate() {
             let mut min = f64::MAX;
             let ip = line.unwrap_or(String::new());
-            let r = ip.split(",").collect::<Vec<&str>>();
+            let r = ip.split(',').collect::<Vec<&str>>();
             let xx = r[3].parse::<f64>().unwrap();
             let yy = r[4].parse::<f64>().unwrap();
 
             let xxx = ((xx - xstart) / size).floor();
             let yyy = ((yy - ystart) / size).floor();
 
-            if let Ok(lines2) = read_lines(&pins_file_in) {
+            if let Ok(lines2) = read_lines(pins_file_in) {
                 for (k, line2) in lines2.enumerate() {
                     let ip2 = line2.unwrap_or(String::new());
-                    let r2 = ip2.split(",").collect::<Vec<&str>>();
+                    let r2 = ip2.split(',').collect::<Vec<&str>>();
                     let xx2 = r2[3].parse::<f64>().unwrap();
                     let yy2 = r2[4].parse::<f64>().unwrap();
 
@@ -6467,10 +6412,10 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if let Ok(lines) = read_lines(&pins_file_in) {
+    if let Ok(lines) = read_lines(pins_file_in) {
         for (l, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let r = ip.split(",").collect::<Vec<&str>>();
+            let r = ip.split(',').collect::<Vec<&str>>();
             let ele = r[2].parse::<f64>().unwrap();
             let xx = r[3].parse::<f64>().unwrap();
             let yy = r[4].parse::<f64>().unwrap();
@@ -6478,11 +6423,11 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
             let xlist = r[6];
             let ylist = r[7];
             let mut x: Vec<f64> = xlist
-                .split(" ")
+                .split(' ')
                 .map(|s| s.parse::<f64>().unwrap())
                 .collect();
             let mut y: Vec<f64> = ylist
-                .split(" ")
+                .split(' ')
                 .map(|s| s.parse::<f64>().unwrap())
                 .collect();
             x.push(x[0]);
@@ -6496,18 +6441,16 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
             }
             if move1 < 0.25 * interval {
                 move2 = 0.0;
-                move1 = move1 + 0.3;
+                move1 += 0.3;
             }
             move1 += 0.5;
             if ele2 + move1 > ((ele - 0.09) / interval + 2.0).floor() * interval {
                 move1 -= 0.4;
             }
-            if elenew - ele > 1.5 * scalefactor {
-                if x.len() > 21 {
-                    for k in 0..x.len() {
-                        x[k] = xx + (x[k] - xx) * 0.8;
-                        y[k] = yy + (y[k] - yy) * 0.8;
-                    }
+            if elenew - ele > 1.5 * scalefactor && x.len() > 21 {
+                for k in 0..x.len() {
+                    x[k] = xx + (x[k] - xx) * 0.8;
+                    y[k] = yy + (y[k] - yy) * 0.8;
                 }
             }
             let mut touched: HashMap<String, bool> = HashMap::new();
@@ -6582,8 +6525,8 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
                             let tmp = *xyz2
                                 .get(&(ii.floor() as u64, jj.floor() as u64))
                                 .unwrap_or(&0.0)
-                                + (range - (xx - ii as f64).abs()) / range
-                                    * (range - (yy - jj as f64).abs())
+                                + (range - (xx - ii).abs()) / range
+                                    * (range - (yy - jj).abs())
                                     / range
                                     * move2;
                             xyz2.insert((ii.floor() as u64, jj.floor() as u64), tmp);
@@ -6594,14 +6537,14 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let f2 = File::create(&Path::new(&format!("{}/xyz_knolls.xyz", tmpfolder)))
+    let f2 = File::create(Path::new(&format!("{}/xyz_knolls.xyz", tmpfolder)))
         .expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let mut r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -6622,7 +6565,7 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
             let new_val = format!("{}", h);
             r[2] = &new_val;
             let out = r.join(" ");
-            f2.write(&out.as_bytes()).expect("cannot write to file");
+            f2.write(out.as_bytes()).expect("cannot write to file");
             f2.write("\n".as_bytes()).expect("cannot write to file");
         }
     }
@@ -6642,10 +6585,10 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -6670,10 +6613,10 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
     let mut top: HashMap<(u64, u64), f64> = HashMap::new();
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -6697,7 +6640,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             .general_section()
             .get(format!("zone{}", i))
             .unwrap_or("");
-        if last_zone == "" {
+        if last_zone.is_empty() {
             break;
         }
         zones.push(last_zone);
@@ -6711,7 +6654,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             .general_section()
             .get(format!("thresold{}", i))
             .unwrap_or("");
-        if last_threshold == "" {
+        if last_threshold.is_empty() {
             break;
         }
         thresholds.push(last_threshold);
@@ -6722,7 +6665,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         .general_section()
         .get("greenshades")
         .unwrap_or("")
-        .split("|")
+        .split('|')
         .collect::<Vec<&str>>();
     let yellowheight: f64 = conf
         .general_section()
@@ -6842,11 +6785,11 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut yhit: HashMap<(u64, u64), u64> = HashMap::new();
     let mut noyhit: HashMap<(u64, u64), u64> = HashMap::new();
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
+                let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
                 let x: f64 = r[0].parse::<f64>().unwrap();
                 let y: f64 = r[1].parse::<f64>().unwrap();
@@ -6865,10 +6808,10 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     }
                     let xx = ((x - xmin) / 3.0).floor() as u64;
                     let yy = ((y - ymin) / 3.0).floor() as u64;
-                    if hits.contains_key(&(xx, yy)) {
-                        *hits.get_mut(&(xx, yy)).unwrap() += 1;
+                    if let std::collections::hash_map::Entry::Vacant(e) = hits.entry((xx, yy)) {
+                        e.insert(1);
                     } else {
-                        hits.insert((xx, yy), 1);
+                        *hits.get_mut(&(xx, yy)).unwrap() += 1;
                     }
                     if r[3] == "2"
                         || h < yellowheight
@@ -6879,25 +6822,21 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                                 ))
                                 .unwrap_or(&0.0)
                     {
-                        if yhit.contains_key(&(xx, yy)) {
+                        if let std::collections::hash_map::Entry::Vacant(e) = yhit.entry((xx, yy)) {
+                            e.insert(1);
+                        } else {
                             *yhit.get_mut(&(xx, yy)).unwrap() += 1;
-                        } else {
-                            yhit.insert((xx, yy), 1);
                         }
+                    } else if r[4] == "1" && r[5] == "1" {
+                        if let std::collections::hash_map::Entry::Vacant(e) = noyhit.entry((xx, yy)) {
+                            e.insert(yellowfirstlast);
+                        } else {
+                            *noyhit.get_mut(&(xx, yy)).unwrap() += yellowfirstlast;
+                        }
+                    } else if let std::collections::hash_map::Entry::Vacant(e) = noyhit.entry((xx, yy)) {
+                        e.insert(1);
                     } else {
-                        if r[4] == "1" && r[5] == "1" {
-                            if noyhit.contains_key(&(xx, yy)) {
-                                *noyhit.get_mut(&(xx, yy)).unwrap() += yellowfirstlast;
-                            } else {
-                                noyhit.insert((xx, yy), yellowfirstlast);
-                            }
-                        } else {
-                            if noyhit.contains_key(&(xx, yy)) {
-                                *noyhit.get_mut(&(xx, yy)).unwrap() += 1;
-                            } else {
-                                noyhit.insert((xx, yy), 1);
-                            }
-                        }
+                        *noyhit.get_mut(&(xx, yy)).unwrap() += 1;
                     }
                 }
             }
@@ -6911,11 +6850,11 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut greenhit: HashMap<(u64, u64), f64> = HashMap::new();
     let mut highit: HashMap<(u64, u64), u64> = HashMap::new();
     let step: f32 = 6.0;
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
+                let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
                 let x: f64 = r[0].parse::<f64>().unwrap();
                 let y: f64 = r[1].parse::<f64>().unwrap();
@@ -6924,10 +6863,10 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     if r[5] == "1" {
                         let xx = ((x - xmin) / block + 0.5).floor() as u64;
                         let yy = ((y - ymin) / block + 0.5).floor() as u64;
-                        if firsthit.contains_key(&(xx, yy)) {
-                            *firsthit.get_mut(&(xx, yy)).unwrap() += 1;
+                        if let std::collections::hash_map::Entry::Vacant(e) = firsthit.entry((xx, yy)) {
+                            e.insert(1);
                         } else {
-                            firsthit.insert((xx, yy), 1);
+                            *firsthit.get_mut(&(xx, yy)).unwrap() += 1;
                         }
                     }
 
@@ -6949,32 +6888,26 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     let hh = h - thelele;
                     if hh <= 1.2 {
                         if r[3] == "2" {
-                            if ugg.contains_key(&(xx, yy)) {
+                            if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy)) {
+                                e.insert(1.0);
+                            } else {
                                 *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
-                            } else {
-                                ugg.insert((xx, yy), 1.0);
                             }
+                        } else if hh > 0.25 {
+                            if let std::collections::hash_map::Entry::Vacant(e) = ug.entry((xx, yy)) {
+                                e.insert(1);
+                            } else {
+                                *ug.get_mut(&(xx, yy)).unwrap() += 1;
+                            }
+                        } else if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy)) {
+                            e.insert(1.0);
                         } else {
-                            if hh > 0.25 {
-                                if ug.contains_key(&(xx, yy)) {
-                                    *ug.get_mut(&(xx, yy)).unwrap() += 1;
-                                } else {
-                                    ug.insert((xx, yy), 1);
-                                }
-                            } else {
-                                if ugg.contains_key(&(xx, yy)) {
-                                    *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
-                                } else {
-                                    ugg.insert((xx, yy), 1.0);
-                                }
-                            }
+                            *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
                         }
+                    } else if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy)) {
+                        e.insert(0.05);
                     } else {
-                        if ugg.contains_key(&(xx, yy)) {
-                            *ugg.get_mut(&(xx, yy)).unwrap() += 0.05;
-                        } else {
-                            ugg.insert((xx, yy), 0.05);
-                        }
+                        *ugg.get_mut(&(xx, yy)).unwrap() += 0.05;
                     }
 
                     let xx = ((x - xmin) / block + 0.5).floor() as u64;
@@ -6982,17 +6915,15 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     let yyy = ((y - ymin) / block).floor() as u64; // necessary due to bug in perl version
                     if r[3] == "2" || greenground >= hh {
                         if r[4] == "1" && r[5] == "1" {
-                            if ghit.contains_key(&(xx, yyy)) {
+                            if let std::collections::hash_map::Entry::Vacant(e) = ghit.entry((xx, yyy)) {
+                                e.insert(firstandlastreturnasground);
+                            } else {
                                 *ghit.get_mut(&(xx, yyy)).unwrap() += firstandlastreturnasground;
-                            } else {
-                                ghit.insert((xx, yyy), firstandlastreturnasground);
                             }
+                        } else if let std::collections::hash_map::Entry::Vacant(e) = ghit.entry((xx, yyy)) {
+                            e.insert(1);
                         } else {
-                            if ghit.contains_key(&(xx, yyy)) {
-                                *ghit.get_mut(&(xx, yyy)).unwrap() += 1;
-                            } else {
-                                ghit.insert((xx, yyy), 1);
-                            }
+                            *ghit.get_mut(&(xx, yyy)).unwrap() += 1;
                         }
                     } else {
                         let mut last = 1.0;
@@ -7003,7 +6934,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                             }
                         }
                         for zone in zones.iter() {
-                            let parts = zone.split("|");
+                            let parts = zone.split('|');
                             let v = parts.collect::<Vec<&str>>();
                             let low: f64 = v[0].parse::<f64>().unwrap();
                             let high: f64 = v[1].parse::<f64>().unwrap();
@@ -7013,21 +6944,21 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                                 && hh < high
                                 && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof
                             {
-                                let offset = factor * last as f64;
-                                if greenhit.contains_key(&(xx, yy)) {
-                                    *greenhit.get_mut(&(xx, yy)).unwrap() += offset;
+                                let offset = factor * last;
+                                if let std::collections::hash_map::Entry::Vacant(e) = greenhit.entry((xx, yy)) {
+                                    e.insert(offset);
                                 } else {
-                                    greenhit.insert((xx, yy), offset);
+                                    *greenhit.get_mut(&(xx, yy)).unwrap() += offset;
                                 }
                                 break;
                             }
                         }
 
                         if greenhigh < hh {
-                            if highit.contains_key(&(xx, yy)) {
-                                *highit.get_mut(&(xx, yy)).unwrap() += 1;
+                            if let std::collections::hash_map::Entry::Vacant(e) = highit.entry((xx, yy)) {
+                                e.insert(1);
                             } else {
-                                highit.insert((xx, yy), 1);
+                                *highit.get_mut(&(xx, yy)).unwrap() += 1;
                             }
                         }
                     }
@@ -7134,8 +7065,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
             let greenhit2 = *greenhit.get(&(x as u64, y as u64)).unwrap_or(&0.0);
             let mut firsthit2 = *firsthit.get(&(x as u64, y as u64)).unwrap_or(&0);
-            for i in (x - 2) as usize..x + 3 as usize {
-                for j in (y - 2) as usize..y + 3 as usize {
+            for i in (x - 2)..x + 3_usize {
+                for j in (y - 2)..y + 3_usize {
                     if firsthit2 > *firsthit.get(&(i as u64, j as u64)).unwrap_or(&0) {
                         firsthit2 = *firsthit.get(&(i as u64, j as u64)).unwrap_or(&0);
                     }
@@ -7146,7 +7077,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
             let mut greenlimit = 9999.0;
             for threshold in thresholds.iter() {
-                let parts = threshold.split("|");
+                let parts = threshold.split('|');
                 let v = parts.collect::<Vec<&str>>();
                 let v0: f64 = v[0].parse::<f64>().unwrap();
                 let v1: f64 = v[1].parse::<f64>().unwrap();
@@ -7320,10 +7251,10 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         .parse::<u64>()
         .unwrap_or(0);
     if buildings > 0 || water > 0 {
-        if let Ok(lines) = read_lines(&xyz_file_in) {
+        if let Ok(lines) = read_lines(xyz_file_in) {
             for line in lines {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(" ");
+                let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
                 let x: f64 = r[0].parse::<f64>().unwrap();
                 let y: f64 = r[1].parse::<f64>().unwrap();
@@ -7353,10 +7284,10 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         .unwrap_or(-999999.0);
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
-    if let Ok(lines) = read_lines(&xyz_file_in) {
+    if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(" ");
+            let parts = ip.split(' ');
             let r = parts.collect::<Vec<&str>>();
             let x: f64 = r[0].parse::<f64>().unwrap();
             let y: f64 = r[1].parse::<f64>().unwrap();
@@ -7381,13 +7312,13 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let hf32 = h as f32;
     let ww = w as f32 * bf32;
     let hh = hf32 * bf32;
-    let mut x = 0.0 as f32;
+    let mut x = 0.0_f32;
 
     loop {
         if x >= ww {
             break;
         }
-        let mut y = 0.0 as f32;
+        let mut y = 0.0_f32;
         loop {
             if y >= hh {
                 break;
@@ -7396,7 +7327,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             let yy = ((y / bf32 / step).floor()) as u64;
             let foo = *ug.get(&(xx, yy)).unwrap_or(&0) as f64
                 / (*ug.get(&(xx, yy)).unwrap_or(&0) as f64
-                    + *ugg.get(&(xx, yy)).unwrap_or(&0.0) as f64
+                    + { *ugg.get(&(xx, yy)).unwrap_or(&0.0) }
                     + 0.01);
             if foo > uglimit {
                 draw_line_segment_mut(
@@ -7505,7 +7436,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         .save(Path::new(&format!("{}/undergrowth_bit.png", tmpfolder)))
         .expect("could not save output png");
 
-    let ugpgw = File::create(&Path::new(&format!("{}/undergrowth.pgw", tmpfolder)))
+    let ugpgw = File::create(Path::new(&format!("{}/undergrowth.pgw", tmpfolder)))
         .expect("Unable to create file");
     let mut ugpgw = BufWriter::new(ugpgw);
     ugpgw
@@ -7521,7 +7452,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         )
         .expect("Cannot write pgw file");
 
-    let vegepgw = File::create(&Path::new(&format!("{}/vegetation.pgw", tmpfolder)))
+    let vegepgw = File::create(Path::new(&format!("{}/vegetation.pgw", tmpfolder)))
         .expect("Unable to create file");
     let mut vegepgw = BufWriter::new(vegepgw);
     vegepgw
@@ -7544,7 +7475,7 @@ fn polylinedxfcrop(
     let data: Vec<&str> = data.split("POLYLINE").collect();
     let dxfhead = data[0];
     let mut out = String::new();
-    out.push_str(&dxfhead);
+    out.push_str(dxfhead);
     for (j, rec) in data.iter().enumerate() {
         let mut poly = String::new();
         let mut pre = "";
@@ -7557,7 +7488,7 @@ fn polylinedxfcrop(
                 poly.push_str(&format!("POLYLINE{}", head));
                 for apu in r.iter() {
                     let (apu2, _notused) = apu.split_once("SEQEND").unwrap_or((apu, ""));
-                    let val: Vec<&str> = apu2.split("\n").collect();
+                    let val: Vec<&str> = apu2.split('\n').collect();
                     let mut xline = 0;
                     let mut yline = 0;
                     for (i, v) in val.iter().enumerate() {
@@ -7572,24 +7503,22 @@ fn polylinedxfcrop(
                     let valx = val[xline].trim().parse::<f64>().unwrap_or(0.0);
                     let valy = val[yline].trim().parse::<f64>().unwrap_or(0.0);
                     if valx >= minx && valx <= maxx && valy >= miny && valy <= maxy {
-                        if pre != "" && pointcount == 0 && (prex < minx || prey < miny) {
+                        if !pre.is_empty() && pointcount == 0 && (prex < minx || prey < miny) {
                             poly.push_str(&format!("VERTEX{}", pre));
                             pointcount += 1;
                         }
                         poly.push_str(&format!("VERTEX{}", apu));
                         pointcount += 1;
-                    } else {
-                        if pointcount > 1 {
-                            if valx < minx || valy < miny {
-                                poly.push_str(&format!("VERTEX{}", apu));
-                            }
-                            if !poly.contains("SEQEND") {
-                                poly.push_str("SEQEND\r\n0\r\n");
-                            }
-                            out.push_str(&poly);
-                            poly = format!("POLYLINE{}", head);
-                            pointcount = 0;
+                    } else if pointcount > 1 {
+                        if valx < minx || valy < miny {
+                            poly.push_str(&format!("VERTEX{}", apu));
                         }
+                        if !poly.contains("SEQEND") {
+                            poly.push_str("SEQEND\r\n0\r\n");
+                        }
+                        out.push_str(&poly);
+                        poly = format!("POLYLINE{}", head);
+                        pointcount = 0;
                     }
                     pre = apu2;
                     prex = valx;
@@ -7626,7 +7555,7 @@ fn pointdxfcrop(
     let mut data: Vec<&str> = data.split("POINT").collect();
     let dxfhead = data[0];
     let mut out = String::new();
-    out.push_str(&dxfhead);
+    out.push_str(dxfhead);
     let (d2, ending) = data[data.len() - 1]
         .split_once("ENDSEC")
         .unwrap_or((data[data.len() - 1], ""));
@@ -7635,7 +7564,7 @@ fn pointdxfcrop(
     data[last_idx] = d2;
     for (j, rec) in data.iter().enumerate() {
         if j > 0 {
-            let val: Vec<&str> = rec.split("\n").collect();
+            let val: Vec<&str> = rec.split('\n').collect();
             let val4 = val[4].trim().parse::<f64>().unwrap_or(0.0);
             let val6 = val[6].trim().parse::<f64>().unwrap_or(0.0);
             if val4 >= minx && val4 <= maxx && val6 >= miny && val6 <= maxy {
@@ -7671,7 +7600,7 @@ fn batch_process(thread: &String) {
         .unwrap_or(0.0);
 
     let mut thread_name = String::new();
-    if thread != "" {
+    if !thread.is_empty() {
         thread_name = format!("Thread {}: ", thread);
     }
 
@@ -7772,39 +7701,33 @@ fn batch_process(thread: &String) {
             let path = format!("pullautus{}.pgw", thread);
             let tfw_in = Path::new(&path);
 
-            let mut lines = read_lines(&tfw_in).expect("PGW file does not exist");
-            let tfw0 = lines
-                .nth(0)
+            let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
+            let tfw0 = lines.next()
                 .expect("no 1 line")
                 .expect("Could not read line 1")
                 .parse::<f64>()
                 .unwrap();
-            let tfw1 = lines
-                .nth(0)
+            let tfw1 = lines.next()
                 .expect("no 2 line")
                 .expect("Could not read line 2")
                 .parse::<f64>()
                 .unwrap();
-            let tfw2 = lines
-                .nth(0)
+            let tfw2 = lines.next()
                 .expect("no 3 line")
                 .expect("Could not read line 3")
                 .parse::<f64>()
                 .unwrap();
-            let tfw3 = lines
-                .nth(0)
+            let tfw3 = lines.next()
                 .expect("no 4 line")
                 .expect("Could not read line 4")
                 .parse::<f64>()
                 .unwrap();
-            let tfw4 = lines
-                .nth(0)
+            let tfw4 = lines.next()
                 .expect("no 5 line")
                 .expect("Could not read line 5")
                 .parse::<f64>()
                 .unwrap();
-            let tfw5 = lines
-                .nth(0)
+            let tfw5 = lines.next()
                 .expect("no 6 line")
                 .expect("Could not read line 6")
                 .parse::<f64>()
@@ -7813,7 +7736,7 @@ fn batch_process(thread: &String) {
             let dx = minx - tfw4;
             let dy = -maxy + tfw5;
 
-            let pgw_file_out = File::create(&tfw_in).expect("Unable to create file");
+            let pgw_file_out = File::create(tfw_in).expect("Unable to create file");
             let mut pgw_file_out = BufWriter::new(pgw_file_out);
             pgw_file_out
                 .write(
@@ -7895,39 +7818,33 @@ fn batch_process(thread: &String) {
         if savetempfiles {
             let path = format!("temp{}/undergrowth.pgw", thread);
             let tfw_in = Path::new(&path);
-            let mut lines = read_lines(&tfw_in).expect("PGW file does not exist");
-            let tfw0 = lines
-                .nth(0)
+            let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
+            let tfw0 = lines.next()
                 .expect("no 1 line")
                 .expect("Could not read line 1")
                 .parse::<f64>()
                 .unwrap();
-            let tfw1 = lines
-                .nth(0)
+            let tfw1 = lines.next()
                 .expect("no 2 line")
                 .expect("Could not read line 2")
                 .parse::<f64>()
                 .unwrap();
-            let tfw2 = lines
-                .nth(0)
+            let tfw2 = lines.next()
                 .expect("no 3 line")
                 .expect("Could not read line 3")
                 .parse::<f64>()
                 .unwrap();
-            let tfw3 = lines
-                .nth(0)
+            let tfw3 = lines.next()
                 .expect("no 4 line")
                 .expect("Could not read line 4")
                 .parse::<f64>()
                 .unwrap();
-            let tfw4 = lines
-                .nth(0)
+            let tfw4 = lines.next()
                 .expect("no 5 line")
                 .expect("Could not read line 5")
                 .parse::<f64>()
                 .unwrap();
-            let tfw5 = lines
-                .nth(0)
+            let tfw5 = lines.next()
                 .expect("no 6 line")
                 .expect("Could not read line 6")
                 .parse::<f64>()
@@ -7936,7 +7853,7 @@ fn batch_process(thread: &String) {
             let dx = minx - tfw4;
             let dy = -maxy + tfw5;
 
-            let pgw_file_out = File::create(&Path::new(&format!(
+            let pgw_file_out = File::create(Path::new(&format!(
                 "{}/{}_undergrowth.pgw",
                 batchoutfolder, laz
             )))
@@ -8072,7 +7989,7 @@ fn batch_process(thread: &String) {
                 )
                 .unwrap();
             }
-            let dxf_files = vec!["c2g", "c3g", "contours03", "detected", "formlines"];
+            let dxf_files = ["c2g", "c3g", "contours03", "detected", "formlines"];
             for dxf_file in dxf_files.iter() {
                 if Path::new(&format!("temp{}/{}.dxf", thread, dxf_file)).exists() {
                     polylinedxfcrop(
@@ -8123,5 +8040,5 @@ fn batch_process(thread: &String) {
             }
         }
     }
-    return ();
+    
 }
