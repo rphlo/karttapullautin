@@ -1,7 +1,10 @@
-use std::mem;
+use skia_safe::{
+    surfaces, Color, Data, EncodedImageFormat, Image, Paint, PaintCap, PaintStyle, Path,
+    PathEffect, Surface,
+};
 use std::fs::File;
-use std::io::{Write};
-use skia_safe::{surfaces, PathEffect, PaintCap, Color, Data, EncodedImageFormat, Paint, PaintStyle, Path, Surface, Image};
+use std::io::Write;
+use std::mem;
 
 pub struct Canvas {
     surface: Surface,
@@ -53,9 +56,10 @@ impl Canvas {
 
     #[inline]
     pub fn set_dash(&mut self, interval_on: f32, interval_off: f32) {
-        self.paint.set_path_effect(PathEffect::dash(&[interval_on, interval_off], 0.0));
+        self.paint
+            .set_path_effect(PathEffect::dash(&[interval_on, interval_off], 0.0));
     }
-    
+
     #[inline]
     pub fn unset_dash(&mut self) {
         self.paint.set_path_effect(None);
@@ -136,7 +140,7 @@ impl Canvas {
     }
 
     #[inline]
-    pub fn load_from(filename: &str) -> Canvas  {
+    pub fn load_from(filename: &str) -> Canvas {
         let data = Data::from_filename(filename).unwrap();
         let image = Image::from_encoded(data).unwrap();
         let mut c = Canvas::new(image.width(), image.height());
@@ -146,19 +150,13 @@ impl Canvas {
 
     #[inline]
     pub fn draw_image(&mut self, image: Image) {
-        self.surface.canvas().draw_image(
-            image,
-            (0, 0),
-            None
-        );
+        self.surface.canvas().draw_image(image, (0, 0), None);
     }
 
     #[inline]
     pub fn overlay(&mut self, other_canvas: &mut Canvas, x: f32, y: f32) {
-        self.surface.canvas().draw_image(
-            other_canvas.image(),
-            (x, y),
-            None,
-        );
+        self.surface
+            .canvas()
+            .draw_image(other_canvas.image(), (x, y), None);
     }
 }
