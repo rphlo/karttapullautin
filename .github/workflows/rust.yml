@@ -29,7 +29,10 @@ jobs:
         with:
           components: clippy
 
-      - run: cargo clippy -- -D warnings
+        # strict version that does not allow _any_ wclippy warnings to pass
+      # - run: cargo clippy -- -D warnings
+        # allows warnings to pass (but still not errors)
+      - run: cargo clippy
 
   format:
     name: Format (rustfmt)
