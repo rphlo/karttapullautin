@@ -910,9 +910,7 @@ fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(
     for png in png_files.iter() {
         let filename = png.as_path().file_name().unwrap().to_str().unwrap();
         let full_filename = format!("{}/{}", batchoutfolder, filename);
-        let img = image::open(Path::new(&full_filename))
-            .ok()
-            .expect("Opening image failed");
+        let img = image::open(Path::new(&full_filename)).expect("Opening image failed");
         let width = img.width() as f64;
         let height = img.height() as f64;
         let pgw = full_filename.replace(".png", ".pgw");
@@ -952,9 +950,7 @@ fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(
         let pgw = png.replace(".png", ".pgw");
         let filesize = Path::new(&png).metadata().unwrap().len();
         if Path::new(&png).exists() && Path::new(&pgw).exists() && filesize > 0 {
-            let img = image::open(Path::new(&png))
-                .ok()
-                .expect("Opening image failed");
+            let img = image::open(Path::new(&png)).expect("Opening image failed");
             let width = img.width() as f64;
             let height = img.height() as f64;
 
@@ -3734,11 +3730,9 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
         .expect("error saving png");
     img2.save(Path::new(&format!("{}/blocks2.png", tmpfolder)))
         .expect("error saving png");
-    let mut img = image::open(Path::new(&format!("{}/blocks.png", tmpfolder)))
-        .ok()
-        .expect("Opening image failed");
+    let mut img =
+        image::open(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("Opening image failed");
     let img2 = image::open(Path::new(&format!("{}/blocks2.png", tmpfolder)))
-        .ok()
         .expect("Opening image failed");
 
     image::imageops::overlay(&mut img, &img2, 0, 0);
@@ -7206,19 +7200,16 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         .save(Path::new(&format!("{}/greens.png", tmpfolder)))
         .expect("could not save output png");
 
-    let mut img = image::open(Path::new(&format!("{}/greens.png", tmpfolder)))
-        .ok()
-        .expect("Opening image failed");
-    let img2 = image::open(Path::new(&format!("{}/yellow.png", tmpfolder)))
-        .ok()
-        .expect("Opening image failed");
+    let mut img =
+        image::open(Path::new(&format!("{}/greens.png", tmpfolder))).expect("Opening image failed");
+    let img2 =
+        image::open(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("Opening image failed");
     image::imageops::overlay(&mut img, &img2, 0, 0);
     img.save(Path::new(&format!("{}/vegetation.png", tmpfolder)))
         .expect("could not save output png");
 
     if vege_bitmode {
         let g_img = image::open(Path::new(&format!("{}/greens.png", tmpfolder)))
-            .ok()
             .expect("Opening image failed");
         let mut g_img = g_img.to_rgb8();
         for pixel in g_img.pixels_mut() {
@@ -7238,7 +7229,6 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             .save(Path::new(&format!("{}/greens_bit.png", tmpfolder)))
             .expect("could not save output png");
         let g_img = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder)))
-            .ok()
             .expect("Opening image failed");
         let g_img = g_img.to_luma8();
         g_img
@@ -7246,7 +7236,6 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             .expect("could not save output png");
 
         let y_img = image::open(Path::new(&format!("{}/yellow.png", tmpfolder)))
-            .ok()
             .expect("Opening image failed");
         let mut y_img = y_img.to_rgba8();
         for pixel in y_img.pixels_mut() {
@@ -7261,7 +7250,6 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             .save(Path::new(&format!("{}/yellow_bit.png", tmpfolder)))
             .expect("could not save output png");
         let y_img = image::open(Path::new(&format!("{}/yellow_bit.png", tmpfolder)))
-            .ok()
             .expect("Opening image failed");
         let y_img = y_img.to_luma_alpha8();
         y_img
@@ -7269,10 +7257,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             .expect("could not save output png");
 
         let mut img_bit = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder)))
-            .ok()
             .expect("Opening image failed");
         let img_bit2 = image::open(Path::new(&format!("{}/yellow_bit.png", tmpfolder)))
-            .ok()
             .expect("Opening image failed");
         image::imageops::overlay(&mut img_bit, &img_bit2, 0, 0);
         img_bit
@@ -7810,7 +7796,6 @@ fn batch_process(thread: &String) {
             .expect("Could not copy file");
 
             let orig_img = image::open(Path::new(&format!("pullautus{}.png", thread)))
-                .ok()
                 .expect("Opening image failed");
             let mut img = RgbImage::from_pixel(
                 ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
@@ -7827,7 +7812,6 @@ fn batch_process(thread: &String) {
                 .expect("could not save output png");
 
             let orig_img = image::open(Path::new(&format!("pullautus_depr{}.png", thread)))
-                .ok()
                 .expect("Opening image failed");
             let mut img = RgbImage::from_pixel(
                 ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
