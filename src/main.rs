@@ -1,5 +1,7 @@
 use regex::Regex;
 use std::env;
+use std::f32::consts::SQRT_2;
+use std::f64::consts::PI;
 use std::path::Path;
 use std::path::PathBuf;
 extern crate ini;
@@ -4573,7 +4575,7 @@ fn render(
         == "1";
 
     let tmpfolder = format!("temp{}", thread);
-    let angle = -angle_deg / 180.0 * 3.14159265358;
+    let angle = -angle_deg / 180.0 * PI;
 
     let mut size: f64 = 0.0;
     let mut xstart: f64 = 0.0;
@@ -7428,7 +7430,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                             (tmpfactor * (x)) as i32,
                             (tmpfactor * (hf32 * bf32 - y)) as i32,
                         ),
-                        (bf32 * 9.0 * 1.4142) as i32,
+                        (bf32 * 9.0 * SQRT_2) as i32,
                         Luma([0x01]),
                     )
                 }
@@ -7460,7 +7462,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                             (tmpfactor * (x)) as i32,
                             (tmpfactor * (hf32 * bf32 - y)) as i32,
                         ),
-                        (bf32 * 9.0 * 1.4142) as i32,
+                        (bf32 * 9.0 * SQRT_2) as i32,
                         Luma([0x02]),
                     )
                 }
