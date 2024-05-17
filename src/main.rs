@@ -7628,6 +7628,17 @@ fn batch_process(thread: &String) {
         .unwrap_or("0")
         .parse::<f64>()
         .unwrap_or(0.0);
+    let mut thinfactor: f64 = conf
+        .general_section()
+        .get("thinfactor")
+        .unwrap_or("1")
+        .parse::<f64>()
+        .unwrap_or(1.0);
+    if thinfactor == 0.0 {
+        thinfactor = 1.0;
+    }
+
+    let mut rng = rand::thread_rng();
 
     let mut thread_name = String::new();
     if !thread.is_empty() {
@@ -7697,7 +7708,12 @@ fn batch_process(thread: &String) {
                 let mut reader = Reader::from_path(laz_p).expect("Unable to open reader");
                 for ptu in reader.points() {
                     let pt = ptu.unwrap();
-                    if pt.x > minx2 && pt.x < maxx2 && pt.y > miny2 && pt.y < maxy2 {
+                    if (thinfactor == 1.0 || thinfactor > rng.gen())
+                        && pt.x > minx2
+                        && pt.x < maxx2
+                        && pt.y > miny2
+                        && pt.y < maxy2
+                    {
                         tmp_fp
                             .write_all(
                                 format!(
