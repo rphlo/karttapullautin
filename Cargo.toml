@@ -19,7 +19,7 @@ imageproc = { version = "0.25.0", default-features = false, features = [
 las = { version = "0.8", features = ["laz"] }
 rand = "0.8.5"
 regex = "1"
-rust-ini = "0.18.0"
+rust-ini = "0.21"
 shapefile = "0.6.0"
 skia-safe = "0.72.0"
 zip = "0.6.6"
