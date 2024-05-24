@@ -1,29 +1,23 @@
-use regex::Regex;
-use std::env;
-use std::f32::consts::SQRT_2;
-use std::f64::consts::PI;
-use std::path::Path;
-use std::path::PathBuf;
-extern crate ini;
 use image::{GrayImage, Luma, Rgb, RgbImage, Rgba, RgbaImage};
-use ini::Ini;
-use std::error::Error;
-use std::fs;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::{thread, time};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut, draw_line_segment_mut};
 use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
-use las::raw::Header;
-use las::{Read, Reader};
+use ini::Ini;
+use las::{raw::Header, Read, Reader};
 use rand::distributions;
 use rand::prelude::*;
+use regex::Regex;
 use shapefile::dbase::{FieldValue, Record};
 use shapefile::{Shape, ShapeType};
 use std::collections::HashMap;
-use std::fs::OpenOptions;
-use std::io::{BufWriter, Write};
+use std::env;
+use std::error::Error;
+use std::f32::consts::SQRT_2;
+use std::f64::consts::PI;
+use std::fs::{self, File, OpenOptions};
+use std::io::{self, BufRead, BufWriter, Write};
+use std::path::{Path, PathBuf};
+use std::{thread, time};
 
 mod canvas;
 use canvas::Canvas;
@@ -2231,7 +2225,7 @@ fn process_tile(
         .unwrap_or("0")
         .parse::<usize>()
         .unwrap_or(0);
-    
+
     let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
     if vegemode {
         println!("vegemode=1 not implemented in rusty-pullauta");
