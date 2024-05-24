@@ -444,9 +444,9 @@ checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
 
 [[package]]
 name = "heck"
-version = "0.4.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hmac"
@@ -1157,9 +1157,9 @@ checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
 name = "skia-bindings"
-version = "0.72.0"
+version = "0.73.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ace7c5359ccb009880e65958eaf1e2fa68ee19ada6931300c2f1942f84abf2c3"
+checksum = "43555ec5d87ee8c14273f3045bf09504a58c6afe842c51d1593b62abf095aa96"
 dependencies = [
  "bindgen",
  "cc",
@@ -1174,9 +1174,9 @@ dependencies = [
 
 [[package]]
 name = "skia-safe"
-version = "0.72.0"
+version = "0.73.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0a4a3df502b317456a34df181ac67a7a6443b0f2e4b883ac220dba1dcb3ce38"
+checksum = "c431cc5c1ca6008199bf2e849083dd05539c9f2a2ffc1c24b521e6e0ef2c31a7"
 dependencies = [
  "bitflags 2.5.0",
  "lazy_static",
