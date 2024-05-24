@@ -1186,7 +1186,7 @@ dependencies = [
 
 [[package]]
 name = "rusty-pullauta"
-version = "1.0.3"
+version = "1.0.7"
 dependencies = [
  "image",
  "imageproc",

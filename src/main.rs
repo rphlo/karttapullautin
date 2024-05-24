@@ -12,12 +12,12 @@ use std::fs;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::{thread, time};
-
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut, draw_line_segment_mut};
 use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
 use las::raw::Header;
 use las::{Read, Reader};
+use rand::distributions;
 use rand::prelude::*;
 use shapefile::dbase::{FieldValue, Record};
 use shapefile::{Shape, ShapeType};
@@ -2231,7 +2231,7 @@ fn process_tile(
         .unwrap_or("0")
         .parse::<usize>()
         .unwrap_or(0);
-    let mut rng = rand::thread_rng();
+    
     let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
     if vegemode {
         println!("vegemode=1 not implemented in rusty-pullauta");
@@ -2278,6 +2278,9 @@ fn process_tile(
             println!("{}Using thinning factor {}", thread_name, thinfactor);
         }
 
+        let mut rng = rand::thread_rng();
+        let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
+
         let mut xfactor: f64 = conf
             .general_section()
             .get("coordxfactor")
@@ -2319,7 +2322,7 @@ fn process_tile(
         let mut reader = Reader::from_path(filename).expect("Unable to open reader");
         for ptu in reader.points() {
             let pt = ptu.unwrap();
-            if thinfactor == 1.0 || thinfactor > rng.gen() {
+            if thinfactor == 1.0 || rng.sample(randdist) {
                 tmp_fp
                     .write_all(
                         format!(
@@ -3333,9 +3336,11 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     let xyz_file_in = Path::new(&path);
 
     let mut rng = rand::thread_rng();
+    let randdist = distributions::Bernoulli::new(cliff_thin).unwrap();
+
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
-            if cliff_thin > rng.gen() {
+            if cliff_thin == 1.0 || rng.sample(randdist) {
                 let ip = line.unwrap_or(String::new());
                 let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
@@ -3543,7 +3548,7 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
 
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
-            if cliff_thin > rng.gen() {
+            if cliff_thin == 1.0 || rng.sample(randdist) {
                 let ip = line.unwrap_or(String::new());
                 let parts = ip.split(' ');
                 let r = parts.collect::<Vec<&str>>();
@@ -7639,6 +7644,7 @@ fn batch_process(thread: &String) {
     }
 
     let mut rng = rand::thread_rng();
+    let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
 
     let mut thread_name = String::new();
     if !thread.is_empty() {
@@ -7708,11 +7714,11 @@ fn batch_process(thread: &String) {
                 let mut reader = Reader::from_path(laz_p).expect("Unable to open reader");
                 for ptu in reader.points() {
                     let pt = ptu.unwrap();
-                    if (thinfactor == 1.0 || thinfactor > rng.gen())
-                        && pt.x > minx2
+                    if pt.x > minx2
                         && pt.x < maxx2
                         && pt.y > miny2
                         && pt.y < maxy2
+                        && (thinfactor == 1.0 || rng.sample(randdist))
                     {
                         tmp_fp
                             .write_all(
