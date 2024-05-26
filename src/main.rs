@@ -609,8 +609,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    out.write_all(format!("ENDSEC{}", &footer).as_bytes())
-        .expect("Could not write to file");
+    write!(&mut out, "ENDSEC{}", &footer).expect("Could not write to file");
 
     headprinted = false;
 
@@ -648,8 +647,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    out.write_all(format!("ENDSEC{}", &footer).as_bytes())
-        .expect("Could not write to file");
+    write!(&mut out, "ENDSEC{}", &footer).expect("Could not write to file");
 
     headprinted = false;
 
@@ -687,8 +685,8 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    out.write_all(format!("ENDSEC{}", &footer).as_bytes())
-        .expect("Could not write to file");
+
+    write!(&mut out, "ENDSEC{}", &footer).expect("Could not write to file");
 
     headprinted = false;
 
@@ -733,8 +731,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
-        out.write_all(format!("ENDSEC{}", &footer).as_bytes())
-            .expect("Could not write to file");
+        write!(&mut out, "ENDSEC{}", &footer).expect("Could not write to file");
 
         headprinted = false;
     }
@@ -773,8 +770,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    out.write_all(format!("ENDSEC{}", &footer).as_bytes())
-        .expect("Could not write to file");
+    write!(&mut out, "ENDSEC{}", &footer).expect("Could not write to file");
 
     headprinted = false;
 
@@ -812,8 +808,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    out.write_all(format!("ENDSEC{}", &footer).as_bytes())
-        .expect("Could not write to file");
+    write!(&mut out, "ENDSEC{}", &footer).expect("Could not write to file");
 
     headprinted = false;
 
@@ -851,8 +846,7 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    out.write_all(format!("ENDSEC{}", &footer).as_bytes())
-        .expect("Could not write to file");
+    write!(&mut out, "ENDSEC{}", &footer).expect("Could not write to file");
 
     headprinted = false;
 
@@ -885,10 +879,9 @@ fn dxfmerge() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    out.write_all(format!("ENDSEC{}", &footer).as_bytes())
-        .expect("Could not write to file");
-    out2.write_all(format!("ENDSEC{}", &footer).as_bytes())
-        .expect("Could not write to file");
+    write!(&mut out, "ENDSEC{}", &footer).expect("Could not write to file");
+    write!(&mut out2, "ENDSEC{}", &footer).expect("Could not write to file");
+
     Ok(())
 }
 
@@ -974,18 +967,15 @@ fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(
 
     let tfw_file = File::create(format!("{}.pgw", outfilename)).expect("Unable to create file");
     let mut tfw_out = BufWriter::new(tfw_file);
-    tfw_out
-        .write_all(
-            format!(
-                "{}\r\n0\r\n0\r\n{}\r\n{}\r\n{}\r\n",
-                res * scale,
-                -res * scale,
-                xmin,
-                ymax
-            )
-            .as_bytes(),
-        )
-        .expect("Could not write to file");
+    write!(
+        &mut tfw_out,
+        "{}\r\n0\r\n0\r\n{}\r\n{}\r\n{}\r\n",
+        res * scale,
+        -res * scale,
+        xmin,
+        ymax
+    )
+    .expect("Could not write to file");
     tfw_out.flush().expect("Cannot flush");
     fs::copy(
         Path::new(&format!("{}.pgw", outfilename)),
@@ -2317,21 +2307,18 @@ fn process_tile(
         for ptu in reader.points() {
             let pt = ptu.unwrap();
             if thinfactor == 1.0 || rng.sample(randdist) {
-                tmp_fp
-                    .write_all(
-                        format!(
-                            "{} {} {} {} {} {} {}\r\n",
-                            pt.x * xfactor,
-                            pt.y * yfactor,
-                            pt.z * zfactor + zoff,
-                            u8::from(pt.classification),
-                            pt.number_of_returns,
-                            pt.return_number,
-                            pt.intensity
-                        )
-                        .as_bytes(),
-                    )
-                    .expect("Could not write temp file");
+                write!(
+                    &mut tmp_fp,
+                    "{} {} {} {} {} {} {}\r\n",
+                    pt.x * xfactor,
+                    pt.y * yfactor,
+                    pt.z * zfactor + zoff,
+                    u8::from(pt.classification),
+                    pt.number_of_returns,
+                    pt.return_number,
+                    pt.intensity
+                )
+                .expect("Could not write temp file");
             }
         }
         tmp_fp.flush().unwrap();
@@ -2859,17 +2846,13 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                 depression = 1;
                 if (h_center < h && hit % 2 == 1) || (h_center > h && hit % 2 != 1) {
                     depression = -1;
-                    depr_fp
-                        .write_all(format!("{},{}", el_x[l][0], el_y[l][0]).as_bytes())
+                    write!(&mut depr_fp, "{},{}", el_x[l][0], el_y[l][0])
                         .expect("Unable to write file");
                     for k in 1..el_x[l].len() {
-                        depr_fp
-                            .write_all(format!("|{},{}", el_x[l][k], el_y[l][k]).as_bytes())
+                        write!(&mut depr_fp, "|{},{}", el_x[l][k], el_y[l][k])
                             .expect("Unable to write file");
                     }
-                    depr_fp
-                        .write_all("\n".as_bytes())
-                        .expect("Unable to write file");
+                    writeln!(&mut depr_fp).expect("Unable to write file");
                 }
                 if !skip {
                     // Check if knoll is distinct enough
@@ -2924,16 +2907,14 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                 }
                 x_avg /= (el_x_len - 1) as f64;
                 y_avg /= (el_x_len - 1) as f64;
-                dotknoll_fp
-                    .write_all(format!("{} {} {}\r\n", depression, x_avg, y_avg).as_bytes())
+                write!(&mut dotknoll_fp, "{} {} {}\r\n", depression, x_avg, y_avg)
                     .expect("Unable to write to file");
                 skip = true;
             }
 
             if !skip {
                 // not skipped, lets save first coordinate pair for later form line knoll PIP analysis
-                knollhead_fp
-                    .write_all(format!("{} {}\r\n", el_x[l][0], el_y[l][0]).as_bytes())
+                write!(&mut knollhead_fp, "{} {}\r\n", el_x[l][0], el_y[l][0])
                     .expect("Unable to write to file");
                 // adaptive generalization
                 if el_x_len > 101 {
@@ -3356,17 +3337,14 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
         File::create(Path::new(&format!("{}/c2g.dxf", tmpfolder))).expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
-    f2.write_all(format!("  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n", xmin, ymin, xmax, ymax).as_bytes()).expect("Cannot write dxf file");
+    write!(&mut f2,"  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n", xmin, ymin, xmax, ymax).expect("Cannot write dxf file");
 
     let f3 =
         File::create(Path::new(&format!("{}/c3g.dxf", tmpfolder))).expect("Unable to create file");
     let mut f3 = BufWriter::new(f3);
 
-    f3.write_all(
-        format!(
-            "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
+    write!(&mut f3, "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
             xmin, ymin, xmax, ymax
-        ).as_bytes()
     ).expect("Cannot write dxf file");
 
     for x in 0..w + 1 {
@@ -3495,14 +3473,13 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
                                             .as_bytes(),
                                     )
                                     .expect("Cannot write dxf file");
-                                    f2.write_all(
-                                        format!(
-                                            "VERTEX\r\n  8\r\ncliff2\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff2\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
-                                            (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
-                                            (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
-                                            (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
-                                            (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
-                                        ).as_bytes()
+                                    write!(
+                                        &mut f2,
+                                        "VERTEX\r\n  8\r\ncliff2\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff2\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
+                                        (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
+                                        (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
+                                        (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
+                                        (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist,
                                     ).expect("Cannot write dxf file");
                                 }
                             }
@@ -3512,14 +3489,13 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
                                     "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff3\r\n  0\r\n".as_bytes(),
                                 )
                                 .expect("Cannot write dxf file");
-                                f3.write_all(
-                                    format!(
-                                        "VERTEX\r\n  8\r\ncliff3\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff3\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
-                                        (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
-                                        (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
-                                        (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
-                                        (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
-                                    ).as_bytes()
+                                write!(
+                                    &mut f3,
+                                    "VERTEX\r\n  8\r\ncliff3\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff3\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
+                                    (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
+                                    (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
+                                    (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
+                                    (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist,
                                 ).expect("Cannot write dxf file");
                             }
                         }
@@ -3604,14 +3580,13 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
                                 "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff4\r\n  0\r\n".as_bytes(),
                             )
                             .expect("Cannot write dxf file");
-                            f3.write_all(
-                                format!(
-                                    "VERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
-                                    (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
-                                    (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
-                                    (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
-                                    (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist
-                                ).as_bytes()
+                            write!(
+                                &mut f3,
+                                "VERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
+                                (x0 + xt) / 2.0 + cliff_length * (y0 - yt) / dist,
+                                (y0 + yt) / 2.0 - cliff_length * (x0 - xt) / dist,
+                                (x0 + xt) / 2.0 - cliff_length * (y0 - yt) / dist,
+                                (y0 + yt) / 2.0 + cliff_length * (x0 - xt) / dist,
                             ).expect("Cannot write dxf file");
                         }
                     }
@@ -3815,10 +3790,9 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let f = File::create(Path::new(&format!("{}/dotknolls.dxf", tmpfolder)))
         .expect("Unable to create file");
     let mut f = BufWriter::new(f);
-    f.write_all(
-        format!("  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
-            xstart, ystart, xmax * size + xstart, ymax * size + ystart
-        ).as_bytes()
+    write!(&mut f,
+        "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
+        xstart, ystart, xmax * size + xstart, ymax * size + ystart
     ).expect("Cannot write dxf file");
 
     let input_filename = &format!("{}/out2.dxf", tmpfolder);
@@ -3906,12 +3880,10 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
                 } else {
                     layer.push_str("udepression")
                 }
-                f.write_all(
-                    format!(
-                        "POINT\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n 50\r\n0\r\n  0\r\n",
-                        layer, x, y
-                    )
-                    .as_bytes(),
+                write!(
+                    &mut f,
+                    "POINT\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n 50\r\n0\r\n  0\r\n",
+                    layer, x, y
                 )
                 .expect("Can not write to file");
             }
@@ -4145,8 +4117,7 @@ fn xyz2contours(
                 let ele = avg_alt[x][y];
                 let xx = x as f64 * 2.0 * scalefactor + xmin;
                 let yy = y as f64 * 2.0 * scalefactor + ymin;
-                f.write_all(format!("{} {} {}\r\n", xx, yy, ele).as_bytes())
-                    .expect("Cannot write to output file");
+                write!(&mut f, "{} {} {}\r\n", xx, yy, ele).expect("Cannot write to output file");
             }
         }
     }
@@ -4329,16 +4300,14 @@ fn xyz2contours(
                     let r = parts.collect::<Vec<&str>>();
                     let x: f64 = r[0].parse::<f64>().unwrap();
                     let y: f64 = r[1].parse::<f64>().unwrap();
-                    f.write_all(format!("{},{};", x, y).as_bytes())
-                        .expect("Cannot write to output file");
+                    write!(&mut f, "{},{};", x, y).expect("Cannot write to output file");
                     let mut res = format!("{}_{}", x, y);
 
                     let parts = curves.get(&k.clone()).unwrap().split(&separator);
                     let r = parts.collect::<Vec<&str>>();
                     let x: f64 = r[0].parse::<f64>().unwrap();
                     let y: f64 = r[1].parse::<f64>().unwrap();
-                    f.write_all(format!("{},{};", x, y).as_bytes())
-                        .expect("Cannot write to output file");
+                    write!(&mut f, "{},{};", x, y).expect("Cannot write to output file");
                     curves.remove(&k.clone());
 
                     let mut head = format!("{}_{}", x, y);
@@ -4361,8 +4330,7 @@ fn xyz2contours(
                             let r = parts.collect::<Vec<&str>>();
                             let x: f64 = r[0].parse::<f64>().unwrap();
                             let y: f64 = r[1].parse::<f64>().unwrap();
-                            f.write_all(format!("{},{};", x, y).as_bytes())
-                                .expect("Cannot write to output file");
+                            write!(&mut f, "{},{};", x, y).expect("Cannot write to output file");
                             curves.remove(&format!("{}_1", head));
 
                             head = format!("{}_{}", x, y);
@@ -4386,8 +4354,7 @@ fn xyz2contours(
                             let r = parts.collect::<Vec<&str>>();
                             let x: f64 = r[0].parse::<f64>().unwrap();
                             let y: f64 = r[1].parse::<f64>().unwrap();
-                            f.write_all(format!("{},{};", x, y).as_bytes())
-                                .expect("Cannot write to output file");
+                            write!(&mut f, "{},{};", x, y).expect("Cannot write to output file");
                             curves.remove(&format!("{}_2", head));
 
                             head = format!("{}_{}", x, y);
@@ -4414,11 +4381,10 @@ fn xyz2contours(
             .expect("Unable to create file");
         let mut f = BufWriter::new(f);
 
-        f.write_all(
-            format!(
-                "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
-                xmin, ymin, xmax, ymax
-            ).as_bytes()
+        write!(
+            &mut f,
+            "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
+            xmin, ymin, xmax, ymax,
         ).expect("Cannot write dxf file");
 
         if let Ok(lines) = read_lines(polyline_out) {
@@ -4439,12 +4405,10 @@ fn xyz2contours(
                         let xy = xy_raw.collect::<Vec<&str>>();
                         let x: f64 = xy[0].parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
                         let y: f64 = xy[1].parse::<f64>().unwrap() * 2.0 * scalefactor + ymin;
-                        f.write_all(
-                            format!(
-                                "VERTEX\r\n  8\r\ncont\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
-                                x, y
-                            )
-                            .as_bytes(),
+                        write!(
+                            &mut f,
+                            "VERTEX\r\n  8\r\ncont\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
+                            x, y
                         )
                         .expect("Cannot write dxf file");
                     }
@@ -5543,13 +5507,10 @@ fn render(
             let ip = line.unwrap_or(String::new());
             let x: f64 = ip.parse::<f64>().unwrap();
             if i == 0 || i == 3 {
-                pgw_file_out
-                    .write_all(format!("{}\r\n", x / 600.0 * 254.0 * scalefactor).as_bytes())
+                write!(&mut pgw_file_out, "{}\r\n", x / 600.0 * 254.0 * scalefactor)
                     .expect("Unable to write to file");
             } else {
-                pgw_file_out
-                    .write_all(format!("{}\r\n", ip).as_bytes())
-                    .expect("Unable to write to file");
+                write!(&mut pgw_file_out, "{}\r\n", ip).expect("Unable to write to file");
             }
         }
     }
@@ -5640,11 +5601,9 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     let f = File::create(Path::new(&format!("{}/detected.dxf", tmpfolder)))
         .expect("Unable to create file");
     let mut f = BufWriter::new(f);
-    f.write_all(
-        format!(
-            "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
-            xmin, ymin, xmax, ymax
-        ).as_bytes()
+    write!(&mut f,
+        "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
+        xmin, ymin, xmax, ymax
     ).expect("Cannot write dxf file");
 
     let mut heads1: HashMap<String, usize> = HashMap::new();
@@ -6270,12 +6229,10 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                         .join(" ")
                 ));
                 for k in 0..x.len() {
-                    f.write_all(
-                        format!(
-                            "VERTEX\r\n  8\r\n1010\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
-                            x[k], y[k]
-                        )
-                        .as_bytes(),
+                    write!(
+                        &mut f,
+                        "VERTEX\r\n  8\r\n1010\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
+                        x[k], y[k]
                     )
                     .expect("Can not write to file");
                 }
@@ -7468,25 +7425,25 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let ugpgw = File::create(Path::new(&format!("{}/undergrowth.pgw", tmpfolder)))
         .expect("Unable to create file");
     let mut ugpgw = BufWriter::new(ugpgw);
-    ugpgw
-        .write_all(
-            format!(
-                "{}\r\n0.0\r\n0.0\r\n{}\r\n{}\r\n{}\r\n",
-                1.0 / tmpfactor,
-                -1.0 / tmpfactor,
-                xmin,
-                ymax
-            )
-            .as_bytes(),
-        )
-        .expect("Cannot write pgw file");
+    write!(
+        &mut ugpgw,
+        "{}\r\n0.0\r\n0.0\r\n{}\r\n{}\r\n{}\r\n",
+        1.0 / tmpfactor,
+        -1.0 / tmpfactor,
+        xmin,
+        ymax,
+    )
+    .expect("Cannot write pgw file");
 
     let vegepgw = File::create(Path::new(&format!("{}/vegetation.pgw", tmpfolder)))
         .expect("Unable to create file");
     let mut vegepgw = BufWriter::new(vegepgw);
-    vegepgw
-        .write_all(format!("1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n", xmin, ymax).as_bytes())
-        .expect("Cannot write pgw file");
+    write!(
+        &mut vegepgw,
+        "1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n",
+        xmin, ymax
+    )
+    .expect("Cannot write pgw file");
 
     println!("Done");
     Ok(())
@@ -7714,21 +7671,18 @@ fn batch_process(thread: &String) {
                         && pt.y < maxy2
                         && (thinfactor == 1.0 || rng.sample(randdist))
                     {
-                        tmp_fp
-                            .write_all(
-                                format!(
-                                    "{} {} {} {} {} {} {}\r\n",
-                                    pt.x,
-                                    pt.y,
-                                    pt.z + zoff,
-                                    u8::from(pt.classification),
-                                    pt.number_of_returns,
-                                    pt.return_number,
-                                    pt.intensity
-                                )
-                                .as_bytes(),
-                            )
-                            .expect("Could not write temp file");
+                        write!(
+                            &mut tmp_fp,
+                            "{} {} {} {} {} {} {}\r\n",
+                            pt.x,
+                            pt.y,
+                            pt.z + zoff,
+                            u8::from(pt.classification),
+                            pt.number_of_returns,
+                            pt.return_number,
+                            pt.intensity
+                        )
+                        .expect("Could not write temp file");
                     }
                 }
             }
@@ -7790,20 +7744,18 @@ fn batch_process(thread: &String) {
 
             let pgw_file_out = File::create(tfw_in).expect("Unable to create file");
             let mut pgw_file_out = BufWriter::new(pgw_file_out);
-            pgw_file_out
-                .write_all(
-                    format!(
-                        "{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n",
-                        tfw0,
-                        tfw1,
-                        tfw2,
-                        tfw3,
-                        minx + tfw0 / 2.0,
-                        maxy - tfw0 / 2.0
-                    )
-                    .as_bytes(),
-                )
-                .expect("Unable to write to file");
+            write!(
+                &mut pgw_file_out,
+                "{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n",
+                tfw0,
+                tfw1,
+                tfw2,
+                tfw3,
+                minx + tfw0 / 2.0,
+                maxy - tfw0 / 2.0
+            )
+            .expect("Unable to write to file");
+
             pgw_file_out.flush().unwrap();
             fs::copy(
                 Path::new(&format!("pullautus{}.pgw", thread)),
@@ -7915,20 +7867,17 @@ fn batch_process(thread: &String) {
             )))
             .expect("Unable to create file");
             let mut pgw_file_out = BufWriter::new(pgw_file_out);
-            pgw_file_out
-                .write_all(
-                    format!(
-                        "{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n",
-                        tfw0,
-                        tfw1,
-                        tfw2,
-                        tfw3,
-                        minx + tfw0 / 2.0,
-                        maxy - tfw0 / 2.0
-                    )
-                    .as_bytes(),
-                )
-                .expect("Unable to write to file");
+            write!(
+                &mut pgw_file_out,
+                "{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n",
+                tfw0,
+                tfw1,
+                tfw2,
+                tfw3,
+                minx + tfw0 / 2.0,
+                maxy - tfw0 / 2.0
+            )
+            .expect("Unable to write to file");
             pgw_file_out.flush().unwrap();
 
             let mut orig_img_reader =
@@ -7970,16 +7919,14 @@ fn batch_process(thread: &String) {
             let pgw_file_out = File::create(&format!("{}/{}_vege.pgw", batchoutfolder, laz))
                 .expect("Unable to create file");
             let mut pgw_file_out = BufWriter::new(pgw_file_out);
-            pgw_file_out
-                .write_all(
-                    format!(
-                        "1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n",
-                        minx + 0.5,
-                        maxy - 0.5
-                    )
-                    .as_bytes(),
-                )
-                .expect("Unable to write to file");
+            write!(
+                &mut pgw_file_out,
+                "1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n",
+                minx + 0.5,
+                maxy - 0.5
+            )
+            .expect("Unable to write to file");
+
             pgw_file_out.flush().unwrap();
 
             if vege_bitmode {
