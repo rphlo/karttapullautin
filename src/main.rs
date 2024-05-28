@@ -7,9 +7,9 @@ use las::{raw::Header, Read, Reader};
 use rand::distributions;
 use rand::prelude::*;
 use regex::Regex;
+use rustc_hash::FxHashMap as HashMap;
 use shapefile::dbase::{FieldValue, Record};
 use shapefile::{Shape, ShapeType};
-use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::f32::consts::SQRT_2;
@@ -2531,7 +2531,7 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let mut xmax: u64 = u64::MIN;
     let mut ymax: u64 = u64::MIN;
-    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
@@ -2602,8 +2602,8 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
     let knollhead_fp = File::create(knollhead_output).expect("Unable to create file");
     let mut knollhead_fp = BufWriter::new(knollhead_fp);
 
-    let mut heads1: HashMap<String, usize> = HashMap::new();
-    let mut heads2: HashMap<String, usize> = HashMap::new();
+    let mut heads1: HashMap<String, usize> = HashMap::default();
+    let mut heads2: HashMap<String, usize> = HashMap::default();
     let mut heads = Vec::<String>::new();
     let mut tails = Vec::<String>::new();
     let mut el_x = Vec::<Vec<f64>>::new();
@@ -3630,7 +3630,7 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
 
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
@@ -4138,7 +4138,7 @@ fn xyz2contours(
             }
 
             let mut obj = Vec::<String>::new();
-            let mut curves: HashMap<String, String> = HashMap::new();
+            let mut curves: HashMap<String, String> = HashMap::default();
 
             for i in 1..(w - 1) {
                 for j in 2..(h - 1) {
@@ -4537,7 +4537,7 @@ fn render(
     let mut size: f64 = 0.0;
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
-    let mut steepness: HashMap<(usize, usize), f64> = HashMap::new();
+    let mut steepness: HashMap<(usize, usize), f64> = HashMap::default();
     if formline > 0.0 {
         let path = format!("{}/xyz2.xyz", tmpfolder);
         let xyz_file_in = Path::new(&path);
@@ -4563,7 +4563,7 @@ fn render(
         let mut sxmax: usize = usize::MIN;
         let mut symax: usize = usize::MIN;
 
-        let mut xyz: HashMap<(usize, usize), f64> = HashMap::new();
+        let mut xyz: HashMap<(usize, usize), f64> = HashMap::default();
 
         if let Ok(lines) = read_lines(xyz_file_in) {
             for line in lines {
@@ -5288,9 +5288,10 @@ fn render(
 
     let black = Rgba([0, 0, 0, 255]);
 
-    let mut cliffcolor = HashMap::from([("cliff2", black), ("cliff3", black), ("cliff4", black)]);
+    let mut cliffcolor =
+        HashMap::from_iter([("cliff2", black), ("cliff3", black), ("cliff4", black)]);
     if cliffdebug {
-        cliffcolor = HashMap::from([
+        cliffcolor = HashMap::from_iter([
             ("cliff2", Rgba([100, 0, 100, 255])),
             ("cliff3", Rgba([0, 100, 100, 255])),
             ("cliff4", Rgba([100, 100, 0, 255])),
@@ -5566,7 +5567,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ymax: u64 = u64::MIN;
     let mut xmin: u64 = u64::MAX;
     let mut ymin: u64 = u64::MAX;
-    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
@@ -5606,8 +5607,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         xmin, ymin, xmax, ymax
     ).expect("Cannot write dxf file");
 
-    let mut heads1: HashMap<String, usize> = HashMap::new();
-    let mut heads2: HashMap<String, usize> = HashMap::new();
+    let mut heads1: HashMap<String, usize> = HashMap::default();
+    let mut heads2: HashMap<String, usize> = HashMap::default();
     let mut heads = Vec::<String>::with_capacity(data.len());
     let mut tails = Vec::<String>::with_capacity(data.len());
     let mut el_x = Vec::<Vec<f64>>::with_capacity(data.len());
@@ -5767,7 +5768,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let mut elevation: HashMap<u64, f64> = HashMap::new();
+    let mut elevation: HashMap<u64, f64> = HashMap::default();
     for l in 0..data.len() {
         let mut skip = false;
         let el_x_len = el_x[l].len();
@@ -5922,7 +5923,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     }
     let heads = temp.split('\n').collect::<Vec<&str>>();
     let mut temp = String::new();
-    let mut bb: HashMap<usize, String> = HashMap::new();
+    let mut bb: HashMap<usize, String> = HashMap::default();
     for l in 0..data.len() {
         let mut skip = false;
         if !el_x[l].is_empty() {
@@ -6079,8 +6080,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let canditates = temp.split('\n').collect::<Vec<&str>>();
 
-    let mut best: HashMap<u64, u64> = HashMap::new();
-    let mut mov: HashMap<u64, f64> = HashMap::new();
+    let mut best: HashMap<u64, u64> = HashMap::default();
+    let mut mov: HashMap<u64, f64> = HashMap::default();
 
     for head in canditates.iter() {
         let headt = head.trim();
@@ -6295,8 +6296,8 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     }
     let mut xmax: u64 = 0;
     let mut ymax: u64 = 0;
-    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
-    let mut xyz2: HashMap<(u64, u64), f64> = HashMap::new();
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
+    let mut xyz2: HashMap<(u64, u64), f64> = HashMap::default();
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
@@ -6350,7 +6351,7 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let path = format!("{}/pins.txt", tmpfolder);
     let pins_file_in = Path::new(&path);
 
-    let mut dist: HashMap<usize, f64> = HashMap::new();
+    let mut dist: HashMap<usize, f64> = HashMap::default();
     if let Ok(lines) = read_lines(pins_file_in) {
         for (l, line) in lines.enumerate() {
             let mut min = f64::MAX;
@@ -6429,7 +6430,7 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
                     y[k] = yy + (y[k] - yy) * 0.8;
                 }
             }
-            let mut touched: HashMap<String, bool> = HashMap::new();
+            let mut touched: HashMap<String, bool> = HashMap::default();
             let mut minx = u64::MAX;
             let mut miny = u64::MAX;
             let mut maxx = u64::MIN;
@@ -6586,8 +6587,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         .parse::<f64>()
         .unwrap_or(3.0);
 
-    let mut xyz: HashMap<(u64, u64), f64> = HashMap::new();
-    let mut top: HashMap<(u64, u64), f64> = HashMap::new();
+    let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
+    let mut top: HashMap<(u64, u64), f64> = HashMap::default();
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
@@ -6756,9 +6757,9 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmax: f64 = f64::MIN;
     let mut ymax: f64 = f64::MIN;
 
-    let mut hits: HashMap<(u64, u64), u64> = HashMap::new();
-    let mut yhit: HashMap<(u64, u64), u64> = HashMap::new();
-    let mut noyhit: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut hits: HashMap<(u64, u64), u64> = HashMap::default();
+    let mut yhit: HashMap<(u64, u64), u64> = HashMap::default();
+    let mut noyhit: HashMap<(u64, u64), u64> = HashMap::default();
 
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
@@ -6821,12 +6822,12 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let mut firsthit: HashMap<(u64, u64), u64> = HashMap::new();
-    let mut ugg: HashMap<(u64, u64), f64> = HashMap::new();
-    let mut ug: HashMap<(u64, u64), u64> = HashMap::new();
-    let mut ghit: HashMap<(u64, u64), u64> = HashMap::new();
-    let mut greenhit: HashMap<(u64, u64), f64> = HashMap::new();
-    let mut highit: HashMap<(u64, u64), u64> = HashMap::new();
+    let mut firsthit: HashMap<(u64, u64), u64> = HashMap::default();
+    let mut ugg: HashMap<(u64, u64), f64> = HashMap::default();
+    let mut ug: HashMap<(u64, u64), u64> = HashMap::default();
+    let mut ghit: HashMap<(u64, u64), u64> = HashMap::default();
+    let mut greenhit: HashMap<(u64, u64), f64> = HashMap::default();
+    let mut highit: HashMap<(u64, u64), u64> = HashMap::default();
     let step: f32 = 6.0;
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {

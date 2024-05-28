@@ -1,6 +1,6 @@
 [package]
 name = "rusty-pullauta"
-version = "1.0.8"
+version = "1.0.9"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -20,6 +20,7 @@ las = { version = "0.8", features = ["laz"] }
 rand = "0.8.5"
 regex = "1"
 rust-ini = "0.21"
+rustc-hash = "1.2.0"
 shapefile = "0.6.0"
 skia-safe = "0.73"
 zip = "0.6.6"
