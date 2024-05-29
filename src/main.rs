@@ -3931,47 +3931,45 @@ fn xyz2contours(
     let path = format!("{}/{}", tmpfolder, xyzfilein);
     let xyz_file_in = Path::new(&path);
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.trim().split(' ');
 
-            // make sure we have least 4 parts
-            if let (Some(p0), Some(p1), Some(p2), Some(p3)) =
-                (parts.next(), parts.next(), parts.next(), parts.next())
-            {
-                if (p3 == "2" || p3 == water_class) || !ground {
-                    let x: f64 = p0.parse::<f64>().unwrap();
-                    let y: f64 = p1.parse::<f64>().unwrap();
-                    let h: f64 = p2.parse::<f64>().unwrap();
+        // make sure we have least 4 parts
+        if let (Some(p0), Some(p1), Some(p2), Some(p3)) =
+            (parts.next(), parts.next(), parts.next(), parts.next())
+        {
+            if (p3 == "2" || p3 == water_class) || !ground {
+                let x: f64 = p0.parse::<f64>().unwrap();
+                let y: f64 = p1.parse::<f64>().unwrap();
+                let h: f64 = p2.parse::<f64>().unwrap();
 
-                    if xmin > x {
-                        xmin = x;
-                    }
+                if xmin > x {
+                    xmin = x;
+                }
 
-                    if xmax < x {
-                        xmax = x;
-                    }
+                if xmax < x {
+                    xmax = x;
+                }
 
-                    if ymin > y {
-                        ymin = y;
-                    }
+                if ymin > y {
+                    ymin = y;
+                }
 
-                    if ymax < y {
-                        ymax = y;
-                    }
+                if ymax < y {
+                    ymax = y;
+                }
 
-                    if hmin > h {
-                        hmin = h;
-                    }
+                if hmin > h {
+                    hmin = h;
+                }
 
-                    if hmax < h {
-                        hmax = h;
-                    }
+                if hmax < h {
+                    hmax = h;
                 }
             }
         }
-    }
+    })
+    .expect("could not read file");
 
     xmin = (xmin / 2.0 / scalefactor).floor() * 2.0 * scalefactor;
     ymin = (ymin / 2.0 / scalefactor).floor() * 2.0 * scalefactor;
@@ -3980,27 +3978,27 @@ fn xyz2contours(
     let h: usize = ((ymax - ymin).ceil() / 2.0 / scalefactor) as usize;
 
     let mut list_alt = vec![vec![Vec::new(); h + 2]; w + 2];
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
 
-            // make sure we have least 4 parts
-            if let (Some(p0), Some(p1), Some(p2), Some(p3)) =
-                (parts.next(), parts.next(), parts.next(), parts.next())
-            {
-                if (p3 == "2" || p3 == water_class) || !ground {
-                    let x: f64 = p0.parse::<f64>().unwrap();
-                    let y: f64 = p1.parse::<f64>().unwrap();
-                    let h: f64 = p2.parse::<f64>().unwrap();
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.trim().split(' ');
 
-                    list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
-                        [((y - ymin).floor() / 2.0 / scalefactor) as usize]
-                        .push(h);
-                }
+        // make sure we have least 4 parts
+        if let (Some(p0), Some(p1), Some(p2), Some(p3)) =
+            (parts.next(), parts.next(), parts.next(), parts.next())
+        {
+            if (p3 == "2" || p3 == water_class) || !ground {
+                let x: f64 = p0.parse::<f64>().unwrap();
+                let y: f64 = p1.parse::<f64>().unwrap();
+                let h: f64 = p2.parse::<f64>().unwrap();
+
+                list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
+                    [((y - ymin).floor() / 2.0 / scalefactor) as usize]
+                    .push(h);
             }
         }
-    }
+    })
+    .expect("could not read file");
+
     let mut avg_alt = vec![vec![f64::NAN; h + 2]; w + 2];
 
     for x in 0..w + 1 {
@@ -4443,6 +4441,25 @@ where
 {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
+}
+
+/// Iterates over the lines in a file and calls the callback with a &str reference to each line.
+/// This function does not allocate new strings for each line, as opposed to using
+/// [`io::BufReader::lines()`].
+fn read_lines_no_alloc<P>(filename: P, mut line_callback: impl FnMut(&str) -> ()) -> io::Result<()>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    let mut reader = io::BufReader::new(file);
+
+    let mut line_buffer = String::new();
+    while reader.read_line(&mut line_buffer)? > 0 {
+        line_callback(&line_buffer);
+        line_buffer.clear();
+    }
+
+    Ok(())
 }
 
 fn average(numbers: &Vec<f64>) -> f64 {
@@ -5211,9 +5228,9 @@ fn render(
         let input_filename = &format!("{}/dotknolls.dxf", tmpfolder);
         let input = Path::new(input_filename);
         let data = fs::read_to_string(input).expect("Can not read input file");
-        let data: Vec<&str> = data.split("POINT").collect();
+        let data = data.split("POINT");
 
-        for (j, rec) in data.iter().enumerate() {
+        for (j, rec) in data.enumerate() {
             let mut x: f64 = 0.0;
             let mut y: f64 = 0.0;
             if j > 0 {
@@ -6603,24 +6620,24 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
     let mut top: HashMap<(u64, u64), f64> = HashMap::default();
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x = parts.next().unwrap().parse::<f64>().unwrap();
-            let y = parts.next().unwrap().parse::<f64>().unwrap();
-            let h = parts.next().unwrap().parse::<f64>().unwrap();
 
-            let xx = ((x - xstart) / size).floor() as u64;
-            let yy = ((y - ystart) / size).floor() as u64;
-            xyz.insert((xx, yy), h);
-            let xxx = ((x - xstart) / block).floor() as u64;
-            let yyy = ((y - ystart) / block).floor() as u64;
-            if top.contains_key(&(xxx, yyy)) && h > *top.get(&(xxx, yyy)).unwrap() {
-                top.insert((xxx, yyy), h);
-            }
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.trim().split(' ');
+
+        let x = parts.next().unwrap().parse::<f64>().unwrap();
+        let y = parts.next().unwrap().parse::<f64>().unwrap();
+        let h = parts.next().unwrap().parse::<f64>().unwrap();
+
+        let xx = ((x - xstart) / size).floor() as u64;
+        let yy = ((y - ystart) / size).floor() as u64;
+        xyz.insert((xx, yy), h);
+        let xxx = ((x - xstart) / block).floor() as u64;
+        let yyy = ((y - ystart) / block).floor() as u64;
+        if top.contains_key(&(xxx, yyy)) && h > *top.get(&(xxx, yyy)).unwrap() {
+            top.insert((xxx, yyy), h);
         }
-    }
+    })
+    .expect("Can not read file");
 
     let mut zones = vec![];
     let mut i: u32 = 1;
@@ -6774,69 +6791,68 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut yhit: HashMap<(u64, u64), u64> = HashMap::default();
     let mut noyhit: HashMap<(u64, u64), u64> = HashMap::default();
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
-                let ip = line.unwrap_or(String::new());
-                let mut parts = ip.split(' ');
-                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let r3 = parts.next().unwrap();
-                let r4 = parts.next().unwrap();
-                let r5 = parts.next().unwrap();
+    let mut i = 0;
+    read_lines_no_alloc(xyz_file_in, |line| {
+        if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
+            let mut parts = line.trim().split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let r3 = parts.next().unwrap();
+            let r4 = parts.next().unwrap();
+            let r5 = parts.next().unwrap();
 
-                if xmax < x {
-                    xmax = x;
+            if xmax < x {
+                xmax = x;
+            }
+            if ymax < y {
+                ymax = y;
+            }
+            if x > xmin && y > ymin {
+                let xx = ((x - xmin) / block).floor() as u64;
+                let yy = ((y - ymin) / block).floor() as u64;
+                if h > *top.get(&(xx, yy)).unwrap_or(&0.0) {
+                    top.insert((xx, yy), h);
                 }
-                if ymax < y {
-                    ymax = y;
+                let xx = ((x - xmin) / 3.0).floor() as u64;
+                let yy = ((y - ymin) / 3.0).floor() as u64;
+                if let std::collections::hash_map::Entry::Vacant(e) = hits.entry((xx, yy)) {
+                    e.insert(1);
+                } else {
+                    *hits.get_mut(&(xx, yy)).unwrap() += 1;
                 }
-                if x > xmin && y > ymin {
-                    let xx = ((x - xmin) / block).floor() as u64;
-                    let yy = ((y - ymin) / block).floor() as u64;
-                    if h > *top.get(&(xx, yy)).unwrap_or(&0.0) {
-                        top.insert((xx, yy), h);
-                    }
-                    let xx = ((x - xmin) / 3.0).floor() as u64;
-                    let yy = ((y - ymin) / 3.0).floor() as u64;
-                    if let std::collections::hash_map::Entry::Vacant(e) = hits.entry((xx, yy)) {
+                if r3 == "2"
+                    || h < yellowheight
+                        + *xyz
+                            .get(&(
+                                ((x - xmin) / size).floor() as u64,
+                                ((y - ymin) / size).floor() as u64,
+                            ))
+                            .unwrap_or(&0.0)
+                {
+                    if let std::collections::hash_map::Entry::Vacant(e) = yhit.entry((xx, yy)) {
                         e.insert(1);
                     } else {
-                        *hits.get_mut(&(xx, yy)).unwrap() += 1;
+                        *yhit.get_mut(&(xx, yy)).unwrap() += 1;
                     }
-                    if r3 == "2"
-                        || h < yellowheight
-                            + *xyz
-                                .get(&(
-                                    ((x - xmin) / size).floor() as u64,
-                                    ((y - ymin) / size).floor() as u64,
-                                ))
-                                .unwrap_or(&0.0)
-                    {
-                        if let std::collections::hash_map::Entry::Vacant(e) = yhit.entry((xx, yy)) {
-                            e.insert(1);
-                        } else {
-                            *yhit.get_mut(&(xx, yy)).unwrap() += 1;
-                        }
-                    } else if r4 == "1" && r5 == "1" {
-                        if let std::collections::hash_map::Entry::Vacant(e) = noyhit.entry((xx, yy))
-                        {
-                            e.insert(yellowfirstlast);
-                        } else {
-                            *noyhit.get_mut(&(xx, yy)).unwrap() += yellowfirstlast;
-                        }
-                    } else if let std::collections::hash_map::Entry::Vacant(e) =
-                        noyhit.entry((xx, yy))
-                    {
-                        e.insert(1);
+                } else if r4 == "1" && r5 == "1" {
+                    if let std::collections::hash_map::Entry::Vacant(e) = noyhit.entry((xx, yy)) {
+                        e.insert(yellowfirstlast);
                     } else {
-                        *noyhit.get_mut(&(xx, yy)).unwrap() += 1;
+                        *noyhit.get_mut(&(xx, yy)).unwrap() += yellowfirstlast;
                     }
+                } else if let std::collections::hash_map::Entry::Vacant(e) = noyhit.entry((xx, yy))
+                {
+                    e.insert(1);
+                } else {
+                    *noyhit.get_mut(&(xx, yy)).unwrap() += 1;
                 }
             }
         }
-    }
+
+        i += 1;
+    })
+    .expect("Can not read file");
 
     let mut firsthit: HashMap<(u64, u64), u64> = HashMap::default();
     let mut ugg: HashMap<(u64, u64), f64> = HashMap::default();
@@ -6845,142 +6861,135 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut greenhit: HashMap<(u64, u64), f64> = HashMap::default();
     let mut highit: HashMap<(u64, u64), u64> = HashMap::default();
     let step: f32 = 6.0;
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
-                let ip = line.unwrap_or(String::new());
 
-                // parse the parts of the line
-                let mut parts = ip.split(' ');
-                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap() - zoffset;
-                let r3 = parts.next().unwrap();
-                let r4 = parts.next().unwrap();
-                let r5 = parts.next().unwrap();
+    let mut i = 0;
+    read_lines_no_alloc(xyz_file_in, |line| {
+        if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
+            let mut parts = line.trim().split(' ');
 
-                if x > xmin && y > ymin {
-                    if r5 == "1" {
-                        let xx = ((x - xmin) / block + 0.5).floor() as u64;
-                        let yy = ((y - ymin) / block + 0.5).floor() as u64;
-                        if let std::collections::hash_map::Entry::Vacant(e) =
-                            firsthit.entry((xx, yy))
-                        {
-                            e.insert(1);
-                        } else {
-                            *firsthit.get_mut(&(xx, yy)).unwrap() += 1;
-                        }
+            // parse the parts of the line
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap() - zoffset;
+            let r3 = parts.next().unwrap();
+            let r4 = parts.next().unwrap();
+            let r5 = parts.next().unwrap();
+
+            if x > xmin && y > ymin {
+                if r5 == "1" {
+                    let xx = ((x - xmin) / block + 0.5).floor() as u64;
+                    let yy = ((y - ymin) / block + 0.5).floor() as u64;
+                    if let std::collections::hash_map::Entry::Vacant(e) = firsthit.entry((xx, yy)) {
+                        e.insert(1);
+                    } else {
+                        *firsthit.get_mut(&(xx, yy)).unwrap() += 1;
                     }
+                }
 
-                    let xx = ((x - xmin) / size).floor() as u64;
-                    let yy = ((y - ymin) / size).floor() as u64;
-                    let a = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
-                    let b = *xyz.get(&(xx + 1, yy)).unwrap_or(&0.0);
-                    let c = *xyz.get(&(xx, yy + 1)).unwrap_or(&0.0);
-                    let d = *xyz.get(&(xx + 1, yy + 1)).unwrap_or(&0.0);
+                let xx = ((x - xmin) / size).floor() as u64;
+                let yy = ((y - ymin) / size).floor() as u64;
+                let a = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
+                let b = *xyz.get(&(xx + 1, yy)).unwrap_or(&0.0);
+                let c = *xyz.get(&(xx, yy + 1)).unwrap_or(&0.0);
+                let d = *xyz.get(&(xx + 1, yy + 1)).unwrap_or(&0.0);
 
-                    let distx = (x - xmin) / size - xx as f64;
-                    let disty = (y - ymin) / size - yy as f64;
+                let distx = (x - xmin) / size - xx as f64;
+                let disty = (y - ymin) / size - yy as f64;
 
-                    let ab = a * (1.0 - distx) + b * distx;
-                    let cd = c * (1.0 - distx) + d * distx;
-                    let thelele = ab * (1.0 - disty) + cd * disty;
-                    let xx = ((x - xmin) / block / (step as f64) + 0.5).floor() as u64;
-                    let yy = (((y - ymin) / block / (step as f64)).floor() + 0.5).floor() as u64;
-                    let hh = h - thelele;
-                    if hh <= 1.2 {
-                        if r3 == "2" {
-                            if let std::collections::hash_map::Entry::Vacant(e) =
-                                ugg.entry((xx, yy))
-                            {
-                                e.insert(1.0);
-                            } else {
-                                *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
-                            }
-                        } else if hh > 0.25 {
-                            if let std::collections::hash_map::Entry::Vacant(e) = ug.entry((xx, yy))
-                            {
-                                e.insert(1);
-                            } else {
-                                *ug.get_mut(&(xx, yy)).unwrap() += 1;
-                            }
-                        } else if let std::collections::hash_map::Entry::Vacant(e) =
-                            ugg.entry((xx, yy))
-                        {
+                let ab = a * (1.0 - distx) + b * distx;
+                let cd = c * (1.0 - distx) + d * distx;
+                let thelele = ab * (1.0 - disty) + cd * disty;
+                let xx = ((x - xmin) / block / (step as f64) + 0.5).floor() as u64;
+                let yy = (((y - ymin) / block / (step as f64)).floor() + 0.5).floor() as u64;
+                let hh = h - thelele;
+                if hh <= 1.2 {
+                    if r3 == "2" {
+                        if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy)) {
                             e.insert(1.0);
                         } else {
                             *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
                         }
+                    } else if hh > 0.25 {
+                        if let std::collections::hash_map::Entry::Vacant(e) = ug.entry((xx, yy)) {
+                            e.insert(1);
+                        } else {
+                            *ug.get_mut(&(xx, yy)).unwrap() += 1;
+                        }
                     } else if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy))
                     {
-                        e.insert(0.05);
+                        e.insert(1.0);
                     } else {
-                        *ugg.get_mut(&(xx, yy)).unwrap() += 0.05;
+                        *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
+                    }
+                } else if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy)) {
+                    e.insert(0.05);
+                } else {
+                    *ugg.get_mut(&(xx, yy)).unwrap() += 0.05;
+                }
+
+                let xx = ((x - xmin) / block + 0.5).floor() as u64;
+                let yy = ((y - ymin) / block + 0.5).floor() as u64;
+                let yyy = ((y - ymin) / block).floor() as u64; // necessary due to bug in perl version
+                if r3 == "2" || greenground >= hh {
+                    if r4 == "1" && r5 == "1" {
+                        if let std::collections::hash_map::Entry::Vacant(e) = ghit.entry((xx, yyy))
+                        {
+                            e.insert(firstandlastreturnasground);
+                        } else {
+                            *ghit.get_mut(&(xx, yyy)).unwrap() += firstandlastreturnasground;
+                        }
+                    } else if let std::collections::hash_map::Entry::Vacant(e) =
+                        ghit.entry((xx, yyy))
+                    {
+                        e.insert(1);
+                    } else {
+                        *ghit.get_mut(&(xx, yyy)).unwrap() += 1;
+                    }
+                } else {
+                    let mut last = 1.0;
+                    if r4 == r5 {
+                        last = lastfactor;
+                        if hh < 5.0 {
+                            last = firstandlastfactor;
+                        }
+                    }
+                    for zone in zones.iter() {
+                        let mut parts = zone.split('|');
+                        let low: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                        let high: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                        let roof: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                        let factor: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                        if hh >= low
+                            && hh < high
+                            && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof
+                        {
+                            let offset = factor * last;
+                            if let std::collections::hash_map::Entry::Vacant(e) =
+                                greenhit.entry((xx, yy))
+                            {
+                                e.insert(offset);
+                            } else {
+                                *greenhit.get_mut(&(xx, yy)).unwrap() += offset;
+                            }
+                            break;
+                        }
                     }
 
-                    let xx = ((x - xmin) / block + 0.5).floor() as u64;
-                    let yy = ((y - ymin) / block + 0.5).floor() as u64;
-                    let yyy = ((y - ymin) / block).floor() as u64; // necessary due to bug in perl version
-                    if r3 == "2" || greenground >= hh {
-                        if r4 == "1" && r5 == "1" {
-                            if let std::collections::hash_map::Entry::Vacant(e) =
-                                ghit.entry((xx, yyy))
-                            {
-                                e.insert(firstandlastreturnasground);
-                            } else {
-                                *ghit.get_mut(&(xx, yyy)).unwrap() += firstandlastreturnasground;
-                            }
-                        } else if let std::collections::hash_map::Entry::Vacant(e) =
-                            ghit.entry((xx, yyy))
+                    if greenhigh < hh {
+                        if let std::collections::hash_map::Entry::Vacant(e) = highit.entry((xx, yy))
                         {
                             e.insert(1);
                         } else {
-                            *ghit.get_mut(&(xx, yyy)).unwrap() += 1;
-                        }
-                    } else {
-                        let mut last = 1.0;
-                        if r4 == r5 {
-                            last = lastfactor;
-                            if hh < 5.0 {
-                                last = firstandlastfactor;
-                            }
-                        }
-                        for zone in zones.iter() {
-                            let mut parts = zone.split('|');
-                            let low: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                            let high: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                            let roof: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                            let factor: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                            if hh >= low
-                                && hh < high
-                                && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof
-                            {
-                                let offset = factor * last;
-                                if let std::collections::hash_map::Entry::Vacant(e) =
-                                    greenhit.entry((xx, yy))
-                                {
-                                    e.insert(offset);
-                                } else {
-                                    *greenhit.get_mut(&(xx, yy)).unwrap() += offset;
-                                }
-                                break;
-                            }
-                        }
-
-                        if greenhigh < hh {
-                            if let std::collections::hash_map::Entry::Vacant(e) =
-                                highit.entry((xx, yy))
-                            {
-                                e.insert(1);
-                            } else {
-                                *highit.get_mut(&(xx, yy)).unwrap() += 1;
-                            }
+                            *highit.get_mut(&(xx, yy)).unwrap() += 1;
                         }
                     }
                 }
             }
         }
-    }
+
+        i += 1;
+    })
+    .expect("Can not read file");
 
     let w = (xmax - xmin).floor() / block;
     let h = (ymax - ymin).floor() / block;
