@@ -2514,10 +2514,9 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
             if i == 0 {
                 xstart = x;
                 ystart = y;
@@ -2535,11 +2534,10 @@ fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
             let xx = ((x - xstart) / size).floor() as u64;
             let yy = ((y - ystart) / size).floor() as u64;
@@ -3191,11 +3189,11 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
             if xmin > x {
                 xmin = x;
             }
@@ -3231,10 +3229,10 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
             if i == 0 {
                 xstart = x;
                 ystart = y;
@@ -3253,11 +3251,10 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
             let xx = ((x - xstart) / size).floor() as usize;
             let yy = ((y - ystart) / size).floor() as usize;
@@ -3317,12 +3314,13 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
         for line in lines {
             if cliff_thin == 1.0 || rng.sample(randdist) {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(' ');
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap();
-                if r[3] == "2" {
+                let mut parts = ip.split(' ');
+                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let r3 = parts.next().unwrap();
+
+                if r3 == "2" {
                     list_alt[((x - xmin).floor() / 3.0) as usize]
                         [((y - ymin).floor() / 3.0) as usize]
                         .push((x, y, h));
@@ -3520,11 +3518,11 @@ fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
         for line in lines {
             if cliff_thin == 1.0 || rng.sample(randdist) {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(' ');
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap();
+                let mut parts = ip.split(' ');
+                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
                 list_alt[((x - xmin).floor() / 3.0) as usize][((y - ymin).floor() / 3.0) as usize]
                     .push((x, y, h));
             }
@@ -3616,10 +3614,10 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
             if i == 0 {
                 xstartxyz = x;
                 ystartxyz = y;
@@ -3635,11 +3633,10 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
             let xx = ((x - xstartxyz) / size).floor() as u64;
             let yy = ((y - ystartxyz) / size).floor() as u64;
@@ -3664,17 +3661,20 @@ fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let r3 = parts.next().unwrap();
+            let r4 = parts.next().unwrap();
+            let r5 = parts.next().unwrap();
+
             let xx = ((x - xstartxyz) / size).floor() as u64;
             let yy = ((y - ystartxyz) / size).floor() as u64;
-            if r[3] != "2"
-                && r[3] != "9"
-                && r[4] == "1"
-                && r[5] == "1"
+            if r3 != "2"
+                && r3 != "9"
+                && r4 == "1"
+                && r5 == "1"
                 && h - *xyz.get(&(xx, yy)).unwrap_or(&0.0) > 2.0
             {
                 draw_filled_rect_mut(
@@ -3741,10 +3741,10 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
             if i == 0 {
                 xstart = x;
                 ystart = y;
@@ -3761,11 +3761,12 @@ fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            if r.len() >= 2 {
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+
+            // make sure we have at least 2 items
+            if let (Some(r0), Some(r1)) = (parts.next(), parts.next()) {
+                let x: f64 = r0.parse::<f64>().unwrap();
+                let y: f64 = r1.parse::<f64>().unwrap();
 
                 let xx = ((x - xstart) / size).floor();
                 let yy = ((y - ystart) / size).floor();
@@ -3933,34 +3934,40 @@ fn xyz2contours(
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            if (r.len() > 3 && (r[3] == "2" || r[3] == water_class)) || !ground {
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap();
-                if xmin > x {
-                    xmin = x;
-                }
+            let mut parts = ip.split(' ');
 
-                if xmax < x {
-                    xmax = x;
-                }
+            // make sure we have least 4 parts
+            if let (Some(p0), Some(p1), Some(p2), Some(p3)) =
+                (parts.next(), parts.next(), parts.next(), parts.next())
+            {
+                if (p3 == "2" || p3 == water_class) || !ground {
+                    let x: f64 = p0.parse::<f64>().unwrap();
+                    let y: f64 = p1.parse::<f64>().unwrap();
+                    let h: f64 = p2.parse::<f64>().unwrap();
 
-                if ymin > y {
-                    ymin = y;
-                }
+                    if xmin > x {
+                        xmin = x;
+                    }
 
-                if ymax < y {
-                    ymax = y;
-                }
+                    if xmax < x {
+                        xmax = x;
+                    }
 
-                if hmin > h {
-                    hmin = h;
-                }
+                    if ymin > y {
+                        ymin = y;
+                    }
 
-                if hmax < h {
-                    hmax = h;
+                    if ymax < y {
+                        ymax = y;
+                    }
+
+                    if hmin > h {
+                        hmin = h;
+                    }
+
+                    if hmax < h {
+                        hmax = h;
+                    }
                 }
             }
         }
@@ -3976,15 +3983,21 @@ fn xyz2contours(
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            if (r.len() > 3 && (r[3] == "2" || r[3] == water_class)) || !ground {
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap();
-                list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
-                    [((y - ymin).floor() / 2.0 / scalefactor) as usize]
-                    .push(h);
+            let mut parts = ip.split(' ');
+
+            // make sure we have least 4 parts
+            if let (Some(p0), Some(p1), Some(p2), Some(p3)) =
+                (parts.next(), parts.next(), parts.next(), parts.next())
+            {
+                if (p3 == "2" || p3 == water_class) || !ground {
+                    let x: f64 = p0.parse::<f64>().unwrap();
+                    let y: f64 = p1.parse::<f64>().unwrap();
+                    let h: f64 = p2.parse::<f64>().unwrap();
+
+                    list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
+                        [((y - ymin).floor() / 2.0 / scalefactor) as usize]
+                        .push(h);
+                }
             }
         }
     }
@@ -4545,10 +4558,10 @@ fn render(
         if let Ok(lines) = read_lines(xyz_file_in) {
             for (i, line) in lines.enumerate() {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(' ');
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
+                let mut parts = ip.split(' ');
+                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
                 if i == 0 {
                     xstart = x;
                     ystart = y;
@@ -4568,11 +4581,10 @@ fn render(
         if let Ok(lines) = read_lines(xyz_file_in) {
             for line in lines {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(' ');
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap();
+                let mut parts = ip.split(' ');
+                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
                 let xx = ((x - xstart) / size).floor() as usize;
                 let yy = ((y - ystart) / size).floor() as usize;
@@ -5548,10 +5560,10 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
             if i == 0 {
                 xstart = x;
                 ystart = y;
@@ -5571,11 +5583,10 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
             let xx = ((x - xstart) / size).floor() as u64;
             let yy = ((y - ystart) / size).floor() as u64;
@@ -6017,21 +6028,22 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             y.push(taily);
 
             let box_raw = bb.get(&l).unwrap();
-            let box_data = box_raw.split(',').collect::<Vec<&str>>();
-            let minx = box_data[0].parse::<f64>().unwrap();
-            let maxx = box_data[1].parse::<f64>().unwrap();
-            let miny = box_data[2].parse::<f64>().unwrap();
-            let maxy = box_data[3].parse::<f64>().unwrap();
+            let mut box_data = box_raw.split(',');
+            let minx = box_data.next().unwrap().parse::<f64>().unwrap();
+            let maxx = box_data.next().unwrap().parse::<f64>().unwrap();
+            let miny = box_data.next().unwrap().parse::<f64>().unwrap();
+            let maxy = box_data.next().unwrap().parse::<f64>().unwrap();
+
             let mut topid = 0;
             for head in tops.iter() {
                 let headt = head.trim();
                 if headt.is_empty() {
                     continue;
                 }
-                let data = headt.split(',').collect::<Vec<&str>>();
-                let id = data[0].parse::<u64>().unwrap();
-                let xtest = data[1].parse::<f64>().unwrap();
-                let ytest = data[2].parse::<f64>().unwrap();
+                let mut data = headt.split(',');
+                let id = data.next().unwrap().parse::<u64>().unwrap();
+                let xtest = data.next().unwrap().parse::<f64>().unwrap();
+                let ytest = data.next().unwrap().parse::<f64>().unwrap();
                 let ll = l as u64;
 
                 if *elevation.get(&ll).unwrap() < (*elevation.get(&id).unwrap() - 0.1)
@@ -6116,11 +6128,13 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         if headt.is_empty() {
             continue;
         }
-        let data = headt.split(',').collect::<Vec<&str>>();
-        let id = data[0].parse::<u64>().unwrap();
-        let xtest = data[1].parse::<f64>().unwrap();
-        let ytest = data[2].parse::<f64>().unwrap();
-        let topid = data[3].parse::<u64>().unwrap();
+
+        let mut data = headt.split(',');
+        let id = data.next().unwrap().parse::<u64>().unwrap();
+        let xtest = data.next().unwrap().parse::<f64>().unwrap();
+        let ytest = data.next().unwrap().parse::<f64>().unwrap();
+        let topid = data.next().unwrap().parse::<u64>().unwrap();
+
         let x = el_x[id as usize].to_vec();
         if *best.get(&topid).unwrap() == id
             && (x.len() < 13
@@ -6154,22 +6168,23 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             y.push(taily);
 
             let box_raw = bb.get(&l).unwrap();
-            let box_data = box_raw.split(',').collect::<Vec<&str>>();
-            let minx = box_data[0].parse::<f64>().unwrap();
-            let maxx = box_data[1].parse::<f64>().unwrap();
-            let miny = box_data[2].parse::<f64>().unwrap();
-            let maxy = box_data[3].parse::<f64>().unwrap();
+            let mut box_data = box_raw.split(',');
+            let minx = box_data.next().unwrap().parse::<f64>().unwrap();
+            let maxx = box_data.next().unwrap().parse::<f64>().unwrap();
+            let miny = box_data.next().unwrap().parse::<f64>().unwrap();
+            let maxy = box_data.next().unwrap().parse::<f64>().unwrap();
 
             for head in canditates.iter() {
                 let headt = head.trim();
                 if headt.is_empty() {
                     continue;
                 }
-                let data = headt.split(',').collect::<Vec<&str>>();
-                let id = data[0].parse::<u64>().unwrap();
-                let xtest = data[1].parse::<f64>().unwrap();
-                let ytest = data[2].parse::<f64>().unwrap();
-                let topid = data[3].parse::<u64>().unwrap();
+                let mut data = headt.split(',');
+                let id = data.next().unwrap().parse::<u64>().unwrap();
+                let xtest = data.next().unwrap().parse::<f64>().unwrap();
+                let ytest = data.next().unwrap().parse::<f64>().unwrap();
+                let topid = data.next().unwrap().parse::<u64>().unwrap();
+
                 ltopid = topid;
                 if id != ll && !skip && xtest < maxx && xtest > minx && ytest < maxy && ytest > miny
                 {
@@ -6280,10 +6295,10 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
             if i == 0 {
                 xstart = x;
                 ystart = y;
@@ -6301,11 +6316,10 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
             let xx = ((x - xstart) / size).floor() as u64;
             let yy = ((y - ystart) / size).floor() as u64;
@@ -6564,10 +6578,10 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x = parts.next().unwrap().parse::<f64>().unwrap();
+            let y = parts.next().unwrap().parse::<f64>().unwrap();
+
             if i == 0 {
                 xstart = x;
                 ystart = y;
@@ -6592,11 +6606,10 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     if let Ok(lines) = read_lines(xyz_file_in) {
         for line in lines {
             let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let h: f64 = r[2].parse::<f64>().unwrap();
+            let mut parts = ip.split(' ');
+            let x = parts.next().unwrap().parse::<f64>().unwrap();
+            let y = parts.next().unwrap().parse::<f64>().unwrap();
+            let h = parts.next().unwrap().parse::<f64>().unwrap();
 
             let xx = ((x - xstart) / size).floor() as u64;
             let yy = ((y - ystart) / size).floor() as u64;
@@ -6765,11 +6778,14 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         for (i, line) in lines.enumerate() {
             if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(' ');
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap();
+                let mut parts = ip.split(' ');
+                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let r3 = parts.next().unwrap();
+                let r4 = parts.next().unwrap();
+                let r5 = parts.next().unwrap();
+
                 if xmax < x {
                     xmax = x;
                 }
@@ -6789,7 +6805,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     } else {
                         *hits.get_mut(&(xx, yy)).unwrap() += 1;
                     }
-                    if r[3] == "2"
+                    if r3 == "2"
                         || h < yellowheight
                             + *xyz
                                 .get(&(
@@ -6803,7 +6819,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                         } else {
                             *yhit.get_mut(&(xx, yy)).unwrap() += 1;
                         }
-                    } else if r[4] == "1" && r[5] == "1" {
+                    } else if r4 == "1" && r5 == "1" {
                         if let std::collections::hash_map::Entry::Vacant(e) = noyhit.entry((xx, yy))
                         {
                             e.insert(yellowfirstlast);
@@ -6833,13 +6849,18 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         for (i, line) in lines.enumerate() {
             if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
                 let ip = line.unwrap_or(String::new());
-                let parts = ip.split(' ');
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let h: f64 = r[2].parse::<f64>().unwrap() - zoffset;
+
+                // parse the parts of the line
+                let mut parts = ip.split(' ');
+                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap() - zoffset;
+                let r3 = parts.next().unwrap();
+                let r4 = parts.next().unwrap();
+                let r5 = parts.next().unwrap();
+
                 if x > xmin && y > ymin {
-                    if r[5] == "1" {
+                    if r5 == "1" {
                         let xx = ((x - xmin) / block + 0.5).floor() as u64;
                         let yy = ((y - ymin) / block + 0.5).floor() as u64;
                         if let std::collections::hash_map::Entry::Vacant(e) =
@@ -6868,7 +6889,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     let yy = (((y - ymin) / block / (step as f64)).floor() + 0.5).floor() as u64;
                     let hh = h - thelele;
                     if hh <= 1.2 {
-                        if r[3] == "2" {
+                        if r3 == "2" {
                             if let std::collections::hash_map::Entry::Vacant(e) =
                                 ugg.entry((xx, yy))
                             {
@@ -6900,8 +6921,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                     let xx = ((x - xmin) / block + 0.5).floor() as u64;
                     let yy = ((y - ymin) / block + 0.5).floor() as u64;
                     let yyy = ((y - ymin) / block).floor() as u64; // necessary due to bug in perl version
-                    if r[3] == "2" || greenground >= hh {
-                        if r[4] == "1" && r[5] == "1" {
+                    if r3 == "2" || greenground >= hh {
+                        if r4 == "1" && r5 == "1" {
                             if let std::collections::hash_map::Entry::Vacant(e) =
                                 ghit.entry((xx, yyy))
                             {
@@ -6918,19 +6939,18 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                         }
                     } else {
                         let mut last = 1.0;
-                        if r[4] == r[5] {
+                        if r4 == r5 {
                             last = lastfactor;
                             if hh < 5.0 {
                                 last = firstandlastfactor;
                             }
                         }
                         for zone in zones.iter() {
-                            let parts = zone.split('|');
-                            let v = parts.collect::<Vec<&str>>();
-                            let low: f64 = v[0].parse::<f64>().unwrap();
-                            let high: f64 = v[1].parse::<f64>().unwrap();
-                            let roof: f64 = v[2].parse::<f64>().unwrap();
-                            let factor: f64 = v[3].parse::<f64>().unwrap();
+                            let mut parts = zone.split('|');
+                            let low: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                            let high: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                            let roof: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                            let factor: f64 = parts.next().unwrap().parse::<f64>().unwrap();
                             if hh >= low
                                 && hh < high
                                 && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof
