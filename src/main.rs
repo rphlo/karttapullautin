@@ -3934,38 +3934,38 @@ fn xyz2contours(
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.trim().split(' ');
 
-        // make sure we have least 4 parts
-        if let (Some(p0), Some(p1), Some(p2), Some(p3)) =
-            (parts.next(), parts.next(), parts.next(), parts.next())
-        {
-            if (p3 == "2" || p3 == water_class) || !ground {
-                let x: f64 = p0.parse::<f64>().unwrap();
-                let y: f64 = p1.parse::<f64>().unwrap();
-                let h: f64 = p2.parse::<f64>().unwrap();
+        let p0 = parts.next().unwrap();
+        let p1 = parts.next().unwrap();
+        let p2 = parts.next().unwrap();
+        let p3 = parts.next();
 
-                if xmin > x {
-                    xmin = x;
-                }
+        if p3.is_some_and(|p3| p3 == "2" || p3 == water_class) || !ground {
+            let x: f64 = p0.parse::<f64>().unwrap();
+            let y: f64 = p1.parse::<f64>().unwrap();
+            let h: f64 = p2.parse::<f64>().unwrap();
 
-                if xmax < x {
-                    xmax = x;
-                }
+            if xmin > x {
+                xmin = x;
+            }
 
-                if ymin > y {
-                    ymin = y;
-                }
+            if xmax < x {
+                xmax = x;
+            }
 
-                if ymax < y {
-                    ymax = y;
-                }
+            if ymin > y {
+                ymin = y;
+            }
 
-                if hmin > h {
-                    hmin = h;
-                }
+            if ymax < y {
+                ymax = y;
+            }
 
-                if hmax < h {
-                    hmax = h;
-                }
+            if hmin > h {
+                hmin = h;
+            }
+
+            if hmax < h {
+                hmax = h;
             }
         }
     })
@@ -3982,19 +3982,19 @@ fn xyz2contours(
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.trim().split(' ');
 
-        // make sure we have least 4 parts
-        if let (Some(p0), Some(p1), Some(p2), Some(p3)) =
-            (parts.next(), parts.next(), parts.next(), parts.next())
-        {
-            if (p3 == "2" || p3 == water_class) || !ground {
-                let x: f64 = p0.parse::<f64>().unwrap();
-                let y: f64 = p1.parse::<f64>().unwrap();
-                let h: f64 = p2.parse::<f64>().unwrap();
+        let p0 = parts.next().unwrap();
+        let p1 = parts.next().unwrap();
+        let p2 = parts.next().unwrap();
+        let p3 = parts.next();
 
-                list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
-                    [((y - ymin).floor() / 2.0 / scalefactor) as usize]
-                    .push(h);
-            }
+        if p3.is_some_and(|p3| p3 == "2" || p3 == water_class) || !ground {
+            let x: f64 = p0.parse::<f64>().unwrap();
+            let y: f64 = p1.parse::<f64>().unwrap();
+            let h: f64 = p2.parse::<f64>().unwrap();
+
+            list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
+                [((y - ymin).floor() / 2.0 / scalefactor) as usize]
+                .push(h);
         }
     })
     .expect("could not read file");
