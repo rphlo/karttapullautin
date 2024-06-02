@@ -5922,7 +5922,12 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
     let heads = temp.split('\n').collect::<Vec<&str>>();
-    let mut temp = String::new();
+    struct Top {
+        id: u64,
+        xtest: f64,
+        ytest: f64,
+    }
+    let mut tops = Vec::<Top>::new();
     struct BoundingBox {
         minx: f64,
         maxx: f64,
@@ -6011,12 +6016,14 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                 }
             }
             if !skip {
-                let new_line = format!("{},{},{}\r\n", l, x[0], y[0]);
-                temp.push_str(&new_line);
+                tops.push(Top {
+                    id: l as u64,
+                    xtest: x[0],
+                    ytest: y[0],
+                });
             }
         }
     }
-    let tops = temp.split('\n').collect::<Vec<&str>>();
     let mut temp = String::new();
 
     for l in 0..data.len() {
@@ -6039,14 +6046,7 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
 
             let mut topid = 0;
             for head in tops.iter() {
-                let headt = head.trim();
-                if headt.is_empty() {
-                    continue;
-                }
-                let mut data = headt.split(',');
-                let id = data.next().unwrap().parse::<u64>().unwrap();
-                let xtest = data.next().unwrap().parse::<f64>().unwrap();
-                let ytest = data.next().unwrap().parse::<f64>().unwrap();
+                let &Top { id, xtest, ytest } = head;
                 let ll = l as u64;
 
                 if *elevation.get(&ll).unwrap() < (*elevation.get(&id).unwrap() - 0.1)
