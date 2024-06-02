@@ -14,7 +14,7 @@ use std::env;
 use std::error::Error;
 use std::f32::consts::SQRT_2;
 use std::f64::consts::PI;
-use std::fs::{self, File, OpenOptions};
+use std::fs::{self, File};
 use std::io::{self, BufRead, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::{thread, time};
@@ -4141,7 +4141,6 @@ fn xyz2contours(
 
         let f = File::create(polyline_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
-        f.write_all(b"").expect("Unable to create file");
 
         loop {
             if level >= hmax {
@@ -4298,14 +4297,6 @@ fn xyz2contours(
                 }
             }
 
-            let f = OpenOptions::new()
-                .append(true)
-                .open(polyline_out)
-                .expect("Unable to create file");
-            let mut f = BufWriter::new(f);
-
-            println!("Objects: {}, hashmap items: {}", obj.len(), curves.len());
-
             for k in obj.iter() {
                 if curves.contains_key(k) {
                     let (x, y, _) = *k;
@@ -4365,9 +4356,12 @@ fn xyz2contours(
                     }
                 }
             }
-            f.flush().expect("Cannot flush");
             level += v;
         }
+        // explicitly flush and drop to close the file
+        f.flush().expect("Cannot flush");
+        drop(f);
+
         let f = File::create(Path::new(&format!("{}/{}", tmpfolder, dxffile)))
             .expect("Unable to create file");
         let mut f = BufWriter::new(f);
@@ -4378,39 +4372,38 @@ fn xyz2contours(
             xmin, ymin, xmax, ymax,
         ).expect("Cannot write dxf file");
 
-        if let Ok(lines) = read_lines(polyline_out) {
-            for line in lines {
-                let ip = line.unwrap_or(String::new());
-                let parts = ip.split(';');
-                let r = parts.collect::<Vec<&str>>();
-                f.write_all("POLYLINE\r\n 66\r\n1\r\n  8\r\ncont\r\n  0\r\n".as_bytes())
-                    .expect("Cannot write dxf file");
-                for (i, d) in r.iter().enumerate() {
-                    if d != &"" {
-                        let ii = i + 1;
-                        let ldata = r.len() - 2;
-                        if ii > 5 && ii < ldata - 5 && ldata > 12 && ii % 2 == 0 {
-                            continue;
-                        }
-                        let xy_raw = d.split(',');
-                        let xy = xy_raw.collect::<Vec<&str>>();
-                        let x: f64 = xy[0].parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
-                        let y: f64 = xy[1].parse::<f64>().unwrap() * 2.0 * scalefactor + ymin;
-                        write!(
-                            &mut f,
-                            "VERTEX\r\n  8\r\ncont\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
-                            x, y
-                        )
-                        .expect("Cannot write dxf file");
-                    }
-                }
-                f.write_all("SEQEND\r\n  0\r\n".as_bytes())
-                    .expect("Cannot write dxf file");
-            }
-            f.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
+        read_lines_no_alloc(polyline_out, |line| {
+            let parts = line.trim().split(';');
+            let r = parts.collect::<Vec<&str>>();
+            f.write_all("POLYLINE\r\n 66\r\n1\r\n  8\r\ncont\r\n  0\r\n".as_bytes())
                 .expect("Cannot write dxf file");
-            println!("Done");
-        }
+            for (i, d) in r.iter().enumerate() {
+                if d != &"" {
+                    let ii = i + 1;
+                    let ldata = r.len() - 2;
+                    if ii > 5 && ii < ldata - 5 && ldata > 12 && ii % 2 == 0 {
+                        continue;
+                    }
+                    let mut xy_raw = d.split(',');
+                    let x: f64 =
+                        xy_raw.next().unwrap().parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
+                    let y: f64 =
+                        xy_raw.next().unwrap().parse::<f64>().unwrap() * 2.0 * scalefactor + ymin;
+                    write!(
+                        &mut f,
+                        "VERTEX\r\n  8\r\ncont\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
+                        x, y
+                    )
+                    .expect("Cannot write dxf file");
+                }
+            }
+            f.write_all("SEQEND\r\n  0\r\n".as_bytes())
+                .expect("Cannot write dxf file");
+        })
+        .expect("Cannot read file");
+        f.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
+            .expect("Cannot write dxf file");
+        println!("Done");
     }
     Ok(())
 }
