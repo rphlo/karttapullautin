@@ -6785,11 +6785,8 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 }
                 let xx = ((x - xmin) / 3.0).floor() as u64;
                 let yy = ((y - ymin) / 3.0).floor() as u64;
-                if let std::collections::hash_map::Entry::Vacant(e) = hits.entry((xx, yy)) {
-                    e.insert(1);
-                } else {
-                    *hits.get_mut(&(xx, yy)).unwrap() += 1;
-                }
+                *hits.entry((xx, yy)).or_insert(0) += 1;
+
                 if r3 == "2"
                     || h < yellowheight
                         + *xyz
@@ -6799,22 +6796,11 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                             ))
                             .unwrap_or(&0.0)
                 {
-                    if let std::collections::hash_map::Entry::Vacant(e) = yhit.entry((xx, yy)) {
-                        e.insert(1);
-                    } else {
-                        *yhit.get_mut(&(xx, yy)).unwrap() += 1;
-                    }
+                    *yhit.entry((xx, yy)).or_insert(0) += 1;
                 } else if r4 == "1" && r5 == "1" {
-                    if let std::collections::hash_map::Entry::Vacant(e) = noyhit.entry((xx, yy)) {
-                        e.insert(yellowfirstlast);
-                    } else {
-                        *noyhit.get_mut(&(xx, yy)).unwrap() += yellowfirstlast;
-                    }
-                } else if let std::collections::hash_map::Entry::Vacant(e) = noyhit.entry((xx, yy))
-                {
-                    e.insert(1);
+                    *noyhit.entry((xx, yy)).or_insert(0) += yellowfirstlast;
                 } else {
-                    *noyhit.get_mut(&(xx, yy)).unwrap() += 1;
+                    *noyhit.entry((xx, yy)).or_insert(0) += 1;
                 }
             }
         }
@@ -6848,11 +6834,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 if r5 == "1" {
                     let xx = ((x - xmin) / block + 0.5).floor() as u64;
                     let yy = ((y - ymin) / block + 0.5).floor() as u64;
-                    if let std::collections::hash_map::Entry::Vacant(e) = firsthit.entry((xx, yy)) {
-                        e.insert(1);
-                    } else {
-                        *firsthit.get_mut(&(xx, yy)).unwrap() += 1;
-                    }
+                    *firsthit.entry((xx, yy)).or_insert(0) += 1;
                 }
 
                 let xx = ((x - xmin) / size).floor() as u64;
@@ -6873,27 +6855,14 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 let hh = h - thelele;
                 if hh <= 1.2 {
                     if r3 == "2" {
-                        if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy)) {
-                            e.insert(1.0);
-                        } else {
-                            *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
-                        }
+                        *ugg.entry((xx, yy)).or_insert(0.0) += 1.0;
                     } else if hh > 0.25 {
-                        if let std::collections::hash_map::Entry::Vacant(e) = ug.entry((xx, yy)) {
-                            e.insert(1);
-                        } else {
-                            *ug.get_mut(&(xx, yy)).unwrap() += 1;
-                        }
-                    } else if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy))
-                    {
-                        e.insert(1.0);
+                        *ug.entry((xx, yy)).or_insert(0) += 1;
                     } else {
-                        *ugg.get_mut(&(xx, yy)).unwrap() += 1.0;
+                        *ugg.entry((xx, yy)).or_insert(0.0) += 1.0;
                     }
-                } else if let std::collections::hash_map::Entry::Vacant(e) = ugg.entry((xx, yy)) {
-                    e.insert(0.05);
                 } else {
-                    *ugg.get_mut(&(xx, yy)).unwrap() += 0.05;
+                    *ugg.entry((xx, yy)).or_insert(0.0) += 0.05;
                 }
 
                 let xx = ((x - xmin) / block + 0.5).floor() as u64;
@@ -6901,18 +6870,9 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 let yyy = ((y - ymin) / block).floor() as u64; // necessary due to bug in perl version
                 if r3 == "2" || greenground >= hh {
                     if r4 == "1" && r5 == "1" {
-                        if let std::collections::hash_map::Entry::Vacant(e) = ghit.entry((xx, yyy))
-                        {
-                            e.insert(firstandlastreturnasground);
-                        } else {
-                            *ghit.get_mut(&(xx, yyy)).unwrap() += firstandlastreturnasground;
-                        }
-                    } else if let std::collections::hash_map::Entry::Vacant(e) =
-                        ghit.entry((xx, yyy))
-                    {
-                        e.insert(1);
+                        *ghit.entry((xx, yyy)).or_insert(0) += firstandlastreturnasground;
                     } else {
-                        *ghit.get_mut(&(xx, yyy)).unwrap() += 1;
+                        *ghit.entry((xx, yyy)).or_insert(0) += 1;
                     }
                 } else {
                     let mut last = 1.0;
@@ -6933,24 +6893,13 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                             && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof
                         {
                             let offset = factor * last;
-                            if let std::collections::hash_map::Entry::Vacant(e) =
-                                greenhit.entry((xx, yy))
-                            {
-                                e.insert(offset);
-                            } else {
-                                *greenhit.get_mut(&(xx, yy)).unwrap() += offset;
-                            }
+                            *greenhit.entry((xx,yy)).or_insert(0.0) += offset;
                             break;
                         }
                     }
 
                     if greenhigh < hh {
-                        if let std::collections::hash_map::Entry::Vacant(e) = highit.entry((xx, yy))
-                        {
-                            e.insert(1);
-                        } else {
-                            *highit.get_mut(&(xx, yy)).unwrap() += 1;
-                        }
+                        *highit.entry((xx, yy)).or_insert(0) += 1;
                     }
                 }
             }
