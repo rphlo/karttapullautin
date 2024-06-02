@@ -6153,7 +6153,9 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let canditates = new_candidates;
 
-    let mut pin = String::new();
+    let file_pins =
+        File::create(Path::new(&format!("{}/pins.txt", tmpfolder))).expect("Unable to create file");
+    let mut file_pins = BufWriter::new(file_pins);
 
     for l in 0..data.len() {
         let mut skip = false;
@@ -6225,7 +6227,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                 xa /= xlen;
                 ya /= xlen;
 
-                pin.push_str(&format!(
+                write!(
+                    &mut file_pins,
                     "{},{},{},{},{},{},{},{}\r\n",
                     x[0],
                     y[0],
@@ -6241,7 +6244,9 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                         .map(|x| x.to_string())
                         .collect::<Vec<_>>()
                         .join(" ")
-                ));
+                )
+                .expect("Could not write to file");
+
                 for k in 0..x.len() {
                     write!(
                         &mut f,
@@ -6261,10 +6266,6 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     f.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
         .expect("Can not write to file");
 
-    let f =
-        File::create(Path::new(&format!("{}/pins.txt", tmpfolder))).expect("Unable to create file");
-    let mut f = BufWriter::new(f);
-    f.write_all(pin.as_bytes()).expect("Unable to write data");
     println!("Done");
     Ok(())
 }
