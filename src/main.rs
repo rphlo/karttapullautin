@@ -4430,7 +4430,9 @@ where
 
     let mut line_buffer = String::new();
     while reader.read_line(&mut line_buffer)? > 0 {
-        line_callback(&line_buffer);
+        // the read line contains the newline delimiter, so we need to trim it off
+        let line = line_buffer.trim_end();
+        line_callback(&line);
         line_buffer.clear();
     }
 
@@ -6622,26 +6624,36 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         i += 1;
     }
 
-    let mut thresholds = vec![];
-    let mut i: u32 = 1;
-    loop {
-        let last_threshold = conf
-            .general_section()
-            .get(format!("thresold{}", i))
-            .unwrap_or("");
-        if last_threshold.is_empty() {
-            break;
+    let thresholds = {
+        let mut thresholds = vec![];
+        let mut i: u32 = 1;
+        loop {
+            let last_threshold = conf
+                .general_section()
+                .get(format!("thresold{}", i))
+                .unwrap_or("");
+            if last_threshold.is_empty() {
+                break;
+            }
+            // parse the threshold values
+            let mut parts = last_threshold.split('|');
+            let v0: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let v1: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let v2: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
+            thresholds.push((v0, v1, v2));
+            i += 1;
         }
-        thresholds.push(last_threshold);
-        i += 1;
-    }
+        thresholds
+    };
 
     let greenshades = conf
         .general_section()
         .get("greenshades")
         .unwrap_or("")
         .split('|')
-        .collect::<Vec<&str>>();
+        .map(|v| v.parse::<f64>().unwrap())
+        .collect::<Vec<f64>>();
     let yellowheight: f64 = conf
         .general_section()
         .get("yellowheight")
@@ -6893,7 +6905,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                             && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof
                         {
                             let offset = factor * last;
-                            *greenhit.entry((xx,yy)).or_insert(0.0) += offset;
+                            *greenhit.entry((xx, yy)).or_insert(0.0) += offset;
                             break;
                         }
                     }
@@ -7018,12 +7030,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             ghit2 += *ghit.get(&(x as u64, y as u64)).unwrap_or(&0);
 
             let mut greenlimit = 9999.0;
-            for threshold in thresholds.iter() {
-                let parts = threshold.split('|');
-                let v = parts.collect::<Vec<&str>>();
-                let v0: f64 = v[0].parse::<f64>().unwrap();
-                let v1: f64 = v[1].parse::<f64>().unwrap();
-                let v2: f64 = v[2].parse::<f64>().unwrap();
+            for &(v0, v1, v2) in thresholds.iter() {
                 if roof >= v0 && roof < v1 {
                     greenlimit = v2;
                     break;
@@ -7039,8 +7046,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 * (1.0 - pointvolumefactor * firsthit2 as f64 / (aveg + 0.00001))
                     .powf(pointvolumeexponent);
             if thevalue > 0.0 {
-                for (i, gshade) in greenshades.iter().enumerate() {
-                    let shade = gshade.parse::<f64>().unwrap();
+                for (i, &shade) in greenshades.iter().enumerate() {
                     if thevalue > greenlimit * shade {
                         greenshade = i + 1;
                     }
@@ -7185,30 +7191,28 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         .parse::<u64>()
         .unwrap_or(0);
     if buildings > 0 || water > 0 {
-        if let Ok(lines) = read_lines(xyz_file_in) {
-            for line in lines {
-                let ip = line.unwrap_or(String::new());
-                let parts = ip.split(' ');
-                let r = parts.collect::<Vec<&str>>();
-                let x: f64 = r[0].parse::<f64>().unwrap();
-                let y: f64 = r[1].parse::<f64>().unwrap();
-                let c: u64 = r[3].parse::<u64>().unwrap();
-                if c == buildings {
-                    draw_filled_rect_mut(
-                        &mut imgwater,
-                        Rect::at((x - xmin) as i32 - 1, (ymax - y) as i32 - 1).of_size(3, 3),
-                        black,
-                    );
-                }
-                if c == water {
-                    draw_filled_rect_mut(
-                        &mut imgwater,
-                        Rect::at((x - xmin) as i32 - 1, (ymax - y) as i32 - 1).of_size(3, 3),
-                        blue,
-                    );
-                }
+        read_lines_no_alloc(xyz_file_in, |line| {
+            let mut parts = line.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let c: u64 = parts.next().unwrap().parse::<u64>().unwrap();
+
+            if c == buildings {
+                draw_filled_rect_mut(
+                    &mut imgwater,
+                    Rect::at((x - xmin) as i32 - 1, (ymax - y) as i32 - 1).of_size(3, 3),
+                    black,
+                );
             }
-        }
+            if c == water {
+                draw_filled_rect_mut(
+                    &mut imgwater,
+                    Rect::at((x - xmin) as i32 - 1, (ymax - y) as i32 - 1).of_size(3, 3),
+                    blue,
+                );
+            }
+        })
+        .expect("Can not read file");
     }
     let waterele = conf
         .general_section()
@@ -7218,23 +7222,23 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
         .unwrap_or(-999999.0);
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let hh: f64 = r[2].parse::<f64>().unwrap();
-            if hh < waterele {
-                draw_filled_rect_mut(
-                    &mut imgwater,
-                    Rect::at((x - xmin) as i32 - 1, (ymax - y) as i32 - 1).of_size(3, 3),
-                    blue,
-                );
-            }
+
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.split(' ');
+        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let hh: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
+        if hh < waterele {
+            draw_filled_rect_mut(
+                &mut imgwater,
+                Rect::at((x - xmin) as i32 - 1, (ymax - y) as i32 - 1).of_size(3, 3),
+                blue,
+            );
         }
-    }
+    })
+    .expect("Can not read file");
+
     imgwater
         .save(Path::new(&format!("{}/blueblack.png", tmpfolder)))
         .expect("could not save output png");
