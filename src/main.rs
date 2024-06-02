@@ -5570,33 +5570,32 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmin: u64 = u64::MAX;
     let mut ymin: u64 = u64::MAX;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.split(' ');
+        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
-            let xx = ((x - xstart) / size).floor() as u64;
-            let yy = ((y - ystart) / size).floor() as u64;
+        let xx = ((x - xstart) / size).floor() as u64;
+        let yy = ((y - ystart) / size).floor() as u64;
 
-            xyz.insert((xx, yy), h);
+        xyz.insert((xx, yy), h);
 
-            if xmax < xx {
-                xmax = xx;
-            }
-            if ymax < yy {
-                ymax = yy;
-            }
-            if xmin > xx {
-                xmin = xx;
-            }
-            if ymin > yy {
-                ymin = yy;
-            }
+        if xmax < xx {
+            xmax = xx;
         }
-    }
+        if ymax < yy {
+            ymax = yy;
+        }
+        if xmin > xx {
+            xmin = xx;
+        }
+        if ymin > yy {
+            ymin = yy;
+        }
+    })
+    .expect("Could not read file");
+
     let data = fs::read_to_string(Path::new(&format!("{}/contours03.dxf", tmpfolder)))
         .expect("Should have been able to read the file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
@@ -5924,7 +5923,13 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     }
     let heads = temp.split('\n').collect::<Vec<&str>>();
     let mut temp = String::new();
-    let mut bb: HashMap<usize, String> = HashMap::default();
+    struct BoundingBox {
+        minx: f64,
+        maxx: f64,
+        miny: f64,
+        maxy: f64,
+    }
+    let mut bb: HashMap<usize, BoundingBox> = HashMap::default();
     for l in 0..data.len() {
         let mut skip = false;
         if !el_x[l].is_empty() {
@@ -5955,7 +5960,15 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                     miny = y[k]
                 }
             }
-            bb.insert(l, format!("{},{},{},{}", minx, maxx, miny, maxy));
+            bb.insert(
+                l,
+                BoundingBox {
+                    minx,
+                    maxx,
+                    miny,
+                    maxy,
+                },
+            );
 
             for head in heads.iter() {
                 let headt = head.trim();
@@ -6017,12 +6030,12 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             let taily = *el_y[l].first().unwrap();
             y.push(taily);
 
-            let box_raw = bb.get(&l).unwrap();
-            let mut box_data = box_raw.split(',');
-            let minx = box_data.next().unwrap().parse::<f64>().unwrap();
-            let maxx = box_data.next().unwrap().parse::<f64>().unwrap();
-            let miny = box_data.next().unwrap().parse::<f64>().unwrap();
-            let maxy = box_data.next().unwrap().parse::<f64>().unwrap();
+            let &BoundingBox {
+                minx,
+                maxx,
+                miny,
+                maxy,
+            } = bb.get(&l).unwrap();
 
             let mut topid = 0;
             for head in tops.iter() {
@@ -6157,12 +6170,12 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             let taily = *el_y[l].first().unwrap();
             y.push(taily);
 
-            let box_raw = bb.get(&l).unwrap();
-            let mut box_data = box_raw.split(',');
-            let minx = box_data.next().unwrap().parse::<f64>().unwrap();
-            let maxx = box_data.next().unwrap().parse::<f64>().unwrap();
-            let miny = box_data.next().unwrap().parse::<f64>().unwrap();
-            let maxy = box_data.next().unwrap().parse::<f64>().unwrap();
+            let &BoundingBox {
+                minx,
+                maxx,
+                miny,
+                maxy,
+            } = bb.get(&l).unwrap();
 
             for head in canditates.iter() {
                 let headt = head.trim();
