@@ -5903,25 +5903,26 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let mut temp = String::new();
+    struct Head {
+        id: u64,
+        xtest: f64,
+        ytest: f64,
+    }
+    let mut heads = Vec::<Head>::new();
     for l in 0..data.len() {
         if !el_x[l].is_empty() {
             if el_x[l].first() == el_x[l].last() && el_y[l].first() == el_y[l].last() {
-                let new_line = format!(
-                    "{},{},{},{}\r\n",
-                    l,
-                    el_x[l].len() - 1,
-                    el_x[l][0],
-                    el_y[l][0]
-                );
-                temp.push_str(&new_line);
+                heads.push(Head {
+                    id: l as u64,
+                    xtest: el_x[l][0],
+                    ytest: el_y[l][0],
+                });
             } else {
                 el_x[l].clear();
                 el_y[l].clear();
             }
         }
     }
-    let heads = temp.split('\n').collect::<Vec<&str>>();
     struct Top {
         id: u64,
         xtest: f64,
@@ -5976,14 +5977,8 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             );
 
             for head in heads.iter() {
-                let headt = head.trim();
-                if headt.is_empty() {
-                    break;
-                }
-                let data = headt.split(',').collect::<Vec<&str>>();
-                let id = data[0].parse::<u64>().unwrap();
-                let xtest = data[2].parse::<f64>().unwrap();
-                let ytest = data[3].parse::<f64>().unwrap();
+                let &Head { id, xtest, ytest } = head;
+
                 if !skip
                     && *elevation.get(&id).unwrap() > *elevation.get(&(l as u64)).unwrap()
                     && id != (l as u64)
