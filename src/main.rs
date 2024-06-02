@@ -6024,7 +6024,13 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    let mut temp = String::new();
+    struct Candidate {
+        id: u64,
+        xtest: f64,
+        ytest: f64,
+        topid: u64,
+    }
+    let mut canditates = Vec::<Candidate>::new();
 
     for l in 0..data.len() {
         let mut skip = true;
@@ -6084,8 +6090,12 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                 }
             }
             if !skip {
-                let new_line = format!("{},{},{},{}\r\n", l, x[0], y[0], topid);
-                temp.push_str(&new_line);
+                canditates.push(Candidate {
+                    id: l as u64,
+                    xtest: x[0],
+                    ytest: y[0],
+                    topid,
+                });
             } else {
                 el_x[l].clear();
                 el_y[l].clear();
@@ -6093,19 +6103,11 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let canditates = temp.split('\n').collect::<Vec<&str>>();
-
     let mut best: HashMap<u64, u64> = HashMap::default();
     let mut mov: HashMap<u64, f64> = HashMap::default();
 
     for head in canditates.iter() {
-        let headt = head.trim();
-        if headt.is_empty() {
-            continue;
-        }
-        let data = headt.split(',').collect::<Vec<&str>>();
-        let id = data[0].parse::<u64>().unwrap();
-        let topid = data[3].parse::<u64>().unwrap();
+        let &Candidate { id, topid, .. } = head;
         let el = *elevation.get(&id).unwrap();
         let test = (el / halfinterval + 1.0).floor() * halfinterval - el;
 
@@ -6125,18 +6127,14 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             }
         }
     }
-    let mut temp = String::new();
+    let mut new_candidates = Vec::<Candidate>::new();
     for head in canditates.iter() {
-        let headt = head.trim();
-        if headt.is_empty() {
-            continue;
-        }
-
-        let mut data = headt.split(',');
-        let id = data.next().unwrap().parse::<u64>().unwrap();
-        let xtest = data.next().unwrap().parse::<f64>().unwrap();
-        let ytest = data.next().unwrap().parse::<f64>().unwrap();
-        let topid = data.next().unwrap().parse::<u64>().unwrap();
+        let &Candidate {
+            id,
+            xtest,
+            ytest,
+            topid,
+        } = head;
 
         let x = el_x[id as usize].to_vec();
         if *best.get(&topid).unwrap() == id
@@ -6146,15 +6144,20 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
                         - 2.5 * (*elevation.get(&id).unwrap() / 2.5).floor())
                         > 0.45))
         {
-            let new_line = format!("{},{},{},{}\r\n", id, xtest, ytest, topid);
-            temp.push_str(&new_line);
+            new_candidates.push(Candidate {
+                id,
+                xtest,
+                ytest,
+                topid,
+            });
         } else {
             el_x[id as usize].clear();
             el_y[id as usize].clear();
         }
     }
 
-    let canditates = temp.split('\n').collect::<Vec<&str>>();
+    let canditates = new_candidates;
+
     let mut pin = String::new();
 
     for l in 0..data.len() {
@@ -6178,15 +6181,12 @@ fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
             } = bb.get(&l).unwrap();
 
             for head in canditates.iter() {
-                let headt = head.trim();
-                if headt.is_empty() {
-                    continue;
-                }
-                let mut data = headt.split(',');
-                let id = data.next().unwrap().parse::<u64>().unwrap();
-                let xtest = data.next().unwrap().parse::<f64>().unwrap();
-                let ytest = data.next().unwrap().parse::<f64>().unwrap();
-                let topid = data.next().unwrap().parse::<u64>().unwrap();
+                let &Candidate {
+                    id,
+                    xtest,
+                    ytest,
+                    topid,
+                } = head;
 
                 ltopid = topid;
                 if id != ll && !skip && xtest < maxx && xtest > minx && ytest < maxy && ytest > miny
