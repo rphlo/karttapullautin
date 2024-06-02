@@ -4148,8 +4148,8 @@ fn xyz2contours(
                 break;
             }
 
-            let mut obj = Vec::<String>::new();
-            let mut curves: HashMap<String, String> = HashMap::default();
+            let mut obj = Vec::<(i64, i64, u8)>::new();
+            let mut curves: HashMap<(i64, i64, u8), (i64, i64)> = HashMap::default();
 
             for i in 1..(w - 1) {
                 for j in 2..(h - 1) {
@@ -4304,78 +4304,58 @@ fn xyz2contours(
                 .expect("Unable to create file");
             let mut f = BufWriter::new(f);
 
+            println!("Objects: {}, hashmap items: {}", obj.len(), curves.len());
+
             for k in obj.iter() {
                 if curves.contains_key(k) {
-                    let separator = "_".to_string();
-                    let parts = k.split(&separator);
-                    let r = parts.collect::<Vec<&str>>();
-                    let x: f64 = r[0].parse::<f64>().unwrap();
-                    let y: f64 = r[1].parse::<f64>().unwrap();
-                    write!(&mut f, "{},{};", x, y).expect("Cannot write to output file");
-                    let mut res = format!("{}_{}", x, y);
+                    let (x, y, _) = *k;
+                    write!(&mut f, "{},{};", x as f64 / 100.0, y as f64 / 100.0)
+                        .expect("Cannot write to output file");
+                    let mut res = (x, y);
 
-                    let parts = curves.get(&k.clone()).unwrap().split(&separator);
-                    let r = parts.collect::<Vec<&str>>();
-                    let x: f64 = r[0].parse::<f64>().unwrap();
-                    let y: f64 = r[1].parse::<f64>().unwrap();
-                    write!(&mut f, "{},{};", x, y).expect("Cannot write to output file");
-                    curves.remove(&k.clone());
+                    let (x, y) = *curves.get(&k).unwrap();
+                    write!(&mut f, "{},{};", x as f64 / 100.0, y as f64 / 100.0)
+                        .expect("Cannot write to output file");
+                    curves.remove(&k);
 
-                    let mut head = format!("{}_{}", x, y);
-                    if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res {
-                        curves.remove(&format!("{}_1", head));
+                    let mut head = (x, y);
+
+                    if curves.get(&(head.0, head.1, 1)).is_some_and(|v| *v == res) {
+                        curves.remove(&(head.0, head.1, 1));
                     }
-                    if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res {
-                        curves.remove(&format!("{}_2", head));
+                    if curves.get(&(head.0, head.1, 2)).is_some_and(|v| *v == res) {
+                        curves.remove(&(head.0, head.1, 2));
                     }
                     loop {
-                        if curves.contains_key(&format!("{}_1", head))
-                            && curves.get(&format!("{}_1", head)).unwrap() != &res
-                        {
-                            res.clone_from(&head);
+                        if curves.get(&(head.0, head.1, 1)).is_some_and(|v| *v != res) {
+                            res = head;
 
-                            let parts = curves
-                                .get(&format!("{}_1", head))
-                                .unwrap()
-                                .split(&separator);
-                            let r = parts.collect::<Vec<&str>>();
-                            let x: f64 = r[0].parse::<f64>().unwrap();
-                            let y: f64 = r[1].parse::<f64>().unwrap();
-                            write!(&mut f, "{},{};", x, y).expect("Cannot write to output file");
-                            curves.remove(&format!("{}_1", head));
+                            let (x, y) = *curves.get(&(head.0, head.1, 1)).unwrap();
+                            write!(&mut f, "{},{};", x as f64 / 100.0, y as f64 / 100.0)
+                                .expect("Cannot write to output file");
+                            curves.remove(&(head.0, head.1, 1));
 
-                            head = format!("{}_{}", x, y);
-                            if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res
-                            {
-                                curves.remove(&format!("{}_1", head));
+                            head = (x, y);
+                            if curves.get(&(head.0, head.1, 1)).is_some_and(|v| *v == res) {
+                                curves.remove(&(head.0, head.1, 1));
                             }
-                            if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res
-                            {
-                                curves.remove(&format!("{}_2", head));
+                            if curves.get(&(head.0, head.1, 2)).is_some_and(|v| *v == res) {
+                                curves.remove(&(head.0, head.1, 2));
                             }
-                        } else if curves.contains_key(&format!("{}_2", head))
-                            && curves.get(&format!("{}_2", head)).unwrap() != &res
-                        {
-                            res.clone_from(&head);
+                        } else if curves.get(&(head.0, head.1, 2)).is_some_and(|v| *v != res) {
+                            res = head;
 
-                            let parts = curves
-                                .get(&format!("{}_2", head))
-                                .unwrap()
-                                .split(&separator);
-                            let r = parts.collect::<Vec<&str>>();
-                            let x: f64 = r[0].parse::<f64>().unwrap();
-                            let y: f64 = r[1].parse::<f64>().unwrap();
-                            write!(&mut f, "{},{};", x, y).expect("Cannot write to output file");
-                            curves.remove(&format!("{}_2", head));
+                            let (x, y) = *curves.get(&(head.0, head.1, 2)).unwrap();
+                            write!(&mut f, "{},{};", x as f64 / 100.0, y as f64 / 100.0)
+                                .expect("Cannot write to output file");
+                            curves.remove(&(head.0, head.1, 2));
 
-                            head = format!("{}_{}", x, y);
-                            if curves.get(&format!("{}_1", head)).unwrap_or(&String::new()) == &res
-                            {
-                                curves.remove(&format!("{}_1", head));
+                            head = (x, y);
+                            if curves.get(&(head.0, head.1, 1)).is_some_and(|v| *v == res) {
+                                curves.remove(&(head.0, head.1, 1));
                             }
-                            if curves.get(&format!("{}_2", head)).unwrap_or(&String::new()) == &res
-                            {
-                                curves.remove(&format!("{}_2", head));
+                            if curves.get(&(head.0, head.1, 2)).is_some_and(|v| *v == res) {
+                                curves.remove(&(head.0, head.1, 2));
                             }
                         } else {
                             f.write_all("\r\n".as_bytes())
@@ -4471,34 +4451,36 @@ fn average(numbers: &Vec<f64>) -> f64 {
 }
 
 fn check_obj_in(
-    obj: &mut Vec<String>,
-    curves: &mut HashMap<String, String>,
+    obj: &mut Vec<(i64, i64, u8)>,
+    curves: &mut HashMap<(i64, i64, u8), (i64, i64)>,
     x1: f64,
     x2: f64,
     y1: f64,
     y2: f64,
 ) {
-    let x1 = (x1 * 100.0).floor() / 100.0;
-    let x2 = (x2 * 100.0).floor() / 100.0;
-    let y1 = (y1 * 100.0).floor() / 100.0;
-    let y2 = (y2 * 100.0).floor() / 100.0;
+    // convert the coordinates to integers with 2 decimal places for use as keys
+    let x1 = (x1 * 100.0).floor() as i64;
+    let x2 = (x2 * 100.0).floor() as i64;
+    let y1 = (y1 * 100.0).floor() as i64;
+    let y2 = (y2 * 100.0).floor() as i64;
+
     if x1 != x2 || y1 != y2 {
-        let mut key: String = format!("{}_{}_1", x1, y1);
+        let key = (x1, y1, 1);
         if !curves.contains_key(&key) {
-            curves.insert(key.clone(), format!("{}_{}", x2, y2));
+            curves.insert(key, (x2, y2));
             obj.push(key.clone());
         } else {
-            key = format!("{}_{}_2", x1, y1);
-            curves.insert(key.clone(), format!("{}_{}", x2, y2));
+            let key = (x1, y1, 2);
+            curves.insert(key.clone(), (x2, y2));
             obj.push(key.clone());
         }
-        key = format!("{}_{}_1", x2, y2);
+        let key = (x2, y2, 1);
         if !curves.contains_key(&key) {
-            curves.insert(key.clone(), format!("{}_{}", x1, y1));
+            curves.insert(key.clone(), (x1, y1));
             obj.push(key.clone());
         } else {
-            key = format!("{}_{}_2", x2, y2);
-            curves.insert(key.clone(), format!("{}_{}", x1, y1));
+            let key = (x2, y2, 2);
+            curves.insert(key.clone(), (x1, y1));
             obj.push(key.clone());
         }
     }
