@@ -3977,7 +3977,8 @@ fn xyz2contours(
     let w: usize = ((xmax - xmin).ceil() / 2.0 / scalefactor) as usize;
     let h: usize = ((ymax - ymin).ceil() / 2.0 / scalefactor) as usize;
 
-    let mut list_alt = vec![vec![Vec::new(); h + 2]; w + 2];
+    // a two-dimensional vector of (sum, count) pairs for computing averages
+    let mut list_alt = vec![vec![(0f64, 0usize); h + 2]; w + 2];
 
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.trim().split(' ');
@@ -3992,9 +3993,10 @@ fn xyz2contours(
             let y: f64 = p1.parse::<f64>().unwrap();
             let h: f64 = p2.parse::<f64>().unwrap();
 
-            list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
-                [((y - ymin).floor() / 2.0 / scalefactor) as usize]
-                .push(h);
+            let (sum, count) = &mut list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
+                [((y - ymin).floor() / 2.0 / scalefactor) as usize];
+            *sum += h;
+            *count += 1;
         }
     })
     .expect("could not read file");
@@ -4003,8 +4005,10 @@ fn xyz2contours(
 
     for x in 0..w + 1 {
         for y in 0..h + 1 {
-            if !list_alt[x][y].is_empty() {
-                avg_alt[x][y] = average(&list_alt[x][y]);
+            let (sum, count) = &list_alt[x][y];
+
+            if *count > 0 {
+                avg_alt[x][y] = *sum / *count as f64;
             }
         }
     }
@@ -4359,7 +4363,6 @@ fn xyz2contours(
             level += v;
         }
         // explicitly flush and drop to close the file
-        f.flush().expect("Cannot flush");
         drop(f);
 
         let f = File::create(Path::new(&format!("{}/{}", tmpfolder, dxffile)))
@@ -4419,7 +4422,7 @@ where
 /// Iterates over the lines in a file and calls the callback with a &str reference to each line.
 /// This function does not allocate new strings for each line, as opposed to using
 /// [`io::BufReader::lines()`].
-fn read_lines_no_alloc<P>(filename: P, mut line_callback: impl FnMut(&str) -> ()) -> io::Result<()>
+fn read_lines_no_alloc<P>(filename: P, mut line_callback: impl FnMut(&str)) -> io::Result<()>
 where
     P: AsRef<Path>,
 {
@@ -4433,14 +4436,6 @@ where
     }
 
     Ok(())
-}
-
-fn average(numbers: &Vec<f64>) -> f64 {
-    let mut sum = 0.0;
-    for n in numbers {
-        sum += n;
-    }
-    sum / numbers.len() as f64
 }
 
 fn check_obj_in(
