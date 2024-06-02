@@ -4461,20 +4461,20 @@ fn check_obj_in(
         let key = (x1, y1, 1);
         if !curves.contains_key(&key) {
             curves.insert(key, (x2, y2));
-            obj.push(key.clone());
+            obj.push(key);
         } else {
             let key = (x1, y1, 2);
-            curves.insert(key.clone(), (x2, y2));
-            obj.push(key.clone());
+            curves.insert(key, (x2, y2));
+            obj.push(key);
         }
         let key = (x2, y2, 1);
         if !curves.contains_key(&key) {
-            curves.insert(key.clone(), (x1, y1));
-            obj.push(key.clone());
+            curves.insert(key, (x1, y1));
+            obj.push(key);
         } else {
             let key = (x2, y2, 2);
-            curves.insert(key.clone(), (x1, y1));
-            obj.push(key.clone());
+            curves.insert(key, (x1, y1));
+            obj.push(key);
         }
     }
 }
