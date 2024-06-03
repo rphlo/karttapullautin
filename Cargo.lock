@@ -886,6 +886,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pullauta"
+version = "2.0.0"
+dependencies = [
+ "image",
+ "imageproc",
+ "las",
+ "rand",
+ "regex",
+ "rust-ini",
+ "rustc-hash",
+ "shapefile",
+ "skia-safe",
+ "zip",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1026,22 +1042,6 @@ dependencies = [
  "libc",
  "linux-raw-sys",
  "windows-sys",
-]
-
-[[package]]
-name = "rusty-pullauta"
-version = "1.0.11"
-dependencies = [
- "image",
- "imageproc",
- "las",
- "rand",
- "regex",
- "rust-ini",
- "rustc-hash",
- "shapefile",
- "skia-safe",
- "zip",
 ]
 
 [[package]]

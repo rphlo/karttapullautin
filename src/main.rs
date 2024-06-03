@@ -33,11 +33,6 @@ fn main() {
 #----------------------------------------------------- #
 
 ################## PARAMETERS #############################
-# vegetation mode. New mode =0, old original (pre 20130613) mode =1
-# rusty-pullata does not support =1
-vegemode=0
-
-### New vegetation mapping mode parameters (vegemode 0)##
 # Experimental undergrowth parameters. Smaller figures will give more undergrowth stripes
 # normal undergrowth 
 undergrowth=0.35
@@ -237,9 +232,9 @@ scalefactor=1
 zoffset=0
 #skipknolldetection=0
 
-##############################################################################################################
-# Settings specific to rusty-pullauta, default values are meant to be fidel to original Perl Karttapullautin #
-##############################################################################################################
+##################################################################################################################################
+# Settings specific to the rust version of karttapulautin, default values are meant to be fidel to original Perl Karttapullautin #
+##################################################################################################################################
 # jarkkos2019, set to 0 to fix the obvious bugs of the Perl KarttaPullautin found in the source code of the 20190203 version, 1 reproduce the buggy behaviours
 jarkkos2019=1
 
@@ -285,7 +280,7 @@ vegeonly=0
     if command.is_empty() || accepted_files_re.is_match(&command.to_lowercase()) {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
         println!(
-            "Rusty-Karttapullautin v{}\nThere is no warranty. Use it at your own risk!\n",
+            "Karttapullautin v{}\nThere is no warranty. Use it at your own risk!\n",
             VERSION
         );
     }
@@ -318,57 +313,57 @@ vegeonly=0
     }
 
     if command.is_empty() && !batch {
-        println!("USAGE:\nrusty-pullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee README.MD for more details");
+        println!("USAGE:\npullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee README.MD for more details");
         return;
     }
 
     if command == "cliffgeneralize" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "ground" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "ground2" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "groundfix" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "profile" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "makecliffsold" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "makeheight" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "makevege" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "xyzfixer" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "vege" {
-        println!("Not implemented in rusty-pullauta, use the perl version");
+        println!("Not implemented in this version, use the perl version");
         return;
     }
 
@@ -2222,7 +2217,7 @@ fn process_tile(
 
     let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
     if vegemode {
-        println!("vegemode=1 not implemented in rusty-pullauta");
+        println!("vegemode=1 not implemented, use perl version");
         return Ok(());
     }
     let mut thread_name = String::new();

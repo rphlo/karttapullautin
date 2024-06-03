@@ -1,11 +1,11 @@
 [package]
-name = "rusty-pullauta"
+name = "pullauta"
 authors = ["Raphael Stefanini <raphael@routechoices.com>"]
-version = "1.0.11"
+version = "2.0.0"
 edition = "2021"
 description = "Tool to generates orienteering maps from classified LiDAR data"
 readme = "README.md"
-repository = "https://github.com/rphlo/rusty-pullauta"
+repository = "https://github.com/rphlo/karttapullautin"
 license-file = "LICENSE"
 keywords = ["map", "mapping", "lidar", "orienteering", "laz", "las"]
 categories = ["command-line-utilities"]

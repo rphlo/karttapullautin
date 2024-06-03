@@ -22,7 +22,7 @@ jobs:
           cargo clean
           cargo build --release
 
-      - run: cp target/release/rusty-pullauta .
+      - run: cp target/release/pullauta .
 
       - name: 'Compress binaries'
         if: true
@@ -30,12 +30,12 @@ jobs:
         with:
           command: c
           files: |
-            rusty-pullauta
+            pullauta
             LICENSE
             README.md
             osm.txt
             fastighetskartan.txt
-          outPath: '${{ runner.temp }}/rusty-pullauta-x86_64-macos.tar.gz'
+          outPath: '${{ runner.temp }}/karttapullautin-x86_64-macos.tar.gz'
 
       - name: 'Release binaries'
         if: true
@@ -43,7 +43,7 @@ jobs:
         with:
           allowUpdates: true
           replacesArtifacts: true
-          artifacts: '${{ runner.temp }}/rusty-pullauta-x86_64-macos.tar.gz'
+          artifacts: '${{ runner.temp }}/karttapullautin-x86_64-macos.tar.gz'
           token: ${{ secrets.GITHUB_TOKEN }}
           artifactErrorsFailBuild: true
           prerelease: true
