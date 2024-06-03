@@ -5,7 +5,7 @@ on:
 
 jobs:
   release:
-    name: release macos
+    name: release macos arm64
     runs-on: macos-14
 
     steps:

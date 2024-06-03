@@ -5,7 +5,7 @@ on:
 
 jobs:
   release:
-    name: release linux
+    name: release linux x86_64
     runs-on: ubuntu-22.04
 
     steps:
@@ -20,9 +20,9 @@ jobs:
         shell: bash
         run: |
           cargo clean
-          cargo build --release
+          RUSTFLAGS='-C target-feature=+crt-static' cargo build --release --target x86_64-unknown-linux-gnu
 
-      - run: cp target/release/rusty-pullauta .
+      - run: cp target/x86_64-unknown-linux-gnu/release/rusty-pullauta .
 
       - name: 'Compress binaries'
         if: true
