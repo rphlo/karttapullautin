@@ -284,7 +284,10 @@ vegeonly=0
     let accepted_files_re = Regex::new(r"\.(las|laz|xyz)$").unwrap();
     if command.is_empty() || accepted_files_re.is_match(&command.to_lowercase()) {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
-        println!("Rusty-Karttapullautin v{}\nThere is no warranty. Use it at your own risk!\n", VERSION);
+        println!(
+            "Rusty-Karttapullautin v{}\nThere is no warranty. Use it at your own risk!\n",
+            VERSION
+        );
     }
 
     let batch: bool = conf.general_section().get("batch").unwrap() == "1";
