@@ -6309,7 +6309,6 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmax: u64 = 0;
     let mut ymax: u64 = 0;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    let mut xyz2: HashMap<(u64, u64), f64> = HashMap::default();
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.split(' ');
         let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
@@ -6319,7 +6318,6 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         let xx = ((x - xstart) / size).floor() as u64;
         let yy = ((y - ystart) / size).floor() as u64;
         xyz.insert((xx, yy), h);
-        xyz2.insert((xx, yy), h);
         if xmax < xx {
             xmax = xx;
         }
@@ -6328,6 +6326,7 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     })
     .expect("could not read file");
+    let mut xyz2: HashMap<(u64, u64), f64> = xyz.clone();
 
     for i in 2..(xmax as usize - 1) {
         for j in 2..(ymax as usize - 1) {
