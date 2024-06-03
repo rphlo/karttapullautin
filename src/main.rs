@@ -6310,26 +6310,24 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ymax: u64 = 0;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
     let mut xyz2: HashMap<(u64, u64), f64> = HashMap::default();
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.split(' ');
+        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
-            let xx = ((x - xstart) / size).floor() as u64;
-            let yy = ((y - ystart) / size).floor() as u64;
-            xyz.insert((xx, yy), h);
-            xyz2.insert((xx, yy), h);
-            if xmax < xx {
-                xmax = xx;
-            }
-            if ymax < yy {
-                ymax = yy;
-            }
+        let xx = ((x - xstart) / size).floor() as u64;
+        let yy = ((y - ystart) / size).floor() as u64;
+        xyz.insert((xx, yy), h);
+        xyz2.insert((xx, yy), h);
+        if xmax < xx {
+            xmax = xx;
         }
-    }
+        if ymax < yy {
+            ymax = yy;
+        }
+    })
+    .expect("could not read file");
 
     for i in 2..(xmax as usize - 1) {
         for j in 2..(ymax as usize - 1) {
@@ -6542,34 +6540,33 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         .expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let mut r = parts.collect::<Vec<&str>>();
-            let x: f64 = r[0].parse::<f64>().unwrap();
-            let y: f64 = r[1].parse::<f64>().unwrap();
-            let mut h = *xyz2
-                .get(&(
-                    ((x - xstart) / size).floor() as u64,
-                    ((y - ystart) / size).floor() as u64,
-                ))
-                .unwrap_or(&0.0);
-            let tmp = (h / interval + 0.5).floor() * interval;
-            if (tmp - h).abs() < 0.02 {
-                if h - tmp < 0.0 {
-                    h = tmp - 0.02;
-                } else {
-                    h = tmp + 0.02;
-                }
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let parts = line.split(' ');
+        let mut r = parts.collect::<Vec<&str>>();
+        let x: f64 = r[0].parse::<f64>().unwrap();
+        let y: f64 = r[1].parse::<f64>().unwrap();
+        let mut h = *xyz2
+            .get(&(
+                ((x - xstart) / size).floor() as u64,
+                ((y - ystart) / size).floor() as u64,
+            ))
+            .unwrap_or(&0.0);
+        let tmp = (h / interval + 0.5).floor() * interval;
+        if (tmp - h).abs() < 0.02 {
+            if h - tmp < 0.0 {
+                h = tmp - 0.02;
+            } else {
+                h = tmp + 0.02;
             }
-            let new_val = format!("{}", h);
-            r[2] = &new_val;
-            let out = r.join(" ");
-            f2.write_all(out.as_bytes()).expect("cannot write to file");
-            f2.write_all("\n".as_bytes()).expect("cannot write to file");
         }
-    }
+        let new_val = format!("{}", h);
+        r[2] = &new_val;
+        let out = r.join(" ");
+        f2.write_all(out.as_bytes()).expect("cannot write to file");
+        f2.write_all("\n".as_bytes()).expect("cannot write to file");
+    })
+    .expect("could not read file");
+
     println!("Done");
     Ok(())
 }
