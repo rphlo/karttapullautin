@@ -283,7 +283,7 @@ vegeonly=0
 
     let accepted_files_re = Regex::new(r"\.(las|laz|xyz)$").unwrap();
     if command.is_empty() || accepted_files_re.is_match(&command.to_lowercase()) {
-        println!("Rusty Karttapulatin...\nThere is no warranty. Use it at your own risk!\n");
+        println!("Rusty-Karttapullautin...\nThere is no warranty. Use it at your own risk!\n");
     }
 
     let batch: bool = conf.general_section().get("batch").unwrap() == "1";
@@ -314,7 +314,7 @@ vegeonly=0
     }
 
     if command.is_empty() && !batch {
-        println!("USAGE:\nrusty-pullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee readme.txt for more details");
+        println!("USAGE:\nrusty-pullauta [parameter 1] [parameter 2] [parameter 3] ... [parameter n]\nSee README.MD for more details");
         return;
     }
 
