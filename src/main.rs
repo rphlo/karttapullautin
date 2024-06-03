@@ -6406,7 +6406,7 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         let xx = ((pin.xx - xstart) / size).floor();
         let yy = ((pin.yy - ystart) / size).floor();
         for (k, pin2) in pins.iter().enumerate() {
-            if k != l {
+            if k == l {
                 continue;
             }
 
