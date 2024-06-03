@@ -6362,162 +6362,176 @@ fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let path = format!("{}/pins.txt", tmpfolder);
     let pins_file_in = Path::new(&path);
 
+    struct Pin {
+        xx: f64,
+        yy: f64,
+        ele: f64,
+        ele2: f64,
+        xlist: Vec<f64>,
+        ylist: Vec<f64>,
+    }
+    let mut pins: Vec<Pin> = Vec::new();
+
+    read_lines_no_alloc(pins_file_in, |line| {
+        let mut r = line.trim().split(',');
+        let ele = r.nth(2).unwrap().parse::<f64>().unwrap();
+        let xx = r.next().unwrap().parse::<f64>().unwrap();
+        let yy = r.next().unwrap().parse::<f64>().unwrap();
+        let ele2 = r.next().unwrap().parse::<f64>().unwrap();
+        let xlist = r.next().unwrap();
+        let ylist = r.next().unwrap();
+        let mut x: Vec<f64> = xlist
+            .split(' ')
+            .map(|s| s.parse::<f64>().unwrap())
+            .collect();
+        let mut y: Vec<f64> = ylist
+            .split(' ')
+            .map(|s| s.parse::<f64>().unwrap())
+            .collect();
+        x.push(x[0]);
+        y.push(y[0]);
+
+        pins.push(Pin {
+            xx,
+            yy,
+            ele,
+            ele2,
+            xlist: x,
+            ylist: y,
+        });
+    })
+    .expect("could not read pins file");
+
+    // compute closest distance from each pin to another pin
     let mut dist: HashMap<usize, f64> = HashMap::default();
-    if let Ok(lines) = read_lines(pins_file_in) {
-        for (l, line) in lines.enumerate() {
-            let mut min = f64::MAX;
-            let ip = line.unwrap_or(String::new());
-            let r = ip.split(',').collect::<Vec<&str>>();
-            let xx = r[3].parse::<f64>().unwrap();
-            let yy = r[4].parse::<f64>().unwrap();
-
-            let xxx = ((xx - xstart) / size).floor();
-            let yyy = ((yy - ystart) / size).floor();
-
-            if let Ok(lines2) = read_lines(pins_file_in) {
-                for (k, line2) in lines2.enumerate() {
-                    let ip2 = line2.unwrap_or(String::new());
-                    let r2 = ip2.split(',').collect::<Vec<&str>>();
-                    let xx2 = r2[3].parse::<f64>().unwrap();
-                    let yy2 = r2[4].parse::<f64>().unwrap();
-
-                    let xxx2 = ((xx2 - xstart) / size).floor();
-                    let yyy2 = ((yy2 - ystart) / size).floor();
-
-                    if k != l {
-                        let mut dis = (xxx2 - xxx).abs();
-                        let disy = (yyy2 - yyy).abs();
-                        if disy > dis {
-                            dis = disy;
-                        }
-                        if dis < min {
-                            min = dis;
-                        }
-                    }
-                }
+    for (l, pin) in pins.iter().enumerate() {
+        let mut min = f64::MAX;
+        let xx = ((pin.xx - xstart) / size).floor();
+        let yy = ((pin.yy - ystart) / size).floor();
+        for (k, pin2) in pins.iter().enumerate() {
+            if k != l {
+                continue;
             }
-            dist.insert(l, min);
+
+            let xx2 = ((pin2.xx - xstart) / size).floor();
+            let yy2 = ((pin2.yy - ystart) / size).floor();
+            let mut dis = (xx2 - xx).abs();
+            let disy = (yy2 - yy).abs();
+            if disy > dis {
+                dis = disy;
+            }
+            if dis < min {
+                min = dis;
+            }
         }
+        dist.insert(l, min);
     }
 
-    if let Ok(lines) = read_lines(pins_file_in) {
-        for (l, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let r = ip.split(',').collect::<Vec<&str>>();
-            let ele = r[2].parse::<f64>().unwrap();
-            let xx = r[3].parse::<f64>().unwrap();
-            let yy = r[4].parse::<f64>().unwrap();
-            let ele2 = r[5].parse::<f64>().unwrap();
-            let xlist = r[6];
-            let ylist = r[7];
-            let mut x: Vec<f64> = xlist
-                .split(' ')
-                .map(|s| s.parse::<f64>().unwrap())
-                .collect();
-            let mut y: Vec<f64> = ylist
-                .split(' ')
-                .map(|s| s.parse::<f64>().unwrap())
-                .collect();
-            x.push(x[0]);
-            y.push(y[0]);
+    for (l, line) in pins.into_iter().enumerate() {
+        let Pin {
+            xx,
+            yy,
+            ele,
+            ele2,
+            xlist: mut x,
+            ylist: mut y,
+        } = line;
 
-            let elenew = ((ele - 0.09) / interval + 1.0).floor() * interval;
-            let mut move1 = elenew - ele + 0.15;
-            let mut move2 = move1 * 0.4;
-            if move1 > 0.66 * interval {
-                move2 = move1 * 0.6;
-            }
-            if move1 < 0.25 * interval {
-                move2 = 0.0;
-                move1 += 0.3;
-            }
-            move1 += 0.5;
-            if ele2 + move1 > ((ele - 0.09) / interval + 2.0).floor() * interval {
-                move1 -= 0.4;
-            }
-            if elenew - ele > 1.5 * scalefactor && x.len() > 21 {
-                for k in 0..x.len() {
-                    x[k] = xx + (x[k] - xx) * 0.8;
-                    y[k] = yy + (y[k] - yy) * 0.8;
-                }
-            }
-            let mut touched: HashMap<String, bool> = HashMap::default();
-            let mut minx = u64::MAX;
-            let mut miny = u64::MAX;
-            let mut maxx = u64::MIN;
-            let mut maxy = u64::MIN;
+        let elenew = ((ele - 0.09) / interval + 1.0).floor() * interval;
+        let mut move1 = elenew - ele + 0.15;
+        let mut move2 = move1 * 0.4;
+        if move1 > 0.66 * interval {
+            move2 = move1 * 0.6;
+        }
+        if move1 < 0.25 * interval {
+            move2 = 0.0;
+            move1 += 0.3;
+        }
+        move1 += 0.5;
+        if ele2 + move1 > ((ele - 0.09) / interval + 2.0).floor() * interval {
+            move1 -= 0.4;
+        }
+        if elenew - ele > 1.5 * scalefactor && x.len() > 21 {
             for k in 0..x.len() {
-                x[k] = ((x[k] - xstart) / size + 0.5).floor();
-                y[k] = ((y[k] - ystart) / size + 0.5).floor();
-                let xk = x[k] as u64;
-                let yk = y[k] as u64;
-                if xk > maxx {
-                    maxx = xk;
-                }
-                if yk > maxy {
-                    maxy = yk;
-                }
-                if xk < minx {
-                    minx = xk;
-                }
-                if yk < miny {
-                    miny = yk;
-                }
+                x[k] = xx + (x[k] - xx) * 0.8;
+                y[k] = yy + (y[k] - yy) * 0.8;
             }
+        }
+        let mut touched: HashMap<String, bool> = HashMap::default();
+        let mut minx = u64::MAX;
+        let mut miny = u64::MAX;
+        let mut maxx = u64::MIN;
+        let mut maxy = u64::MIN;
+        for k in 0..x.len() {
+            x[k] = ((x[k] - xstart) / size + 0.5).floor();
+            y[k] = ((y[k] - ystart) / size + 0.5).floor();
+            let xk = x[k] as u64;
+            let yk = y[k] as u64;
+            if xk > maxx {
+                maxx = xk;
+            }
+            if yk > maxy {
+                maxy = yk;
+            }
+            if xk < minx {
+                minx = xk;
+            }
+            if yk < miny {
+                miny = yk;
+            }
+        }
 
-            let xx = ((xx - xstart) / size).floor();
-            let yy = ((yy - ystart) / size).floor();
+        let xx = ((xx - xstart) / size).floor();
+        let yy = ((yy - ystart) / size).floor();
 
-            let mut x0 = 0.0;
-            let mut y0 = 0.0;
+        let mut x0 = 0.0;
+        let mut y0 = 0.0;
 
-            for ii in minx as usize..(maxx as usize + 1) {
-                for jj in miny as usize..(maxy as usize + 1) {
-                    let mut hit = 0;
-                    let xtest = ii as f64;
-                    let ytest = jj as f64;
-                    for n in 0..x.len() {
-                        let x1 = x[n];
-                        let y1 = y[n];
-                        if n > 1
-                            && ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0))
-                            && xtest < (x1 - x0) * (ytest - y0) / (y1 - y0) + x0
-                        {
-                            hit += 1;
-                        }
-                        x0 = x1;
-                        y0 = y1;
+        for ii in minx as usize..(maxx as usize + 1) {
+            for jj in miny as usize..(maxy as usize + 1) {
+                let mut hit = 0;
+                let xtest = ii as f64;
+                let ytest = jj as f64;
+                for n in 0..x.len() {
+                    let x1 = x[n];
+                    let y1 = y[n];
+                    if n > 1
+                        && ((y0 <= ytest && ytest < y1) || (y1 <= ytest && ytest < y0))
+                        && xtest < (x1 - x0) * (ytest - y0) / (y1 - y0) + x0
+                    {
+                        hit += 1;
                     }
-                    if hit % 2 == 1 {
-                        let tmp = *xyz2.get(&(ii as u64, jj as u64)).unwrap_or(&0.0) + move1;
-                        xyz2.insert((ii as u64, jj as u64), tmp);
-                        let coords = format!("{}_{}", ii, jj);
-                        touched.insert(coords, true);
-                    }
+                    x0 = x1;
+                    y0 = y1;
+                }
+                if hit % 2 == 1 {
+                    let tmp = *xyz2.get(&(ii as u64, jj as u64)).unwrap_or(&0.0) + move1;
+                    xyz2.insert((ii as u64, jj as u64), tmp);
+                    let coords = format!("{}_{}", ii, jj);
+                    touched.insert(coords, true);
                 }
             }
-            let mut range = *dist.get(&l).unwrap_or(&0.0) * 0.8 - 1.0;
-            if range < 1.0 {
-                range = 1.0;
-            }
-            if range > 12.0 {
-                range = 12.0;
-            }
-            for iii in 0..((range * 2.0 + 1.0) as usize) {
-                for jjj in 0..((range * 2.0 + 1.0) as usize) {
-                    let ii: f64 = xx - range + iii as f64;
-                    let jj: f64 = yy - range + jjj as f64;
-                    if ii > 0.0 && ii < xmax as f64 + 1.0 && jj > 0.0 && jj < ymax as f64 + 1.0 {
-                        let coords = format!("{}_{}", ii, jj);
-                        if !*touched.get(&coords).unwrap_or(&false) {
-                            let tmp = *xyz2
-                                .get(&(ii.floor() as u64, jj.floor() as u64))
-                                .unwrap_or(&0.0)
-                                + (range - (xx - ii).abs()) / range * (range - (yy - jj).abs())
-                                    / range
-                                    * move2;
-                            xyz2.insert((ii.floor() as u64, jj.floor() as u64), tmp);
-                        }
+        }
+        let mut range = *dist.get(&l).unwrap_or(&0.0) * 0.8 - 1.0;
+        if range < 1.0 {
+            range = 1.0;
+        }
+        if range > 12.0 {
+            range = 12.0;
+        }
+        for iii in 0..((range * 2.0 + 1.0) as usize) {
+            for jjj in 0..((range * 2.0 + 1.0) as usize) {
+                let ii: f64 = xx - range + iii as f64;
+                let jj: f64 = yy - range + jjj as f64;
+                if ii > 0.0 && ii < xmax as f64 + 1.0 && jj > 0.0 && jj < ymax as f64 + 1.0 {
+                    let coords = format!("{}_{}", ii, jj);
+                    if !*touched.get(&coords).unwrap_or(&false) {
+                        let tmp = *xyz2
+                            .get(&(ii.floor() as u64, jj.floor() as u64))
+                            .unwrap_or(&0.0)
+                            + (range - (xx - ii).abs()) / range * (range - (yy - jj).abs()) / range
+                                * move2;
+                        xyz2.insert((ii.floor() as u64, jj.floor() as u64), tmp);
                     }
                 }
             }
