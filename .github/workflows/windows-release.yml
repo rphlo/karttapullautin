@@ -1,4 +1,4 @@
-name: "Build for windows"
+name: "Build for windows x86_64"
 on:
   release:
     types: [created]

@@ -1,4 +1,4 @@
-name: "Build for linux"
+name: "Build for linux x86_64"
 on:
   release:
     types: [created]

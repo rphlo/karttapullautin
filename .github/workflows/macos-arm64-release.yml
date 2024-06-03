@@ -1,4 +1,4 @@
-name: "Build for macos"
+name: "Build for macos arm64"
 on:
   release:
     types: [created]
