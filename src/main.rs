@@ -7214,6 +7214,7 @@ fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
             let mut parts = line.split(' ');
             let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
             let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            parts.next();
             let c: u64 = parts.next().unwrap().parse::<u64>().unwrap();
 
             if c == buildings {
