@@ -26,7 +26,7 @@ where
     while reader.read_line(&mut line_buffer)? > 0 {
         // the read line contains the newline delimiter, so we need to trim it off
         let line = line_buffer.trim_end();
-        line_callback(&line);
+        line_callback(line);
         line_buffer.clear();
     }
 
