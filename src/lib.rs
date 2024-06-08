@@ -1,7 +1,11 @@
 pub mod blocks;
+pub mod canvas;
 pub mod cliffs;
 pub mod contours;
+pub mod crop;
 pub mod knolls;
 pub mod merge;
+pub mod process;
+pub mod render;
 pub mod util;
 pub mod vegetation;
