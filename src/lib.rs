@@ -1,3 +1,4 @@
+pub mod blocks;
 pub mod cliffs;
 pub mod contours;
 pub mod knolls;
