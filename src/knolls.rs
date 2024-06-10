@@ -944,7 +944,14 @@ pub fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         .parse::<f64>()
         .unwrap_or(1.0);
 
-    let interval = 2.5 * scalefactor;
+    let contour_interval: f64 = conf
+        .general_section()
+        .get("contour_interval")
+        .unwrap_or("5")
+        .parse::<f64>()
+        .unwrap_or(5.0);
+
+    let interval = contour_interval / 2.0 * scalefactor;
 
     let tmpfolder = format!("temp{}", thread);
 
