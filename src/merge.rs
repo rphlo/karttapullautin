@@ -6,7 +6,7 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-use crate::util::read_lines;
+use crate::util::{read_n_points, read_bytes_no_alloc};
 
 fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(), Box<dyn Error>> {
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
@@ -570,12 +570,11 @@ pub fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    if let Ok(lines) = read_n_points(xyz_file_in, 2) {
+        for (i, line) in lines.iter().enumerate() {
+            let x = line.x;
+            let y = line.y;
+
             if i == 0 {
                 xstart = x;
                 ystart = y;
@@ -590,27 +589,23 @@ pub fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmax: u64 = u64::MIN;
     let mut ymax: u64 = u64::MIN;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+        let h = line_pt.h;
+        
+        let xx = ((x - xstart) / size).floor() as u64;
+        let yy = ((y - ystart) / size).floor() as u64;
 
-            let xx = ((x - xstart) / size).floor() as u64;
-            let yy = ((y - ystart) / size).floor() as u64;
+        xyz.insert((xx, yy), h);
 
-            xyz.insert((xx, yy), h);
-
-            if xmax < xx {
-                xmax = xx;
-            }
-            if ymax < yy {
-                ymax = yy;
-            }
+        if xmax < xx {
+            xmax = xx;
         }
-    }
+        if ymax < yy {
+            ymax = yy;
+        }
+    }).expect("No can read");
 
     let mut steepness = vec![vec![f64::NAN; (ymax + 1) as usize]; (xmax + 1) as usize];
     for i in 1..xmax {

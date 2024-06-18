@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-use crate::util::read_lines_no_alloc;
+use crate::util::{read_lines_no_alloc, read_bytes_no_alloc, XYZPoint};
 
 pub fn xyz2contours(
     thread: &String,
@@ -26,7 +26,7 @@ pub fn xyz2contours(
         .unwrap_or("1")
         .parse::<f64>()
         .unwrap_or(1.0);
-    let water_class = conf.general_section().get("waterclass").unwrap_or("9");
+    let water_class = conf.general_section().get("waterclass").unwrap_or("9").parse::<u8>().unwrap_or(9);
 
     let tmpfolder = format!("temp{}", thread);
 
@@ -42,18 +42,13 @@ pub fn xyz2contours(
     let path = format!("{}/{}", tmpfolder, xyzfilein);
     let xyz_file_in = Path::new(&path);
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.trim().split(' ');
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+        let h = line_pt.h;
+        let p3 = line_pt.classification;
 
-        let p0 = parts.next().unwrap();
-        let p1 = parts.next().unwrap();
-        let p2 = parts.next().unwrap();
-        let p3 = parts.next();
-
-        if p3.is_some_and(|p3| p3 == "2" || p3 == water_class) || !ground {
-            let x: f64 = p0.parse::<f64>().unwrap();
-            let y: f64 = p1.parse::<f64>().unwrap();
-            let h: f64 = p2.parse::<f64>().unwrap();
+        if p3 == 2 || p3 == water_class || !ground {
 
             if xmin > x {
                 xmin = x;
@@ -91,19 +86,13 @@ pub fn xyz2contours(
     // a two-dimensional vector of (sum, count) pairs for computing averages
     let mut list_alt = vec![vec![(0f64, 0usize); h + 2]; w + 2];
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.trim().split(' ');
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+        let h = line_pt.h;
+        let class = line_pt.classification;
 
-        let p0 = parts.next().unwrap();
-        let p1 = parts.next().unwrap();
-        let p2 = parts.next().unwrap();
-        let p3 = parts.next();
-
-        if p3.is_some_and(|p3| p3 == "2" || p3 == water_class) || !ground {
-            let x: f64 = p0.parse::<f64>().unwrap();
-            let y: f64 = p1.parse::<f64>().unwrap();
-            let h: f64 = p2.parse::<f64>().unwrap();
-
+        if class == 2 || class == water_class || !ground {
             let (sum, count) = &mut list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
                 [((y - ymin).floor() / 2.0 / scalefactor) as usize];
             *sum += h;
@@ -240,10 +229,17 @@ pub fn xyz2contours(
         let mut f = BufWriter::new(f);
         for x in 0..w + 1 {
             for y in 0..h + 1 {
-                let ele = avg_alt[x][y];
-                let xx = x as f64 * 2.0 * scalefactor + xmin;
-                let yy = y as f64 * 2.0 * scalefactor + ymin;
-                write!(&mut f, "{} {} {}\r\n", xx, yy, ele).expect("Cannot write to output file");
+                let pt = XYZPoint {
+                    x: x as f64 * 2.0 * scalefactor + xmin,
+                    y: y as f64 * 2.0 * scalefactor + ymin,
+                    h: avg_alt[x][y],
+                    classification: 0,
+                    number_of_returns: 0,
+                    return_number: 0,
+                };
+                f.write(
+                    &pt.to_bytes()
+                ).unwrap();
             }
         }
     }

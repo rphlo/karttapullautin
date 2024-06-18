@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-use crate::util::{read_lines, read_lines_no_alloc};
+use crate::util::{read_lines_no_alloc, read_bytes_no_alloc, read_n_points};
 
 pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Generating vegetation...");
@@ -24,12 +24,10 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x = parts.next().unwrap().parse::<f64>().unwrap();
-            let y = parts.next().unwrap().parse::<f64>().unwrap();
+    if let Ok(lines) = read_n_points(xyz_file_in, 2) {
+        for (i, line) in lines.iter().enumerate() {
+            let x = line.x;
+            let y = line.y;
 
             if i == 0 {
                 xstart = x;
@@ -53,12 +51,10 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
     let mut top: HashMap<(u64, u64), f64> = HashMap::default();
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.trim().split(' ');
-
-        let x = parts.next().unwrap().parse::<f64>().unwrap();
-        let y = parts.next().unwrap().parse::<f64>().unwrap();
-        let h = parts.next().unwrap().parse::<f64>().unwrap();
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+        let h = line_pt.h;
 
         let xx = ((x - xstart) / size).floor() as u64;
         let yy = ((y - ystart) / size).floor() as u64;
@@ -234,16 +230,15 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut noyhit: HashMap<(u64, u64), u64> = HashMap::default();
 
     let mut i = 0;
-    read_lines_no_alloc(xyz_file_in, |line| {
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
         if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
-            let mut parts = line.trim().split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let r3 = parts.next().unwrap();
-            let r4 = parts.next().unwrap();
-            let r5 = parts.next().unwrap();
-
+            let x = line_pt.x;
+            let y = line_pt.y;
+            let h = line_pt.h;
+            let class = line_pt.classification;
+            let number_of_returns = line_pt.number_of_returns;
+            let return_number = line_pt.return_number;
+            
             if xmax < x {
                 xmax = x;
             }
@@ -260,7 +255,7 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 let yy = ((y - ymin) / 3.0).floor() as u64;
                 *hits.entry((xx, yy)).or_insert(0) += 1;
 
-                if r3 == "2"
+                if class == 2
                     || h < yellowheight
                         + *xyz
                             .get(&(
@@ -270,7 +265,7 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                             .unwrap_or(&0.0)
                 {
                     *yhit.entry((xx, yy)).or_insert(0) += 1;
-                } else if r4 == "1" && r5 == "1" {
+                } else if number_of_returns == 1 && return_number == 1 {
                     *noyhit.entry((xx, yy)).or_insert(0) += yellowfirstlast;
                 } else {
                     *noyhit.entry((xx, yy)).or_insert(0) += 1;
@@ -291,20 +286,17 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let step: f32 = 6.0;
 
     let mut i = 0;
-    read_lines_no_alloc(xyz_file_in, |line| {
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
         if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
-            let mut parts = line.trim().split(' ');
-
-            // parse the parts of the line
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap() - zoffset;
-            let r3 = parts.next().unwrap();
-            let r4 = parts.next().unwrap();
-            let r5 = parts.next().unwrap();
-
+            let x = line_pt.x;
+            let y = line_pt.y;
+            let h = line_pt.h - zoffset;
+            let class = line_pt.classification;
+            let number_of_returns = line_pt.number_of_returns;
+            let return_number = line_pt.return_number;
+            
             if x > xmin && y > ymin {
-                if r5 == "1" {
+                if return_number == 1 {
                     let xx = ((x - xmin) / block + 0.5).floor() as u64;
                     let yy = ((y - ymin) / block + 0.5).floor() as u64;
                     *firsthit.entry((xx, yy)).or_insert(0) += 1;
@@ -327,7 +319,7 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 let yy = (((y - ymin) / block / (step as f64)).floor() + 0.5).floor() as u64;
                 let hh = h - thelele;
                 if hh <= 1.2 {
-                    if r3 == "2" {
+                    if class == 2 {
                         *ugg.entry((xx, yy)).or_insert(0.0) += 1.0;
                     } else if hh > 0.25 {
                         *ug.entry((xx, yy)).or_insert(0) += 1;
@@ -341,15 +333,15 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
                 let xx = ((x - xmin) / block + 0.5).floor() as u64;
                 let yy = ((y - ymin) / block + 0.5).floor() as u64;
                 let yyy = ((y - ymin) / block).floor() as u64; // necessary due to bug in perl version
-                if r3 == "2" || greenground >= hh {
-                    if r4 == "1" && r5 == "1" {
+                if class == 2 || greenground >= hh {
+                    if number_of_returns == 1 && return_number == 1 {
                         *ghit.entry((xx, yyy)).or_insert(0) += firstandlastreturnasground;
                     } else {
                         *ghit.entry((xx, yyy)).or_insert(0) += 1;
                     }
                 } else {
                     let mut last = 1.0;
-                    if r4 == r5 {
+                    if number_of_returns == return_number {
                         last = lastfactor;
                         if hh < 5.0 {
                             last = firstandlastfactor;
@@ -685,11 +677,10 @@ pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let hh: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+        let hh = line_pt.h;
 
         if hh < waterele {
             draw_filled_rect_mut(

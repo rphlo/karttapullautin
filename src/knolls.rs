@@ -7,7 +7,7 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-use crate::util::{read_lines, read_lines_no_alloc};
+use crate::util::{read_lines, read_lines_no_alloc, read_bytes_no_alloc, read_n_points, XYZPoint};
 
 pub fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Identifying dotknolls...");
@@ -28,12 +28,10 @@ pub fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    if let Ok(lines) = read_n_points(xyz_file_in, 2) {
+        for (i, line) in lines.iter().enumerate() {
+            let x = line.x;
+            let y = line.y;
 
             if i == 0 {
                 xstart = x;
@@ -48,29 +46,21 @@ pub fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmax = 0.0;
     let mut ymax = 0.0;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+        
+        let xx = ((x - xstart) / size).floor();
+        let yy = ((y - ystart) / size).floor();
 
-            // make sure we have at least 2 items
-            if let (Some(r0), Some(r1)) = (parts.next(), parts.next()) {
-                let x: f64 = r0.parse::<f64>().unwrap();
-                let y: f64 = r1.parse::<f64>().unwrap();
-
-                let xx = ((x - xstart) / size).floor();
-                let yy = ((y - ystart) / size).floor();
-
-                if xmax < xx {
-                    xmax = xx;
-                }
-
-                if ymax < yy {
-                    ymax = yy;
-                }
-            }
+        if xmax < xx {
+            xmax = xx;
         }
-    }
+
+        if ymax < yy {
+            ymax = yy;
+        }
+    }).expect("cannot read file");
 
     let mut im = GrayImage::from_pixel(
         (xmax * size / scalefactor) as u32,
@@ -210,13 +200,11 @@ pub fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut size: f64 = f64::NAN;
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
-
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    
+    if let Ok(lines) = read_n_points(xyz_file_in, 2) {
+        for (i, line) in lines.iter().enumerate() {
+            let x = line.x;
+            let y = line.y;
 
             if i == 0 {
                 xstart = x;
@@ -234,11 +222,10 @@ pub fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmin: u64 = u64::MAX;
     let mut ymin: u64 = u64::MAX;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+        let h = line_pt.h;
 
         let xx = ((x - xstart) / size).floor() as u64;
         let yy = ((y - ystart) / size).floor() as u64;
@@ -962,12 +949,10 @@ pub fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    if let Ok(lines) = read_n_points(xyz_file_in, 2) {
+        for (i, line) in lines.iter().enumerate() {
+            let x = line.x;
+            let y = line.y;
 
             if i == 0 {
                 xstart = x;
@@ -982,11 +967,10 @@ pub fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmax: u64 = 0;
     let mut ymax: u64 = 0;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+        let h = line_pt.h;
 
         let xx = ((x - xstart) / size).floor() as u64;
         let yy = ((y - ystart) / size).floor() as u64;
@@ -1212,11 +1196,10 @@ pub fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         .expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let parts = line.split(' ');
-        let mut r = parts.collect::<Vec<&str>>();
-        let x: f64 = r[0].parse::<f64>().unwrap();
-        let y: f64 = r[1].parse::<f64>().unwrap();
+    read_bytes_no_alloc(xyz_file_in, |line_pt| {
+        let x = line_pt.x;
+        let y = line_pt.y;
+
         let mut h = *xyz2
             .get(&(
                 ((x - xstart) / size).floor() as u64,
@@ -1231,11 +1214,18 @@ pub fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
                 h = tmp + 0.02;
             }
         }
-        let new_val = format!("{}", h);
-        r[2] = &new_val;
-        let out = r.join(" ");
-        f2.write_all(out.as_bytes()).expect("cannot write to file");
-        f2.write_all("\n".as_bytes()).expect("cannot write to file");
+        let newpt = XYZPoint{
+            x: line_pt.x,
+            y: line_pt.y,
+            h: h,
+            classification: line_pt.classification,
+            number_of_returns: line_pt.number_of_returns,
+            return_number: line_pt.return_number,
+        };
+        
+        f2.write(
+            &newpt.to_bytes()
+        ).unwrap();
     })
     .expect("could not read file");
 

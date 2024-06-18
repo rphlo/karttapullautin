@@ -16,7 +16,7 @@ use crate::crop;
 use crate::knolls;
 use crate::merge;
 use crate::render;
-use crate::util::read_lines;
+use crate::util::{read_lines, XYZPoint};
 use crate::vegetation;
 
 pub fn process_zip(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn Error>> {
@@ -121,7 +121,7 @@ pub fn process_tile(
         }
     }
 
-    if !skiplaz2txt {
+    if false && !skiplaz2txt {
         let mut thinfactor: f64 = conf
             .general_section()
             .get("thinfactor")
@@ -426,24 +426,23 @@ pub fn batch_process(thread: &String) {
                         && pt.y < maxy2
                         && (thinfactor == 1.0 || rng.sample(randdist))
                     {
-                        write!(
-                            &mut tmp_fp,
-                            "{} {} {} {} {} {} {}\r\n",
-                            pt.x,
-                            pt.y,
-                            pt.z + zoff,
-                            u8::from(pt.classification),
-                            pt.number_of_returns,
-                            pt.return_number,
-                            pt.intensity
-                        )
-                        .expect("Could not write temp file");
+                        let xyz_point = XYZPoint {
+                            x: pt.x,
+                            y: pt.y,
+                            h: pt.z + zoff,
+                            classification: u8::from(pt.classification),
+                            number_of_returns: pt.number_of_returns,
+                            return_number: pt.return_number,
+                        };
+                        tmp_fp.write(
+                            &xyz_point.to_bytes()
+                        ).unwrap();
                     }
                 }
             }
         }
         tmp_fp.flush().unwrap();
-
+        
         if zip_files.is_empty() {
             process_tile(thread, &format!("temp{}.xyz", thread), false).unwrap();
         } else {
