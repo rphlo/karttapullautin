@@ -12,7 +12,7 @@ use std::path::Path;
 
 use crate::util::{read_lines, read_lines_no_alloc};
 
-pub fn makevegenew(thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn makevege(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Generating vegetation...");
 
     let tmpfolder = format!("temp{}", thread);

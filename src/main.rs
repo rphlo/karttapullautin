@@ -24,7 +24,7 @@ undergrowth=0.35
 # undergrowth walk
 undergrowth2=0.56
 
-# Note, you will need to iterate this if you use this mode. with commands 'pullauta makevegenew' and then 'pullauta' you can process only this part again. 
+# Note, you will need to iterate this if you use this mode. with commands 'pullauta makevege' and then 'pullauta' you can process only this part again. 
 # Elevation for hits below green. For green mapping hits below this will be calculated as points gone trough vegetation ~ ground.
 greenground=0.9
 greenhigh=2
@@ -219,9 +219,6 @@ zoffset=0
 ##################################################################################################################################
 # Settings specific to the rust version of karttapulautin, default values are meant to be fidel to original Perl Karttapullautin #
 ##################################################################################################################################
-# jarkkos2019, set to 0 to fix the obvious bugs of the Perl KarttaPullautin found in the source code of the 20190203 version, 1 reproduce the buggy behaviours
-jarkkos2019=1
-
 # contour_interval sets the contours interval in meters for the output map
 contour_interval=5
 
@@ -336,11 +333,6 @@ vegeonly=0
         return;
     }
 
-    if command == "makevege" {
-        println!("Not implemented in this version, use the perl version");
-        return;
-    }
-
     if command == "xyzfixer" {
         println!("Not implemented in this version, use the perl version");
         return;
@@ -383,8 +375,8 @@ vegeonly=0
         return;
     }
 
-    if command == "makevegenew" {
-        pullauta::vegetation::makevegenew(&thread).unwrap();
+    if command == "makevege" {
+        pullauta::vegetation::makevege(&thread).unwrap();
     }
 
     if command == "pngmerge" || command == "pngmergedepr" {

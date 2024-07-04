@@ -18,7 +18,6 @@ pub fn xyz2contours(
     println!("Generating curves...");
 
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
 
     let scalefactor: f64 = conf
         .general_section()
@@ -223,7 +222,7 @@ pub fn xyz2contours(
             let mut ele = avg_alt[x][y];
             let temp: f64 = (ele / cinterval + 0.5).floor() * cinterval;
             if (ele - temp).abs() < 0.02 {
-                if ele - temp < 0.0 || (jarkkos_bug && -temp < 0.0) {
+                if ele - temp < 0.0 {
                     ele = temp - 0.02;
                 } else {
                     ele = temp + 0.02;

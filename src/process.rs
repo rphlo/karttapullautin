@@ -297,7 +297,7 @@ pub fn process_tile(
     }
 
     println!("{}Vegetation generation", thread_name);
-    vegetation::makevegenew(thread).unwrap();
+    vegetation::makevege(thread).unwrap();
 
     if !vegeonly {
         println!("{}Cliff generation", thread_name);

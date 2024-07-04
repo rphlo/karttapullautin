@@ -12,7 +12,6 @@ use crate::util::read_lines;
 pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Identifying cliffs...");
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
 
     let c1_limit: f64 = conf
         .general_section()
@@ -297,7 +296,7 @@ pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
                     if temp_max < h0 {
                         temp_max = h0;
                     }
-                    if temp_min > h0 || jarkkos_bug {
+                    if temp_min > h0 {
                         temp_min = h0;
                     }
                 }

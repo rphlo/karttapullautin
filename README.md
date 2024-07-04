@@ -57,7 +57,7 @@ For Ini file configuration explanation, see ini file comments.
 
 When the process is done and you find there is too much green or too small cliffs, you can make parts of the process again with different parameters without having to do it all again. To re-generate only vegetation type from command line:
 
-    ./pullauta makevegenew
+    ./pullauta makevege
     ./pullauta 
 
 To make cliffs again:
@@ -115,7 +115,6 @@ They are:
   - `groundfix`
   - `makecliffsold`
   - `makeheight`
-  - `makevege`
   - `vege`
   - `profile`
   - `xyzfixer`

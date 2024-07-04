@@ -545,7 +545,7 @@ pub fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
         .unwrap_or("2")
         .parse::<f64>()
         .unwrap_or(2.0);
-    let jarkkos_bug: bool = conf.general_section().get("jarkkos2019").unwrap_or("0") == "1";
+
     let contour_interval: f64 = conf
         .general_section()
         .get("contour_interval")
@@ -932,7 +932,7 @@ pub fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                     }
 
                     if (steepcounter as f64) < 0.4 * (el_x_len as f64 - 1.0)
-                        && (jarkkos_bug || el_x_len < 41)
+                        && el_x_len < 41
                         && depression as f64 * h_center - 1.9 < minele
                     {
                         if maxele - 0.45 * scalefactor * inidotknolls < minele {
