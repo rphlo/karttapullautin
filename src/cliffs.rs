@@ -254,7 +254,7 @@ pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
                 if y < h {
                     t.extend(&list_alt[x][y + 1]);
                 }
-                if x < h {
+                if x < w {
                     if y >= 1 {
                         t.extend(&list_alt[x + 1][y - 1]);
                     }
@@ -438,7 +438,7 @@ pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
                 if y < h {
                     t.extend(&list_alt[x][y + 1]);
                 }
-                if x < h {
+                if x < w {
                     if y >= 1 {
                         t.extend(&list_alt[x + 1][y - 1]);
                     }
