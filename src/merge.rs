@@ -1159,8 +1159,8 @@ pub fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
                 for k in 0..el_x_len {
                     out.push_str(
                         format!(
-                            "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
-                            layer, el_x[l][k], el_y[l][k]
+                            "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n 30\r\n{}\r\n  0\r\n",
+                            layer, el_x[l][k], el_y[l][k], h
                         )
                         .as_str(),
                     );
