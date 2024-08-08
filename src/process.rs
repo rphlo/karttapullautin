@@ -636,7 +636,7 @@ pub fn batch_process(thread: &String) {
             pgw_file_out.flush().unwrap();
 
             let mut orig_img_reader =
-                image::io::Reader::open(Path::new(&format!("temp{}/undergrowth.png", thread)))
+                image::ImageReader::open(Path::new(&format!("temp{}/undergrowth.png", thread)))
                     .expect("Opening undergrowth image failed");
             orig_img_reader.no_limits();
             let orig_img = orig_img_reader.decode().unwrap();
@@ -658,7 +658,7 @@ pub fn batch_process(thread: &String) {
             .expect("could not save output png");
 
             let mut orig_img_reader =
-                image::io::Reader::open(Path::new(&format!("temp{}/vegetation.png", thread)))
+                image::ImageReader::open(Path::new(&format!("temp{}/vegetation.png", thread)))
                     .expect("Opening vegetation image failed");
             orig_img_reader.no_limits();
             let orig_img = orig_img_reader.decode().unwrap();
@@ -685,7 +685,7 @@ pub fn batch_process(thread: &String) {
             pgw_file_out.flush().unwrap();
 
             if vege_bitmode {
-                let mut orig_img_reader = image::io::Reader::open(Path::new(&format!(
+                let mut orig_img_reader = image::ImageReader::open(Path::new(&format!(
                     "temp{}/vegetation_bit.png",
                     thread
                 )))
@@ -704,7 +704,7 @@ pub fn batch_process(thread: &String) {
                 )))
                 .expect("could not save output png");
 
-                let mut orig_img_reader = image::io::Reader::open(Path::new(&format!(
+                let mut orig_img_reader = image::ImageReader::open(Path::new(&format!(
                     "temp{}/undergrowth_bit.png",
                     thread
                 )))
