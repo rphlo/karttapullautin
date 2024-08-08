@@ -62,7 +62,7 @@ pub fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
     // let resvege = d[0].trim().parse::<f64>().unwrap();
 
     let mut img_reader =
-        image::io::Reader::open(Path::new(&format!("{}/vegetation.png", tmpfolder)))
+        image::ImageReader::open(Path::new(&format!("{}/vegetation.png", tmpfolder)))
             .expect("Opening vegetation image failed");
     img_reader.no_limits();
     let img = img_reader.decode().unwrap();
@@ -1423,13 +1423,13 @@ pub fn render(
         .unwrap();
 
     let mut img_reader =
-        image::io::Reader::open(Path::new(&format!("{}/vegetation.png", tmpfolder)))
+        image::ImageReader::open(Path::new(&format!("{}/vegetation.png", tmpfolder)))
             .expect("Opening vegetation image failed");
     img_reader.no_limits();
     let img = img_reader.decode().unwrap();
 
     let mut imgug_reader =
-        image::io::Reader::open(Path::new(&format!("{}/undergrowth.png", tmpfolder)))
+        image::ImageReader::open(Path::new(&format!("{}/undergrowth.png", tmpfolder)))
             .expect("Opening undergrowth image failed");
     imgug_reader.no_limits();
     let imgug = imgug_reader.decode().unwrap();
@@ -1461,7 +1461,7 @@ pub fn render(
     image::imageops::overlay(&mut img, &imgug, 0, 0);
 
     if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
-        let mut low_reader = image::io::Reader::open(Path::new(&format!("{}/low.png", tmpfolder)))
+        let mut low_reader = image::ImageReader::open(Path::new(&format!("{}/low.png", tmpfolder)))
             .expect("Opening low image failed");
         low_reader.no_limits();
         let low = low_reader.decode().unwrap();
@@ -1878,7 +1878,7 @@ pub fn render(
     // blocks -------------
     if Path::new(&format!("{}/blocks.png", tmpfolder)).exists() {
         let mut blockpurple_reader =
-            image::io::Reader::open(Path::new(&format!("{}/blocks.png", tmpfolder)))
+            image::ImageReader::open(Path::new(&format!("{}/blocks.png", tmpfolder)))
                 .expect("Opening blocks image failed");
         blockpurple_reader.no_limits();
         let blockpurple = blockpurple_reader.decode().unwrap();
@@ -1911,7 +1911,7 @@ pub fn render(
     // blueblack -------------
     if Path::new(&format!("{}/blueblack.png", tmpfolder)).exists() {
         let mut imgbb_reader =
-            image::io::Reader::open(Path::new(&format!("{}/blueblack.png", tmpfolder)))
+            image::ImageReader::open(Path::new(&format!("{}/blueblack.png", tmpfolder)))
                 .expect("Opening blueblack image failed");
         imgbb_reader.no_limits();
         let imgbb = imgbb_reader.decode().unwrap();
@@ -2125,7 +2125,7 @@ pub fn render(
     // high -------------
     if Path::new(&format!("{}/high.png", tmpfolder)).exists() {
         let mut high_reader =
-            image::io::Reader::open(Path::new(&format!("{}/high.png", tmpfolder)))
+            image::ImageReader::open(Path::new(&format!("{}/high.png", tmpfolder)))
                 .expect("Opening high image failed");
         high_reader.no_limits();
         let high = high_reader.decode().unwrap();
