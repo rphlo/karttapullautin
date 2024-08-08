@@ -117,6 +117,11 @@ pub fn process_tile(
                     }
                 }
                 i += 1;
+                // we only care about the third line, so break after that to avoid having to read
+                // the entire file line by line (file is large)
+                if i > 2 {
+                    break;
+                }
             }
         }
     }
