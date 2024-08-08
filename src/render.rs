@@ -12,7 +12,7 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use crate::canvas::Canvas;
-use crate::util::read_lines;
+use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
@@ -1213,27 +1213,26 @@ pub fn render(
 
         let mut xyz: HashMap<(usize, usize), f64> = HashMap::default();
 
-        if let Ok(lines) = read_lines(xyz_file_in) {
-            for line in lines {
-                let ip = line.unwrap_or(String::new());
-                let mut parts = ip.split(' ');
-                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        read_lines_no_alloc(xyz_file_in, |line| {
+            let mut parts = line.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
-                let xx = ((x - xstart) / size).floor() as usize;
-                let yy = ((y - ystart) / size).floor() as usize;
+            let xx = ((x - xstart) / size).floor() as usize;
+            let yy = ((y - ystart) / size).floor() as usize;
 
-                xyz.insert((xx, yy), h);
+            xyz.insert((xx, yy), h);
 
-                if sxmax < xx {
-                    sxmax = xx;
-                }
-                if symax < yy {
-                    symax = yy;
-                }
+            if sxmax < xx {
+                sxmax = xx;
             }
-        }
+            if symax < yy {
+                symax = yy;
+            }
+        })
+        .expect("Unable to read file");
+
         for i in 6..(sxmax - 7) {
             for j in 6..(symax - 7) {
                 let mut det: f64 = 0.0;

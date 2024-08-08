@@ -6,7 +6,7 @@ use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::path::Path;
 
-use crate::util::read_lines;
+use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Identifying blocks...");
@@ -35,28 +35,27 @@ pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
             }
         }
     }
+
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.split(' ');
+        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let xx = ((x - xstartxyz) / size).floor() as u64;
+        let yy = ((y - ystartxyz) / size).floor() as u64;
+        xyz.insert((xx, yy), h);
 
-            let xx = ((x - xstartxyz) / size).floor() as u64;
-            let yy = ((y - ystartxyz) / size).floor() as u64;
-            xyz.insert((xx, yy), h);
-
-            if xmax < xx {
-                xmax = xx;
-            }
-            if ymax < yy {
-                ymax = yy;
-            }
+        if xmax < xx {
+            xmax = xx;
         }
-    }
+        if ymax < yy {
+            ymax = yy;
+        }
+    })
+    .expect("error reading xyz file");
+
     let mut img = RgbImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgb([255, 255, 255]));
     let mut img2 = RgbaImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgba([0, 0, 0, 0]));
 
@@ -65,47 +64,47 @@ pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let path = format!("{}/xyztemp.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let r3 = parts.next().unwrap();
-            let r4 = parts.next().unwrap();
-            let r5 = parts.next().unwrap();
 
-            let xx = ((x - xstartxyz) / size).floor() as u64;
-            let yy = ((y - ystartxyz) / size).floor() as u64;
-            if r3 != "2"
-                && r3 != "9"
-                && r4 == "1"
-                && r5 == "1"
-                && h - *xyz.get(&(xx, yy)).unwrap_or(&0.0) > 2.0
-            {
-                draw_filled_rect_mut(
-                    &mut img,
-                    Rect::at(
-                        (x - xstartxyz - 1.0) as i32,
-                        (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32,
-                    )
-                    .of_size(3, 3),
-                    black,
-                );
-            } else {
-                draw_filled_rect_mut(
-                    &mut img2,
-                    Rect::at(
-                        (x - xstartxyz - 1.0) as i32,
-                        (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32,
-                    )
-                    .of_size(3, 3),
-                    white,
-                );
-            }
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.split(' ');
+        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let r3 = parts.next().unwrap();
+        let r4 = parts.next().unwrap();
+        let r5 = parts.next().unwrap();
+
+        let xx = ((x - xstartxyz) / size).floor() as u64;
+        let yy = ((y - ystartxyz) / size).floor() as u64;
+        if r3 != "2"
+            && r3 != "9"
+            && r4 == "1"
+            && r5 == "1"
+            && h - *xyz.get(&(xx, yy)).unwrap_or(&0.0) > 2.0
+        {
+            draw_filled_rect_mut(
+                &mut img,
+                Rect::at(
+                    (x - xstartxyz - 1.0) as i32,
+                    (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32,
+                )
+                .of_size(3, 3),
+                black,
+            );
+        } else {
+            draw_filled_rect_mut(
+                &mut img2,
+                Rect::at(
+                    (x - xstartxyz - 1.0) as i32,
+                    (ystartxyz + 2.0 * ymax as f64 - y - 1.0) as i32,
+                )
+                .of_size(3, 3),
+                white,
+            );
         }
-    }
+    })
+    .expect("error reading xyz file");
+
     let filter_size = 2;
     img.save(Path::new(&format!("{}/blocks.png", tmpfolder)))
         .expect("error saving png");

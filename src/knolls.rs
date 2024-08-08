@@ -48,29 +48,27 @@ pub fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut xmax = 0.0;
     let mut ymax = 0.0;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.split(' ');
 
-            // make sure we have at least 2 items
-            if let (Some(r0), Some(r1)) = (parts.next(), parts.next()) {
-                let x: f64 = r0.parse::<f64>().unwrap();
-                let y: f64 = r1.parse::<f64>().unwrap();
+        // make sure we have at least 2 items
+        if let (Some(r0), Some(r1)) = (parts.next(), parts.next()) {
+            let x: f64 = r0.parse::<f64>().unwrap();
+            let y: f64 = r1.parse::<f64>().unwrap();
 
-                let xx = ((x - xstart) / size).floor();
-                let yy = ((y - ystart) / size).floor();
+            let xx = ((x - xstart) / size).floor();
+            let yy = ((y - ystart) / size).floor();
 
-                if xmax < xx {
-                    xmax = xx;
-                }
+            if xmax < xx {
+                xmax = xx;
+            }
 
-                if ymax < yy {
-                    ymax = yy;
-                }
+            if ymax < yy {
+                ymax = yy;
             }
         }
-    }
+    })
+    .expect("Could not read input file");
 
     let mut im = GrayImage::from_pixel(
         (xmax * size / scalefactor) as u32,
@@ -135,51 +133,51 @@ pub fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
 
     let input_filename = &format!("{}/dotknolls.txt", tmpfolder);
     let input = Path::new(input_filename);
-    if let Ok(lines) = read_lines(input) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let parts = ip.split(' ');
-            let r = parts.collect::<Vec<&str>>();
-            if r.len() >= 3 {
-                let depression: bool = r[0] == "1";
-                let x: f64 = r[1].parse::<f64>().unwrap();
-                let y: f64 = r[2].parse::<f64>().unwrap();
-                let mut ok = true;
-                let mut i = (x - xstart) / scalefactor - 3.0;
-                let mut layer = String::new();
-                while i < (x - xstart) / scalefactor + 4.0 && ok {
-                    let mut j = (y - ystart) / scalefactor - 3.0;
-                    while j < (y - ystart) / scalefactor + 4.0 && ok {
-                        if (i as u32) >= im.width() || (j as u32) >= im.height() {
-                            ok = false;
-                            break;
-                        }
-                        let pix = im.get_pixel(i as u32, j as u32);
-                        if pix[0] == 0 {
-                            ok = false;
-                            break;
-                        }
-                        j += 1.0;
+
+    read_lines_no_alloc(input, |line| {
+        let parts = line.split(' ');
+        let r = parts.collect::<Vec<&str>>();
+        if r.len() >= 3 {
+            let depression: bool = r[0] == "1";
+            let x: f64 = r[1].parse::<f64>().unwrap();
+            let y: f64 = r[2].parse::<f64>().unwrap();
+            let mut ok = true;
+            let mut i = (x - xstart) / scalefactor - 3.0;
+            let mut layer = String::new();
+            while i < (x - xstart) / scalefactor + 4.0 && ok {
+                let mut j = (y - ystart) / scalefactor - 3.0;
+                while j < (y - ystart) / scalefactor + 4.0 && ok {
+                    if (i as u32) >= im.width() || (j as u32) >= im.height() {
+                        ok = false;
+                        break;
                     }
-                    i += 1.0;
+                    let pix = im.get_pixel(i as u32, j as u32);
+                    if pix[0] == 0 {
+                        ok = false;
+                        break;
+                    }
+                    j += 1.0;
                 }
-                if !ok {
-                    layer = String::from("ugly");
-                }
-                if depression {
-                    layer.push_str("dotknoll")
-                } else {
-                    layer.push_str("udepression")
-                }
-                write!(
-                    &mut f,
-                    "POINT\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n 50\r\n0\r\n  0\r\n",
-                    layer, x, y
-                )
-                .expect("Can not write to file");
+                i += 1.0;
             }
+            if !ok {
+                layer = String::from("ugly");
+            }
+            if depression {
+                layer.push_str("dotknoll")
+            } else {
+                layer.push_str("udepression")
+            }
+            write!(
+                &mut f,
+                "POINT\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n 50\r\n0\r\n  0\r\n",
+                layer, x, y
+            )
+            .expect("Can not write to file");
         }
-    }
+    })
+    .expect("Could not read file");
+
     f.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
         .expect("Can not write to file");
     println!("Done");
