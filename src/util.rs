@@ -14,7 +14,7 @@ where
 
 /// Iterates over the lines in a file and calls the callback with a &str reference to each line.
 /// This function does not allocate new strings for each line, as opposed to using
-/// [`io::BufReader::lines()`].
+/// [`io::BufReader::lines()`] as in [`read_lines`].
 pub fn read_lines_no_alloc<P>(filename: P, mut line_callback: impl FnMut(&str)) -> io::Result<()>
 where
     P: AsRef<Path>,
