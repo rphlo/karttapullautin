@@ -8,6 +8,7 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use crate::util::read_lines;
+use crate::util::read_lines_no_alloc;
 
 pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Identifying cliffs...");
@@ -74,39 +75,38 @@ pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     let path = format!("{}/xyztemp.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.split(' ');
+        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
-            if xmin > x {
-                xmin = x;
-            }
-
-            if xmax < x {
-                xmax = x;
-            }
-
-            if ymin > y {
-                ymin = y;
-            }
-
-            if ymax < y {
-                ymax = y;
-            }
-
-            if hmin > h {
-                hmin = h;
-            }
-
-            if hmax < h {
-                hmax = h;
-            }
+        if xmin > x {
+            xmin = x;
         }
-    }
+
+        if xmax < x {
+            xmax = x;
+        }
+
+        if ymin > y {
+            ymin = y;
+        }
+
+        if ymax < y {
+            ymax = y;
+        }
+
+        if hmin > h {
+            hmin = h;
+        }
+
+        if hmax < h {
+            hmax = h;
+        }
+    })
+    .expect("Could not read input file");
+
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
     let mut size: f64 = f64::NAN;
@@ -136,27 +136,25 @@ pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
         vec![f64::NAN; ((ymax - ystart) / size).ceil() as usize + 1];
         ((xmax - xstart) / size).ceil() as usize + 1
     ];
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_lines_no_alloc(xyz_file_in, |line| {
+        let mut parts = line.split(' ');
+        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
-            let xx = ((x - xstart) / size).floor() as usize;
-            let yy = ((y - ystart) / size).floor() as usize;
+        let xx = ((x - xstart) / size).floor() as usize;
+        let yy = ((y - ystart) / size).floor() as usize;
 
-            xyz[xx][yy] = h;
+        xyz[xx][yy] = h;
 
-            if sxmax < xx {
-                sxmax = xx;
-            }
-            if symax < yy {
-                symax = yy;
-            }
+        if sxmax < xx {
+            sxmax = xx;
         }
-    }
+        if symax < yy {
+            symax = yy;
+        }
+    })
+    .expect("Could not read input file");
 
     let mut steepness = vec![vec![f64::NAN; symax + 1]; sxmax + 1];
     for i in 3..sxmax - 4 {
@@ -198,24 +196,22 @@ pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
     let mut rng = rand::thread_rng();
     let randdist = distributions::Bernoulli::new(cliff_thin).unwrap();
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            if cliff_thin == 1.0 || rng.sample(randdist) {
-                let ip = line.unwrap_or(String::new());
-                let mut parts = ip.split(' ');
-                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let r3 = parts.next().unwrap();
+    read_lines_no_alloc(xyz_file_in, |line| {
+        if cliff_thin == 1.0 || rng.sample(randdist) {
+            let mut parts = line.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let r3 = parts.next().unwrap();
 
-                if r3 == "2" {
-                    list_alt[((x - xmin).floor() / 3.0) as usize]
-                        [((y - ymin).floor() / 3.0) as usize]
-                        .push((x, y, h));
-                }
+            if r3 == "2" {
+                list_alt[((x - xmin).floor() / 3.0) as usize][((y - ymin).floor() / 3.0) as usize]
+                    .push((x, y, h));
             }
         }
-    }
+    })
+    .expect("Could not read input file");
+
     let w = ((xmax - xmin).floor() / 3.0) as usize;
     let h = ((ymax - ymin).floor() / 3.0) as usize;
 
@@ -402,20 +398,18 @@ pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
             (((xmax - xmin) / 3.0).ceil() + 1.0) as usize
         ];
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
-        for line in lines {
-            if cliff_thin == 1.0 || rng.sample(randdist) {
-                let ip = line.unwrap_or(String::new());
-                let mut parts = ip.split(' ');
-                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    read_lines_no_alloc(xyz_file_in, |line| {
+        if cliff_thin == 1.0 || rng.sample(randdist) {
+            let mut parts = line.split(' ');
+            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
-                list_alt[((x - xmin).floor() / 3.0) as usize][((y - ymin).floor() / 3.0) as usize]
-                    .push((x, y, h));
-            }
+            list_alt[((x - xmin).floor() / 3.0) as usize][((y - ymin).floor() / 3.0) as usize]
+                .push((x, y, h));
         }
-    }
+    })
+    .expect("Could not read input file");
 
     for x in 0..w + 1 {
         for y in 0..h + 1 {
