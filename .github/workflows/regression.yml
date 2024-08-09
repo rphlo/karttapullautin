@@ -27,13 +27,14 @@ jobs:
         echo "Running code on PR branch"
         cargo run --release -- test_file.laz
         mv pullautus.png pullautus_pr.png
+        rm -rf temp/
 
     - name: Checkout main branch
       run: |
-        git fetch origin main
-        git checkout main
+        git fetch origin master
+        git checkout master
 
-    - name: Run code on main branch
+    - name: Run code on master branch
       id: run_main_branch
       run: |
         echo "Running code on main branch"
@@ -44,13 +45,17 @@ jobs:
       id: compare
       run: |
         # Compare the results from both branches
-        diff pullautus_pr.png pullautus_main.png
-      continue-on-error: true
+        # install imagemagic to do the comparison ( Seems to work and already be included with ubuntu-latest)
+        sudo apt install imagemagick 
+        imagemagic compare -metric PSNR pullautus_main.png pullautus_pr.png difference.png
+    
+    - name: Upload results
+      uses: actions/upload-artifact@v4
+      with:
+        name: regression-results
+        path: |
+          pullautus_main.png
+          pullautus_pr.png
+          difference.png
+        overwrite: true # we need subsequent runs to overwrite the result
 
-    # - name: Check comparison result
-    #   if: steps.compare.outcome == 'failure'
-    #   run: |
-    #     echo "Results differ between PR branch and main"
-    #     exit 1
-    #   if: steps.compare.outcome == 'success'
-    #   run: echo "Results are the same between PR branch and main"
