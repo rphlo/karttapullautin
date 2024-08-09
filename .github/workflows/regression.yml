@@ -1,0 +1,56 @@
+on:
+  pull_request:
+    branches: [ "master" ]
+
+name: "Regression"
+
+jobs:
+  compare-results:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - uses: dtolnay/rust-toolchain@stable
+
+    - name: Download LAZ file
+      env:
+        REGRESSION_LAZ_FILE_URL: ${{ secrets.REGRESSION_LAZ_FILE_URL }}
+      run: curl -L "$REGRESSION_LAZ_FILE_URL" -o test_file.laz
+
+    - name: Run code on PR branch
+      id: run_pr_branch
+      run: |
+        echo "Running code on PR branch"
+        cargo run --release -- test_file.laz
+        mv pullautus.png pullautus_pr.png
+
+    - name: Checkout main branch
+      run: |
+        git fetch origin main
+        git checkout main
+
+    - name: Run code on main branch
+      id: run_main_branch
+      run: |
+        echo "Running code on main branch"
+        cargo run --release -- test_file.laz
+        mv pullautus.png pullautus_main.png
+
+    - name: Compare results
+      id: compare
+      run: |
+        # Compare the results from both branches
+        diff pullautus_pr.png pullautus_main.png
+      continue-on-error: true
+
+    # - name: Check comparison result
+    #   if: steps.compare.outcome == 'failure'
+    #   run: |
+    #     echo "Results differ between PR branch and main"
+    #     exit 1
+    #   if: steps.compare.outcome == 'success'
+    #   run: echo "Results are the same between PR branch and main"
