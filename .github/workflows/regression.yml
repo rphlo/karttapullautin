@@ -25,8 +25,10 @@ jobs:
       id: run_pr_branch
       run: |
         echo "Running code on PR branch"
+        compare -list resource
         cargo run --release -- test_file.laz
         mv pullautus.png pullautus_pr.png
+        mv pullautus_depr.png pullautus_depr_pr.png
         rm -rf temp/
 
     - name: Checkout main branch
@@ -40,6 +42,7 @@ jobs:
         echo "Running code on main branch"
         cargo run --release -- test_file.laz
         mv pullautus.png pullautus_main.png
+        mv pullautus_depr.png pullautus_depr_main.png
 
     - name: Compare results
       id: compare
@@ -47,7 +50,8 @@ jobs:
         # Compare the results from both branches
         # install imagemagic to do the comparison ( Seems to work and already be included with ubuntu-latest)
         sudo apt install imagemagick 
-        imagemagic compare -metric PSNR pullautus_main.png pullautus_pr.png difference.png
+        compare -metric PSNR pullautus_main.png pullautus_pr.png difference.png
+        compare -metric PSNR pullautus_depr_main.png pullautus_depr_pr.png difference_depr.png
     
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -57,5 +61,8 @@ jobs:
           pullautus_main.png
           pullautus_pr.png
           difference.png
+          pullautus_depr_main.png
+          pullautus_depr_pr.png
+          difference_depr.png
         overwrite: true # we need subsequent runs to overwrite the result
 
