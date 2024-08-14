@@ -1027,9 +1027,6 @@ pub fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let path = format!("{}/pins.txt", tmpfolder);
-    let pins_file_in = Path::new(&path);
-
     struct Pin {
         xx: f64,
         yy: f64,
@@ -1040,35 +1037,39 @@ pub fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     }
     let mut pins: Vec<Pin> = Vec::new();
 
-    read_lines_no_alloc(pins_file_in, |line| {
-        let mut r = line.trim().split(',');
-        let ele = r.nth(2).unwrap().parse::<f64>().unwrap();
-        let xx = r.next().unwrap().parse::<f64>().unwrap();
-        let yy = r.next().unwrap().parse::<f64>().unwrap();
-        let ele2 = r.next().unwrap().parse::<f64>().unwrap();
-        let xlist = r.next().unwrap();
-        let ylist = r.next().unwrap();
-        let mut x: Vec<f64> = xlist
-            .split(' ')
-            .map(|s| s.parse::<f64>().unwrap())
-            .collect();
-        let mut y: Vec<f64> = ylist
-            .split(' ')
-            .map(|s| s.parse::<f64>().unwrap())
-            .collect();
-        x.push(x[0]);
-        y.push(y[0]);
+    let path = format!("{}/pins.txt", tmpfolder);
+    let pins_file_in = Path::new(&path);
+    if pins_file_in.exists() {
+        read_lines_no_alloc(pins_file_in, |line| {
+            let mut r = line.trim().split(',');
+            let ele = r.nth(2).unwrap().parse::<f64>().unwrap();
+            let xx = r.next().unwrap().parse::<f64>().unwrap();
+            let yy = r.next().unwrap().parse::<f64>().unwrap();
+            let ele2 = r.next().unwrap().parse::<f64>().unwrap();
+            let xlist = r.next().unwrap();
+            let ylist = r.next().unwrap();
+            let mut x: Vec<f64> = xlist
+                .split(' ')
+                .map(|s| s.parse::<f64>().unwrap())
+                .collect();
+            let mut y: Vec<f64> = ylist
+                .split(' ')
+                .map(|s| s.parse::<f64>().unwrap())
+                .collect();
+            x.push(x[0]);
+            y.push(y[0]);
 
-        pins.push(Pin {
-            xx,
-            yy,
-            ele,
-            ele2,
-            xlist: x,
-            ylist: y,
-        });
-    })
-    .expect("could not read pins file");
+            pins.push(Pin {
+                xx,
+                yy,
+                ele,
+                ele2,
+                xlist: x,
+                ylist: y,
+            });
+        })
+        .expect("could not read pins file");
+    }
 
     // compute closest distance from each pin to another pin
     let mut dist: HashMap<usize, f64> = HashMap::default();
