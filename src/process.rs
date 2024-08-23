@@ -1,6 +1,6 @@
 use image::{GrayImage, Luma, Rgb, RgbImage, Rgba, RgbaImage};
 use ini::Ini;
-use las::{raw::Header, Read, Reader};
+use las::{raw::Header, Reader};
 use rand::distributions;
 use rand::prelude::*;
 use regex::Regex;
