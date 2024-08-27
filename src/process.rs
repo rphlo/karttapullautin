@@ -36,6 +36,7 @@ pub fn process_zip(thread: &String, filenames: &Vec<String>) -> Result<(), Box<d
 
     println!("Rendering shape files");
     unzipmtk(thread, filenames).unwrap();
+
     println!("Rendering png map with depressions");
     render::render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
     println!("Rendering png map without depressions");
@@ -216,14 +217,16 @@ pub fn process_tile(
         .parse::<f64>()
         .unwrap_or(1.0);
     let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
+    let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
+    let contoursonly: bool = conf.general_section().get("contoursonly").unwrap_or("0") == "1";
 
-    if !vegeonly {
+    if vegeonly || cliffsonly {
         contours::xyz2contours(
             thread,
             scalefactor * 0.3,
             "xyztemp.xyz",
             "xyz_03.xyz",
-            "contours03.dxf",
+            "null",
             true,
         )
         .expect("contour generation failed");
@@ -233,7 +236,7 @@ pub fn process_tile(
             scalefactor * 0.3,
             "xyztemp.xyz",
             "xyz_03.xyz",
-            "null",
+            "contours03.dxf",
             true,
         )
         .expect("contour generation failed");
@@ -253,7 +256,7 @@ pub fn process_tile(
         .unwrap_or(5.0);
     let halfinterval = contour_interval / 2.0 * scalefactor;
 
-    if !vegeonly {
+    if !vegeonly && !cliffsonly {
         let basemapcontours: f64 = conf
             .general_section()
             .get("basemapinterval")
@@ -301,19 +304,24 @@ pub fn process_tile(
         knolls::dotknolls(thread).unwrap();
     }
 
-    println!("{}Vegetation generation", thread_name);
-    vegetation::makevege(thread).unwrap();
+    if !cliffsonly && !contoursonly {
+        println!("{}Vegetation generation", thread_name);
+        vegetation::makevege(thread).unwrap();
+    }
 
-    if !vegeonly {
+    if !vegeonly && !contoursonly {
         println!("{}Cliff generation", thread_name);
         cliffs::makecliffs(thread).unwrap();
     }
-    let detectbuildings: bool = conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
-    if detectbuildings {
-        println!("{}Detecting buildings", thread_name);
-        blocks::blocks(thread).unwrap();
+    if !vegeonly && !contoursonly && !contoursonly {
+        let detectbuildings: bool =
+            conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
+        if detectbuildings {
+            println!("{}Detecting buildings", thread_name);
+            blocks::blocks(thread).unwrap();
+        }
     }
-    if !skip_rendering {
+    if !skip_rendering && !vegeonly && !contoursonly && !contoursonly {
         println!("{}Rendering png map with depressions", thread_name);
         render::render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
         println!("{}Rendering png map without depressions", thread_name);
@@ -453,7 +461,13 @@ pub fn batch_process(thread: &String) {
             process_tile(thread, &format!("temp{}.xyz", thread), false).unwrap();
         } else {
             process_tile(thread, &format!("temp{}.xyz", thread), true).unwrap();
-            process_zip(thread, &zip_files).unwrap();
+            let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
+            let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
+            let contoursonly: bool =
+                conf.general_section().get("contoursonly").unwrap_or("0") == "1";
+            if !vegeonly && !cliffsonly && !contoursonly {
+                process_zip(thread, &zip_files).unwrap();
+            }
         }
 
         // crop

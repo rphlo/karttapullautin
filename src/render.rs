@@ -1495,309 +1495,280 @@ pub fn render(
     }
 
     // Drawing curves --------------
-    let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
+    let input_filename = &format!("{}/out2.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
 
-    if !vegeonly {
-        let input_filename = &format!("{}/out2.dxf", tmpfolder);
-        let input = Path::new(input_filename);
-        let data = fs::read_to_string(input).expect("Can not read input file");
-        let data: Vec<&str> = data.split("POLYLINE").collect();
+    let mut formline_out = String::new();
+    formline_out.push_str(data[0]);
 
-        let mut formline_out = String::new();
-        formline_out.push_str(data[0]);
-
-        for (j, rec) in data.iter().enumerate() {
-            let mut x = Vec::<f64>::new();
-            let mut y = Vec::<f64>::new();
-            let mut xline = 0;
-            let mut yline = 0;
-            let mut layer = "";
-            if j > 0 {
-                let r = rec.split("VERTEX").collect::<Vec<&str>>();
-                let apu = r[1];
-                let val = apu.split('\n').collect::<Vec<&str>>();
-                layer = val[2].trim();
-                for (i, v) in val.iter().enumerate() {
-                    let vt = v.trim();
-                    if vt == "10" {
-                        xline = i + 1;
-                    }
-                    if vt == "20" {
-                        yline = i + 1;
-                    }
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        let mut layer = "";
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split('\n').collect::<Vec<&str>>();
+            layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                let vt = v.trim();
+                if vt == "10" {
+                    xline = i + 1;
                 }
-                for (i, v) in r.iter().enumerate() {
-                    if i > 0 {
-                        let val = v.trim_end().split('\n').collect::<Vec<&str>>();
-                        x.push(
-                            (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
-                                / 254.0
-                                / scalefactor,
-                        );
-                        y.push(
-                            (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
-                                / 254.0
-                                / scalefactor,
-                        );
-                    }
+                if vt == "20" {
+                    yline = i + 1;
                 }
             }
-            let mut color = Rgba([200, 0, 200, 255]); // purple
-            if layer.contains("contour") {
-                color = Rgba([166, 85, 43, 255]) // brown
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
+                    x.push(
+                        (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
+                            / 254.0
+                            / scalefactor,
+                    );
+                    y.push(
+                        (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
+                            / 254.0
+                            / scalefactor,
+                    );
+                }
             }
-            if !nodepressions || layer.contains("contour") {
-                let mut curvew = 2.0;
+        }
+        let mut color = Rgba([200, 0, 200, 255]); // purple
+        if layer.contains("contour") {
+            color = Rgba([166, 85, 43, 255]) // brown
+        }
+        if !nodepressions || layer.contains("contour") {
+            let mut curvew = 2.0;
+            if layer.contains("index") {
+                curvew = 3.0;
+            }
+            if formline > 0.0 {
+                if formline == 1.0 {
+                    curvew = 2.5
+                }
+                if layer.contains("intermed") {
+                    curvew = 1.5
+                }
                 if layer.contains("index") {
-                    curvew = 3.0;
+                    curvew = 3.5
                 }
-                if formline > 0.0 {
-                    if formline == 1.0 {
-                        curvew = 2.5
-                    }
-                    if layer.contains("intermed") {
-                        curvew = 1.5
-                    }
-                    if layer.contains("index") {
-                        curvew = 3.5
-                    }
-                }
+            }
 
-                let mut smallringtest = false;
-                let mut help = vec![false; x.len()];
-                let mut help2 = vec![false; x.len()];
-                if curvew == 1.5 {
-                    for i in 0..x.len() {
-                        help[i] = false;
+            let mut smallringtest = false;
+            let mut help = vec![false; x.len()];
+            let mut help2 = vec![false; x.len()];
+            if curvew == 1.5 {
+                for i in 0..x.len() {
+                    help[i] = false;
+                    help2[i] = true;
+                    let xx = (((x[i] / 600.0 * 254.0 * scalefactor + x0) - xstart) / size).floor();
+                    let yy = (((-y[i] / 600.0 * 254.0 * scalefactor + y0) - ystart) / size).floor();
+                    if curvew != 1.5
+                        || formline == 0.0
+                        || steepness.get(&(xx as usize, yy as usize)).unwrap_or(&0.0)
+                            < &formlinesteepness
+                        || steepness
+                            .get(&(xx as usize, yy as usize + 1))
+                            .unwrap_or(&0.0)
+                            < &formlinesteepness
+                        || steepness
+                            .get(&(xx as usize + 1, yy as usize))
+                            .unwrap_or(&0.0)
+                            < &formlinesteepness
+                        || steepness
+                            .get(&(xx as usize + 1, yy as usize + 1))
+                            .unwrap_or(&0.0)
+                            < &formlinesteepness
+                    {
+                        help[i] = true;
+                    }
+                }
+                for i in 5..(x.len() - 6) {
+                    let mut apu = 0;
+                    for j in (i - 5)..(i + 4) {
+                        if help[j] {
+                            apu += 1;
+                        }
+                    }
+                    if apu < 5 {
+                        help2[i] = false;
+                    }
+                }
+                for i in 0..6 {
+                    help2[i] = help2[6]
+                }
+                for i in (x.len() - 6)..x.len() {
+                    help2[i] = help2[x.len() - 7]
+                }
+                let mut on = 0.0;
+                for i in 0..x.len() {
+                    if help2[i] {
+                        on = formlineaddition
+                    }
+                    if on > 0.0 {
                         help2[i] = true;
-                        let xx =
-                            (((x[i] / 600.0 * 254.0 * scalefactor + x0) - xstart) / size).floor();
-                        let yy =
-                            (((-y[i] / 600.0 * 254.0 * scalefactor + y0) - ystart) / size).floor();
-                        if curvew != 1.5
-                            || formline == 0.0
-                            || steepness.get(&(xx as usize, yy as usize)).unwrap_or(&0.0)
-                                < &formlinesteepness
-                            || steepness
-                                .get(&(xx as usize, yy as usize + 1))
-                                .unwrap_or(&0.0)
-                                < &formlinesteepness
-                            || steepness
-                                .get(&(xx as usize + 1, yy as usize))
-                                .unwrap_or(&0.0)
-                                < &formlinesteepness
-                            || steepness
-                                .get(&(xx as usize + 1, yy as usize + 1))
-                                .unwrap_or(&0.0)
-                                < &formlinesteepness
-                        {
-                            help[i] = true;
-                        }
+                        on -= 1.0;
                     }
-                    for i in 5..(x.len() - 6) {
-                        let mut apu = 0;
-                        for j in (i - 5)..(i + 4) {
-                            if help[j] {
-                                apu += 1;
-                            }
-                        }
-                        if apu < 5 {
-                            help2[i] = false;
-                        }
+                }
+                if x.first() == x.last() && y.first() == y.last() && on > 0.0 {
+                    let mut i = 0;
+                    while i < x.len() && on > 0.0 {
+                        help2[i] = true;
+                        on -= 1.0;
+                        i += 1;
                     }
-                    for i in 0..6 {
-                        help2[i] = help2[6]
+                }
+                let mut on = 0.0;
+                for i in 0..x.len() {
+                    let ii = x.len() - i - 1;
+                    if help2[ii] {
+                        on = formlineaddition
                     }
-                    for i in (x.len() - 6)..x.len() {
-                        help2[i] = help2[x.len() - 7]
+                    if on > 0.0 {
+                        help2[ii] = true;
+                        on -= 1.0;
                     }
-                    let mut on = 0.0;
-                    for i in 0..x.len() {
+                }
+                if x.first() == x.last() && y.first() == y.last() && on > 0.0 {
+                    let mut i = (x.len() - 1) as i32;
+                    while i > -1 && on > 0.0 {
+                        help2[i as usize] = true;
+                        on -= 1.0;
+                        i -= 1;
+                    }
+                }
+                // Let's not break small form line rings
+                smallringtest = false;
+                if x.first() == x.last() && y.first() == y.last() && x.len() < 122 {
+                    for i in 1..x.len() {
                         if help2[i] {
-                            on = formlineaddition
-                        }
-                        if on > 0.0 {
-                            help2[i] = true;
-                            on -= 1.0;
+                            smallringtest = true
                         }
                     }
-                    if x.first() == x.last() && y.first() == y.last() && on > 0.0 {
-                        let mut i = 0;
-                        while i < x.len() && on > 0.0 {
-                            help2[i] = true;
-                            on -= 1.0;
-                            i += 1;
-                        }
-                    }
-                    let mut on = 0.0;
-                    for i in 0..x.len() {
-                        let ii = x.len() - i - 1;
-                        if help2[ii] {
-                            on = formlineaddition
-                        }
-                        if on > 0.0 {
-                            help2[ii] = true;
-                            on -= 1.0;
-                        }
-                    }
-                    if x.first() == x.last() && y.first() == y.last() && on > 0.0 {
-                        let mut i = (x.len() - 1) as i32;
-                        while i > -1 && on > 0.0 {
-                            help2[i as usize] = true;
-                            on -= 1.0;
-                            i -= 1;
-                        }
-                    }
-                    // Let's not break small form line rings
-                    smallringtest = false;
-                    if x.first() == x.last() && y.first() == y.last() && x.len() < 122 {
-                        for i in 1..x.len() {
-                            if help2[i] {
-                                smallringtest = true
-                            }
-                        }
-                    }
-                    // Let's draw short gaps together
-                    if !smallringtest {
-                        let mut tester = 1;
-                        for i in 1..x.len() {
-                            if help2[i] {
-                                if tester < i && ((i - tester) as u32) < minimumgap {
-                                    for j in tester..(i + 1) {
-                                        help2[j] = true;
-                                    }
+                }
+                // Let's draw short gaps together
+                if !smallringtest {
+                    let mut tester = 1;
+                    for i in 1..x.len() {
+                        if help2[i] {
+                            if tester < i && ((i - tester) as u32) < minimumgap {
+                                for j in tester..(i + 1) {
+                                    help2[j] = true;
                                 }
-                                tester = i;
                             }
+                            tester = i;
                         }
-                        // Ring handling
-                        if x.first() == x.last() && y.first() == y.last() && x.len() < 2 {
-                            let mut i = 1;
-                            while i < x.len() && !help2[i] {
-                                i += 1
+                    }
+                    // Ring handling
+                    if x.first() == x.last() && y.first() == y.last() && x.len() < 2 {
+                        let mut i = 1;
+                        while i < x.len() && !help2[i] {
+                            i += 1
+                        }
+                        let mut j = x.len() - 1;
+                        while j > 1 && !help2[i] {
+                            j -= 1
+                        }
+                        if ((x.len() - j + i - 1) as u32) < minimumgap && j > i {
+                            for k in 0..(i + 1) {
+                                help2[k] = true
                             }
-                            let mut j = x.len() - 1;
-                            while j > 1 && !help2[i] {
-                                j -= 1
-                            }
-                            if ((x.len() - j + i - 1) as u32) < minimumgap && j > i {
-                                for k in 0..(i + 1) {
-                                    help2[k] = true
-                                }
-                                for k in j..x.len() {
-                                    help2[k] = true
-                                }
+                            for k in j..x.len() {
+                                help2[k] = true
                             }
                         }
                     }
                 }
+            }
 
-                let mut linedist = 0.0;
-                let mut onegapdone = false;
-                let mut gap = 0.0;
-                let mut formlinestart = false;
+            let mut linedist = 0.0;
+            let mut onegapdone = false;
+            let mut gap = 0.0;
+            let mut formlinestart = false;
 
-                let f_label;
-                if layer.contains("depression") && label_depressions {
-                    f_label = "formline_depression";
-                } else {
-                    f_label = "formline"
-                };
+            let f_label;
+            if layer.contains("depression") && label_depressions {
+                f_label = "formline_depression";
+            } else {
+                f_label = "formline"
+            };
 
-                for i in 1..x.len() {
-                    if curvew != 1.5 || formline == 0.0 || help2[i] || smallringtest {
-                        if formline == 2.0 && !nodepressions && curvew == 1.5 {
-                            if !formlinestart {
-                                formline_out.push_str(
-                                    format!(
-                                        "POLYLINE\r\n 66\r\n1\r\n  8\r\n{}\r\n  0\r\n",
-                                        f_label
-                                    )
-                                    .as_str(),
-                                );
-                                formlinestart = true;
-                            }
+            for i in 1..x.len() {
+                if curvew != 1.5 || formline == 0.0 || help2[i] || smallringtest {
+                    if formline == 2.0 && !nodepressions && curvew == 1.5 {
+                        if !formlinestart {
                             formline_out.push_str(
-                                format!(
-                                    "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
-                                    f_label,
-                                    x[i] / 600.0 * 254.0 * scalefactor + x0,
-                                    -y[i] / 600.0 * 254.0 * scalefactor + y0
-                                )
-                                .as_str(),
+                                format!("POLYLINE\r\n 66\r\n1\r\n  8\r\n{}\r\n  0\r\n", f_label)
+                                    .as_str(),
                             );
+                            formlinestart = true;
                         }
-                        if curvew == 1.5 && formline == 2.0 {
-                            let step =
-                                ((x[i - 1] - x[i]).powi(2) + (y[i - 1] - y[i]).powi(2)).sqrt();
-                            if i < 4 {
-                                linedist = 0.0
+                        formline_out.push_str(
+                            format!(
+                                "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
+                                f_label,
+                                x[i] / 600.0 * 254.0 * scalefactor + x0,
+                                -y[i] / 600.0 * 254.0 * scalefactor + y0
+                            )
+                            .as_str(),
+                        );
+                    }
+                    if curvew == 1.5 && formline == 2.0 {
+                        let step = ((x[i - 1] - x[i]).powi(2) + (y[i - 1] - y[i]).powi(2)).sqrt();
+                        if i < 4 {
+                            linedist = 0.0
+                        }
+                        linedist += step;
+                        if linedist > dashlength && i > 10 && i < x.len() - 11 {
+                            let mut sum = 0.0;
+                            for k in (i - 4)..(i + 6) {
+                                sum +=
+                                    ((x[k - 1] - x[k]).powi(2) + (y[k - 1] - y[k]).powi(2)).sqrt()
                             }
-                            linedist += step;
-                            if linedist > dashlength && i > 10 && i < x.len() - 11 {
-                                let mut sum = 0.0;
-                                for k in (i - 4)..(i + 6) {
-                                    sum += ((x[k - 1] - x[k]).powi(2) + (y[k - 1] - y[k]).powi(2))
-                                        .sqrt()
+                            let mut toonearend = false;
+                            for k in (i - 10)..(i + 10) {
+                                if !help2[k] {
+                                    toonearend = true;
+                                    break;
                                 }
-                                let mut toonearend = false;
-                                for k in (i - 10)..(i + 10) {
-                                    if !help2[k] {
-                                        toonearend = true;
-                                        break;
-                                    }
-                                }
-                                if !toonearend
-                                    && ((x[i - 5] - x[i + 5]).powi(2)
-                                        + (y[i - 5] - y[i + 5]).powi(2))
+                            }
+                            if !toonearend
+                                && ((x[i - 5] - x[i + 5]).powi(2) + (y[i - 5] - y[i + 5]).powi(2))
                                     .sqrt()
-                                        * 1.138
-                                        > sum
-                                {
-                                    linedist = 0.0;
-                                    gap = gaplength;
-                                    onegapdone = true;
-                                }
-                            }
-                            if !onegapdone && (i < x.len() - 9) && i > 6 {
-                                gap = gaplength * 0.82;
+                                    * 1.138
+                                    > sum
+                            {
+                                linedist = 0.0;
+                                gap = gaplength;
                                 onegapdone = true;
-                                linedist = 0.0
                             }
-                            if gap > 0.0 {
-                                gap -= step;
-                                if gap < 0.0 && onegapdone && step > 0.0 {
-                                    let mut n = -curvew - 0.5;
-                                    while n < curvew + 0.5 {
-                                        let mut m = -curvew - 0.5;
-                                        while m < curvew + 0.5 {
-                                            draw_line_segment_mut(
-                                                &mut img,
-                                                (
-                                                    ((-x[i - 1] * gap + (step + gap) * x[i]) / step
-                                                        + n)
-                                                        as f32,
-                                                    ((-y[i - 1] * gap + (step + gap) * y[i]) / step
-                                                        + m)
-                                                        as f32,
-                                                ),
-                                                ((x[i] + n) as f32, (y[i] + m) as f32),
-                                                color,
-                                            );
-                                            m += 1.0;
-                                        }
-                                        n += 1.0;
-                                    }
-                                    gap = 0.0;
-                                }
-                            } else {
+                        }
+                        if !onegapdone && (i < x.len() - 9) && i > 6 {
+                            gap = gaplength * 0.82;
+                            onegapdone = true;
+                            linedist = 0.0
+                        }
+                        if gap > 0.0 {
+                            gap -= step;
+                            if gap < 0.0 && onegapdone && step > 0.0 {
                                 let mut n = -curvew - 0.5;
                                 while n < curvew + 0.5 {
                                     let mut m = -curvew - 0.5;
                                     while m < curvew + 0.5 {
                                         draw_line_segment_mut(
                                             &mut img,
-                                            ((x[i - 1] + n) as f32, (y[i - 1] + m) as f32),
+                                            (
+                                                ((-x[i - 1] * gap + (step + gap) * x[i]) / step + n)
+                                                    as f32,
+                                                ((-y[i - 1] * gap + (step + gap) * y[i]) / step + m)
+                                                    as f32,
+                                            ),
                                             ((x[i] + n) as f32, (y[i] + m) as f32),
                                             color,
                                         );
@@ -1805,12 +1776,13 @@ pub fn render(
                                     }
                                     n += 1.0;
                                 }
+                                gap = 0.0;
                             }
                         } else {
-                            let mut n = -curvew;
-                            while n < curvew {
-                                let mut m = -curvew;
-                                while m < curvew {
+                            let mut n = -curvew - 0.5;
+                            while n < curvew + 0.5 {
+                                let mut m = -curvew - 0.5;
+                                while m < curvew + 0.5 {
                                     draw_line_segment_mut(
                                         &mut img,
                                         ((x[i - 1] + n) as f32, (y[i - 1] + m) as f32),
@@ -1822,55 +1794,70 @@ pub fn render(
                                 n += 1.0;
                             }
                         }
-                    } else if formline == 2.0 && formlinestart && !nodepressions {
-                        formline_out.push_str("SEQEND\r\n  0\r\n");
-                        formlinestart = false;
+                    } else {
+                        let mut n = -curvew;
+                        while n < curvew {
+                            let mut m = -curvew;
+                            while m < curvew {
+                                draw_line_segment_mut(
+                                    &mut img,
+                                    ((x[i - 1] + n) as f32, (y[i - 1] + m) as f32),
+                                    ((x[i] + n) as f32, (y[i] + m) as f32),
+                                    color,
+                                );
+                                m += 1.0;
+                            }
+                            n += 1.0;
+                        }
                     }
-                }
-                if formline == 2.0 && formlinestart && !nodepressions {
+                } else if formline == 2.0 && formlinestart && !nodepressions {
                     formline_out.push_str("SEQEND\r\n  0\r\n");
+                    formlinestart = false;
                 }
             }
+            if formline == 2.0 && formlinestart && !nodepressions {
+                formline_out.push_str("SEQEND\r\n  0\r\n");
+            }
         }
-        if formline == 2.0 && !nodepressions {
-            formline_out.push_str("ENDSEC\r\n  0\r\nEOF\r\n");
-            let filename = &format!("{}/formlines.dxf", tmpfolder);
-            let output = Path::new(filename);
-            let fp = File::create(output).expect("Unable to create file");
-            let mut fp = BufWriter::new(fp);
-            fp.write_all(formline_out.as_bytes())
-                .expect("Unable to write file");
-        }
-        // dotknolls----------
-        let input_filename = &format!("{}/dotknolls.dxf", tmpfolder);
-        let input = Path::new(input_filename);
-        let data = fs::read_to_string(input).expect("Can not read input file");
-        let data = data.split("POINT");
+    }
+    if formline == 2.0 && !nodepressions {
+        formline_out.push_str("ENDSEC\r\n  0\r\nEOF\r\n");
+        let filename = &format!("{}/formlines.dxf", tmpfolder);
+        let output = Path::new(filename);
+        let fp = File::create(output).expect("Unable to create file");
+        let mut fp = BufWriter::new(fp);
+        fp.write_all(formline_out.as_bytes())
+            .expect("Unable to write file");
+    }
+    // dotknolls----------
+    let input_filename = &format!("{}/dotknolls.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = data.split("POINT");
 
-        for (j, rec) in data.enumerate() {
-            let mut x: f64 = 0.0;
-            let mut y: f64 = 0.0;
-            if j > 0 {
-                let val = rec.split('\n').collect::<Vec<&str>>();
-                let layer = val[2].trim();
-                for (i, v) in val.iter().enumerate() {
-                    let vt = v.trim();
-                    if vt == "10" {
-                        x = (val[i + 1].trim().parse::<f64>().unwrap() - x0) * 600.0
-                            / 254.0
-                            / scalefactor;
-                    }
-                    if vt == "20" {
-                        y = (y0 - val[i + 1].trim().parse::<f64>().unwrap()) * 600.0
-                            / 254.0
-                            / scalefactor;
-                    }
+    for (j, rec) in data.enumerate() {
+        let mut x: f64 = 0.0;
+        let mut y: f64 = 0.0;
+        if j > 0 {
+            let val = rec.split('\n').collect::<Vec<&str>>();
+            let layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                let vt = v.trim();
+                if vt == "10" {
+                    x = (val[i + 1].trim().parse::<f64>().unwrap() - x0) * 600.0
+                        / 254.0
+                        / scalefactor;
                 }
-                if layer == "dotknoll" {
-                    let color = Rgba([166, 85, 43, 255]);
+                if vt == "20" {
+                    y = (y0 - val[i + 1].trim().parse::<f64>().unwrap()) * 600.0
+                        / 254.0
+                        / scalefactor;
+                }
+            }
+            if layer == "dotknoll" {
+                let color = Rgba([166, 85, 43, 255]);
 
-                    draw_filled_circle_mut(&mut img, (x as i32, y as i32), 7, color)
-                }
+                draw_filled_circle_mut(&mut img, (x as i32, y as i32), 7, color)
             }
         }
     }
@@ -1943,180 +1930,178 @@ pub fn render(
             ("cliff4", Rgba([100, 100, 0, 255])),
         ]);
     }
-    if !vegeonly {
-        let input_filename = &format!("{}/c2g.dxf", tmpfolder);
-        let input = Path::new(input_filename);
-        let data = fs::read_to_string(input).expect("Can not read input file");
-        let data: Vec<&str> = data.split("POLYLINE").collect();
+    let input_filename = &format!("{}/c2g.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
 
-        let mut formline_out = String::new();
-        formline_out.push_str(data[0]);
+    let mut formline_out = String::new();
+    formline_out.push_str(data[0]);
 
-        for (j, rec) in data.iter().enumerate() {
-            let mut x = Vec::<f64>::new();
-            let mut y = Vec::<f64>::new();
-            let mut xline = 0;
-            let mut yline = 0;
-            let mut layer = "";
-            if j > 0 {
-                let r = rec.split("VERTEX").collect::<Vec<&str>>();
-                let apu = r[1];
-                let val = apu.split('\n').collect::<Vec<&str>>();
-                layer = val[2].trim();
-                for (i, v) in val.iter().enumerate() {
-                    let vt = v.trim();
-                    if vt == "10" {
-                        xline = i + 1;
-                    }
-                    if vt == "20" {
-                        yline = i + 1;
-                    }
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        let mut layer = "";
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split('\n').collect::<Vec<&str>>();
+            layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                let vt = v.trim();
+                if vt == "10" {
+                    xline = i + 1;
                 }
-                for (i, v) in r.iter().enumerate() {
-                    if i > 0 {
-                        let val = v.trim_end().split('\n').collect::<Vec<&str>>();
-                        x.push(
-                            (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
-                                / 254.0
-                                / scalefactor,
-                        );
-                        y.push(
-                            (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
-                                / 254.0
-                                / scalefactor,
-                        );
-                    }
+                if vt == "20" {
+                    yline = i + 1;
                 }
             }
-            let last_idx = x.len() - 1;
-            if x.first() != x.last() || y.first() != y.last() {
-                let dist = ((x[0] - x[last_idx]).powi(2) + (y[0] - y[last_idx]).powi(2)).sqrt();
-                if dist > 0.0 {
-                    let dx = x[0] - x[last_idx];
-                    let dy = y[0] - y[last_idx];
-                    x[0] += dx / dist * 1.5;
-                    y[0] += dy / dist * 1.5;
-                    x[last_idx] -= dx / dist * 1.5;
-                    y[last_idx] -= dy / dist * 1.5;
-                    draw_filled_circle_mut(
-                        &mut img,
-                        (x[0] as i32, y[0] as i32),
-                        3,
-                        *cliffcolor.get(&layer).unwrap_or(&black),
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
+                    x.push(
+                        (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
+                            / 254.0
+                            / scalefactor,
                     );
-                    draw_filled_circle_mut(
-                        &mut img,
-                        (x[last_idx] as i32, y[last_idx] as i32),
-                        3,
-                        *cliffcolor.get(&layer).unwrap_or(&black),
+                    y.push(
+                        (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
+                            / 254.0
+                            / scalefactor,
                     );
-                }
-            }
-            for i in 1..x.len() {
-                for n in 0..6 {
-                    for m in 0..6 {
-                        draw_line_segment_mut(
-                            &mut img,
-                            (
-                                (x[i - 1] + (n as f64) - 3.0).floor() as f32,
-                                (y[i - 1] + (m as f64) - 3.0).floor() as f32,
-                            ),
-                            (
-                                (x[i] + (n as f64) - 3.0).floor() as f32,
-                                (y[i] + (m as f64) - 3.0).floor() as f32,
-                            ),
-                            *cliffcolor.get(&layer).unwrap_or(&black),
-                        )
-                    }
                 }
             }
         }
-
-        let input_filename = &format!("{}/c3g.dxf", tmpfolder);
-        let input = Path::new(input_filename);
-        let data = fs::read_to_string(input).expect("Can not read input file");
-        let data: Vec<&str> = data.split("POLYLINE").collect();
-
-        let mut formline_out = String::new();
-        formline_out.push_str(data[0]);
-
-        for (j, rec) in data.iter().enumerate() {
-            let mut x = Vec::<f64>::new();
-            let mut y = Vec::<f64>::new();
-            let mut xline = 0;
-            let mut yline = 0;
-            let mut layer = "";
-            if j > 0 {
-                let r = rec.split("VERTEX").collect::<Vec<&str>>();
-                let apu = r[1];
-                let val = apu.split('\n').collect::<Vec<&str>>();
-                layer = val[2].trim();
-                for (i, v) in val.iter().enumerate() {
-                    let vt = v.trim();
-                    if vt == "10" {
-                        xline = i + 1;
-                    }
-                    if vt == "20" {
-                        yline = i + 1;
-                    }
-                }
-                for (i, v) in r.iter().enumerate() {
-                    if i > 0 {
-                        let val = v.trim_end().split('\n').collect::<Vec<&str>>();
-                        x.push(
-                            (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
-                                / 254.0
-                                / scalefactor,
-                        );
-                        y.push(
-                            (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
-                                / 254.0
-                                / scalefactor,
-                        );
-                    }
+        let last_idx = x.len() - 1;
+        if x.first() != x.last() || y.first() != y.last() {
+            let dist = ((x[0] - x[last_idx]).powi(2) + (y[0] - y[last_idx]).powi(2)).sqrt();
+            if dist > 0.0 {
+                let dx = x[0] - x[last_idx];
+                let dy = y[0] - y[last_idx];
+                x[0] += dx / dist * 1.5;
+                y[0] += dy / dist * 1.5;
+                x[last_idx] -= dx / dist * 1.5;
+                y[last_idx] -= dy / dist * 1.5;
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[0] as i32, y[0] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black),
+                );
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[last_idx] as i32, y[last_idx] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black),
+                );
+            }
+        }
+        for i in 1..x.len() {
+            for n in 0..6 {
+                for m in 0..6 {
+                    draw_line_segment_mut(
+                        &mut img,
+                        (
+                            (x[i - 1] + (n as f64) - 3.0).floor() as f32,
+                            (y[i - 1] + (m as f64) - 3.0).floor() as f32,
+                        ),
+                        (
+                            (x[i] + (n as f64) - 3.0).floor() as f32,
+                            (y[i] + (m as f64) - 3.0).floor() as f32,
+                        ),
+                        *cliffcolor.get(&layer).unwrap_or(&black),
+                    )
                 }
             }
-            let last_idx = x.len() - 1;
-            if x.first() != x.last() || y.first() != y.last() {
-                let dist = ((x[0] - x[last_idx]).powi(2) + (y[0] - y[last_idx]).powi(2)).sqrt();
-                if dist > 0.0 {
-                    let dx = x[0] - x[last_idx];
-                    let dy = y[0] - y[last_idx];
-                    x[0] += dx / dist * 1.5;
-                    y[0] += dy / dist * 1.5;
-                    x[last_idx] -= dx / dist * 1.5;
-                    y[last_idx] -= dy / dist * 1.5;
+        }
+    }
 
-                    draw_filled_circle_mut(
-                        &mut img,
-                        (x[0] as i32, y[0] as i32),
-                        3,
-                        *cliffcolor.get(&layer).unwrap_or(&black),
+    let input_filename = &format!("{}/c3g.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+
+    let mut formline_out = String::new();
+    formline_out.push_str(data[0]);
+
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        let mut layer = "";
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split('\n').collect::<Vec<&str>>();
+            layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                let vt = v.trim();
+                if vt == "10" {
+                    xline = i + 1;
+                }
+                if vt == "20" {
+                    yline = i + 1;
+                }
+            }
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
+                    x.push(
+                        (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
+                            / 254.0
+                            / scalefactor,
                     );
-                    draw_filled_circle_mut(
-                        &mut img,
-                        (x[last_idx] as i32, y[last_idx] as i32),
-                        3,
-                        *cliffcolor.get(&layer).unwrap_or(&black),
+                    y.push(
+                        (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
+                            / 254.0
+                            / scalefactor,
                     );
                 }
             }
-            for i in 1..x.len() {
-                for n in 0..6 {
-                    for m in 0..6 {
-                        draw_line_segment_mut(
-                            &mut img,
-                            (
-                                (x[i - 1] + (n as f64) - 3.0).floor() as f32,
-                                (y[i - 1] + (m as f64) - 3.0).floor() as f32,
-                            ),
-                            (
-                                (x[i] + (n as f64) - 3.0).floor() as f32,
-                                (y[i] + (m as f64) - 3.0).floor() as f32,
-                            ),
-                            *cliffcolor.get(&layer).unwrap_or(&black),
-                        )
-                    }
+        }
+        let last_idx = x.len() - 1;
+        if x.first() != x.last() || y.first() != y.last() {
+            let dist = ((x[0] - x[last_idx]).powi(2) + (y[0] - y[last_idx]).powi(2)).sqrt();
+            if dist > 0.0 {
+                let dx = x[0] - x[last_idx];
+                let dy = y[0] - y[last_idx];
+                x[0] += dx / dist * 1.5;
+                y[0] += dy / dist * 1.5;
+                x[last_idx] -= dx / dist * 1.5;
+                y[last_idx] -= dy / dist * 1.5;
+
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[0] as i32, y[0] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black),
+                );
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[last_idx] as i32, y[last_idx] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black),
+                );
+            }
+        }
+        for i in 1..x.len() {
+            for n in 0..6 {
+                for m in 0..6 {
+                    draw_line_segment_mut(
+                        &mut img,
+                        (
+                            (x[i - 1] + (n as f64) - 3.0).floor() as f32,
+                            (y[i - 1] + (m as f64) - 3.0).floor() as f32,
+                        ),
+                        (
+                            (x[i] + (n as f64) - 3.0).floor() as f32,
+                            (y[i] + (m as f64) - 3.0).floor() as f32,
+                        ),
+                        *cliffcolor.get(&layer).unwrap_or(&black),
+                    )
                 }
             }
         }

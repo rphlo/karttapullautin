@@ -235,8 +235,14 @@ vege_bitmode=0
 # label_formlines_depressions, set to 1 to add a seperate label on the depressions in the formlines vector file
 label_formlines_depressions=0
 
-# vegeonly, set to 1 to only process the vegetation and skip the contour processing
+# vegeonly, set to 1 to only generate the vegetations related files and skip the rest
 vegeonly=0
+# contoursonly, set to 1 to only generate the contours related files and skip the rest
+contoursonly=0
+# cliffsonly, set to 1 to only generate the cliffs related files and skip the rest
+cliffsonly=0
+# Only one of vegeonly contoursonly and cliffsonly can be set at a time
+
 ".as_bytes()).expect("Cannot write file");
     }
 
@@ -264,6 +270,18 @@ vegeonly=0
             "Karttapullautin v{}\nThere is no warranty. Use it at your own risk!\n",
             VERSION
         );
+    }
+
+    let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
+    let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
+    let contoursonly: bool = conf.general_section().get("contoursonly").unwrap_or("0") == "1";
+
+    if (vegeonly && (cliffsonly || contoursonly))
+        || (cliffsonly && (vegeonly || contoursonly))
+        || (contoursonly && (vegeonly || cliffsonly))
+    {
+        println!("Only one of vegeonly, cliffsonly, or contoursonly can be set!\n");
+        return;
     }
 
     let batch: bool = conf.general_section().get("batch").unwrap() == "1";
