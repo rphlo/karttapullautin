@@ -313,7 +313,7 @@ pub fn process_tile(
         println!("{}Cliff generation", thread_name);
         cliffs::makecliffs(thread).unwrap();
     }
-    if !vegeonly && !contoursonly && !contoursonly {
+    if !vegeonly && !contoursonly && !cliffssonly {
         let detectbuildings: bool =
             conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
         if detectbuildings {
@@ -321,7 +321,7 @@ pub fn process_tile(
             blocks::blocks(thread).unwrap();
         }
     }
-    if !skip_rendering && !vegeonly && !contoursonly && !contoursonly {
+    if !skip_rendering && !vegeonly && !contoursonly && !cliffsonly {
         println!("{}Rendering png map with depressions", thread_name);
         render::render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
         println!("{}Rendering png map without depressions", thread_name);
@@ -339,6 +339,11 @@ pub fn batch_process(thread: &String) {
     let batchoutfolder = conf.general_section().get("batchoutfolder").unwrap_or("");
     let savetempfiles: bool = conf.general_section().get("savetempfiles").unwrap() == "1";
     let savetempfolders: bool = conf.general_section().get("savetempfolders").unwrap() == "1";
+
+    let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
+    let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
+    let contoursonly: bool = conf.general_section().get("contoursonly").unwrap_or("0") == "1";
+
     let scalefactor: f64 = conf
         .general_section()
         .get("scalefactor")
@@ -592,167 +597,179 @@ pub fn batch_process(thread: &String) {
         }
 
         if savetempfiles {
-            let path = format!("temp{}/undergrowth.pgw", thread);
-            let tfw_in = Path::new(&path);
-            let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
-            let tfw0 = lines
-                .next()
-                .expect("no 1 line")
-                .expect("Could not read line 1")
-                .parse::<f64>()
-                .unwrap();
-            let tfw1 = lines
-                .next()
-                .expect("no 2 line")
-                .expect("Could not read line 2")
-                .parse::<f64>()
-                .unwrap();
-            let tfw2 = lines
-                .next()
-                .expect("no 3 line")
-                .expect("Could not read line 3")
-                .parse::<f64>()
-                .unwrap();
-            let tfw3 = lines
-                .next()
-                .expect("no 4 line")
-                .expect("Could not read line 4")
-                .parse::<f64>()
-                .unwrap();
-            let tfw4 = lines
-                .next()
-                .expect("no 5 line")
-                .expect("Could not read line 5")
-                .parse::<f64>()
-                .unwrap();
-            let tfw5 = lines
-                .next()
-                .expect("no 6 line")
-                .expect("Could not read line 6")
-                .parse::<f64>()
-                .unwrap();
+            if !contoursonly && !cliffsonly {
+                let path = format!("temp{}/undergrowth.pgw", thread);
+                let tfw_in = Path::new(&path);
+                let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
+                let tfw0 = lines
+                    .next()
+                    .expect("no 1 line")
+                    .expect("Could not read line 1")
+                    .parse::<f64>()
+                    .unwrap();
+                let tfw1 = lines
+                    .next()
+                    .expect("no 2 line")
+                    .expect("Could not read line 2")
+                    .parse::<f64>()
+                    .unwrap();
+                let tfw2 = lines
+                    .next()
+                    .expect("no 3 line")
+                    .expect("Could not read line 3")
+                    .parse::<f64>()
+                    .unwrap();
+                let tfw3 = lines
+                    .next()
+                    .expect("no 4 line")
+                    .expect("Could not read line 4")
+                    .parse::<f64>()
+                    .unwrap();
+                let tfw4 = lines
+                    .next()
+                    .expect("no 5 line")
+                    .expect("Could not read line 5")
+                    .parse::<f64>()
+                    .unwrap();
+                let tfw5 = lines
+                    .next()
+                    .expect("no 6 line")
+                    .expect("Could not read line 6")
+                    .parse::<f64>()
+                    .unwrap();
 
-            let dx = minx - tfw4;
-            let dy = -maxy + tfw5;
+                let dx = minx - tfw4;
+                let dy = -maxy + tfw5;
 
-            let pgw_file_out = File::create(Path::new(&format!(
-                "{}/{}_undergrowth.pgw",
-                batchoutfolder, laz
-            )))
-            .expect("Unable to create file");
-            let mut pgw_file_out = BufWriter::new(pgw_file_out);
-            write!(
-                &mut pgw_file_out,
-                "{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n",
-                tfw0,
-                tfw1,
-                tfw2,
-                tfw3,
-                minx + tfw0 / 2.0,
-                maxy - tfw0 / 2.0
-            )
-            .expect("Unable to write to file");
-            pgw_file_out.flush().unwrap();
-
-            let mut orig_img_reader =
-                image::ImageReader::open(Path::new(&format!("temp{}/undergrowth.png", thread)))
-                    .expect("Opening undergrowth image failed");
-            orig_img_reader.no_limits();
-            let orig_img = orig_img_reader.decode().unwrap();
-            let mut img = RgbaImage::from_pixel(
-                ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
-                ((maxy - miny) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
-                Rgba([255, 255, 255, 0]),
-            );
-            image::imageops::overlay(
-                &mut img,
-                &orig_img,
-                (-dx * 600.0 / 254.0 / scalefactor) as i64,
-                (-dy * 600.0 / 254.0 / scalefactor) as i64,
-            );
-            img.save(Path::new(&format!(
-                "{}/{}_undergrowth.png",
-                batchoutfolder, laz
-            )))
-            .expect("could not save output png");
-
-            let mut orig_img_reader =
-                image::ImageReader::open(Path::new(&format!("temp{}/vegetation.png", thread)))
-                    .expect("Opening vegetation image failed");
-            orig_img_reader.no_limits();
-            let orig_img = orig_img_reader.decode().unwrap();
-            let mut img = RgbImage::from_pixel(
-                ((maxx - minx) + 1.0) as u32,
-                ((maxy - miny) + 1.0) as u32,
-                Rgb([255, 255, 255]),
-            );
-            image::imageops::overlay(&mut img, &orig_img.to_rgb8(), -dx as i64, -dy as i64);
-            img.save(Path::new(&format!("{}/{}_vege.png", batchoutfolder, laz)))
-                .expect("could not save output png");
-
-            let pgw_file_out = File::create(&format!("{}/{}_vege.pgw", batchoutfolder, laz))
+                let pgw_file_out = File::create(Path::new(&format!(
+                    "{}/{}_undergrowth.pgw",
+                    batchoutfolder, laz
+                )))
                 .expect("Unable to create file");
-            let mut pgw_file_out = BufWriter::new(pgw_file_out);
-            write!(
-                &mut pgw_file_out,
-                "1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n",
-                minx + 0.5,
-                maxy - 0.5
-            )
-            .expect("Unable to write to file");
+                let mut pgw_file_out = BufWriter::new(pgw_file_out);
+                write!(
+                    &mut pgw_file_out,
+                    "{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n",
+                    tfw0,
+                    tfw1,
+                    tfw2,
+                    tfw3,
+                    minx + tfw0 / 2.0,
+                    maxy - tfw0 / 2.0
+                )
+                .expect("Unable to write to file");
+                pgw_file_out.flush().unwrap();
 
-            pgw_file_out.flush().unwrap();
-
-            if vege_bitmode {
-                let mut orig_img_reader = image::ImageReader::open(Path::new(&format!(
-                    "temp{}/vegetation_bit.png",
-                    thread
-                )))
-                .expect("Opening vegetation bit image failed");
+                let mut orig_img_reader =
+                    image::ImageReader::open(Path::new(&format!("temp{}/undergrowth.png", thread)))
+                        .expect("Opening undergrowth image failed");
                 orig_img_reader.no_limits();
                 let orig_img = orig_img_reader.decode().unwrap();
-                let mut img = GrayImage::from_pixel(
-                    ((maxx - minx) + 1.0) as u32,
-                    ((maxy - miny) + 1.0) as u32,
-                    Luma([0]),
+                let mut img = RgbaImage::from_pixel(
+                    ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
+                    ((maxy - miny) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
+                    Rgba([255, 255, 255, 0]),
                 );
-                image::imageops::overlay(&mut img, &orig_img.to_luma8(), -dx as i64, -dy as i64);
+                image::imageops::overlay(
+                    &mut img,
+                    &orig_img,
+                    (-dx * 600.0 / 254.0 / scalefactor) as i64,
+                    (-dy * 600.0 / 254.0 / scalefactor) as i64,
+                );
                 img.save(Path::new(&format!(
-                    "{}/{}_vege_bit.png",
+                    "{}/{}_undergrowth.png",
                     batchoutfolder, laz
                 )))
                 .expect("could not save output png");
 
-                let mut orig_img_reader = image::ImageReader::open(Path::new(&format!(
-                    "temp{}/undergrowth_bit.png",
-                    thread
-                )))
-                .expect("Opening undergrowth bit image failed");
+                let mut orig_img_reader =
+                    image::ImageReader::open(Path::new(&format!("temp{}/vegetation.png", thread)))
+                        .expect("Opening vegetation image failed");
                 orig_img_reader.no_limits();
                 let orig_img = orig_img_reader.decode().unwrap();
-                let mut img = GrayImage::from_pixel(
+                let mut img = RgbImage::from_pixel(
                     ((maxx - minx) + 1.0) as u32,
                     ((maxy - miny) + 1.0) as u32,
-                    Luma([0]),
+                    Rgb([255, 255, 255]),
                 );
-                image::imageops::overlay(&mut img, &orig_img.to_luma8(), -dx as i64, -dy as i64);
-                img.save(Path::new(&format!(
-                    "{}/{}_undergrowth_bit.png",
-                    batchoutfolder, laz
-                )))
-                .expect("could not save output png");
+                image::imageops::overlay(&mut img, &orig_img.to_rgb8(), -dx as i64, -dy as i64);
+                img.save(Path::new(&format!("{}/{}_vege.png", batchoutfolder, laz)))
+                    .expect("could not save output png");
 
-                fs::copy(
-                    Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
-                    Path::new(&format!("{}/{}_vege_bit.pgw", batchoutfolder, laz)),
+                let pgw_file_out = File::create(&format!("{}/{}_vege.pgw", batchoutfolder, laz))
+                    .expect("Unable to create file");
+                let mut pgw_file_out = BufWriter::new(pgw_file_out);
+                write!(
+                    &mut pgw_file_out,
+                    "1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n",
+                    minx + 0.5,
+                    maxy - 0.5
                 )
-                .expect("Could not copy file");
+                .expect("Unable to write to file");
 
-                fs::copy(
-                    Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
-                    Path::new(&format!("{}/{}_undergrowth_bit.pgw", batchoutfolder, laz)),
-                )
-                .expect("Could not copy file");
+                pgw_file_out.flush().unwrap();
+
+                if vege_bitmode {
+                    let mut orig_img_reader = image::ImageReader::open(Path::new(&format!(
+                        "temp{}/vegetation_bit.png",
+                        thread
+                    )))
+                    .expect("Opening vegetation bit image failed");
+                    orig_img_reader.no_limits();
+                    let orig_img = orig_img_reader.decode().unwrap();
+                    let mut img = GrayImage::from_pixel(
+                        ((maxx - minx) + 1.0) as u32,
+                        ((maxy - miny) + 1.0) as u32,
+                        Luma([0]),
+                    );
+                    image::imageops::overlay(
+                        &mut img,
+                        &orig_img.to_luma8(),
+                        -dx as i64,
+                        -dy as i64,
+                    );
+                    img.save(Path::new(&format!(
+                        "{}/{}_vege_bit.png",
+                        batchoutfolder, laz
+                    )))
+                    .expect("could not save output png");
+
+                    let mut orig_img_reader = image::ImageReader::open(Path::new(&format!(
+                        "temp{}/undergrowth_bit.png",
+                        thread
+                    )))
+                    .expect("Opening undergrowth bit image failed");
+                    orig_img_reader.no_limits();
+                    let orig_img = orig_img_reader.decode().unwrap();
+                    let mut img = GrayImage::from_pixel(
+                        ((maxx - minx) + 1.0) as u32,
+                        ((maxy - miny) + 1.0) as u32,
+                        Luma([0]),
+                    );
+                    image::imageops::overlay(
+                        &mut img,
+                        &orig_img.to_luma8(),
+                        -dx as i64,
+                        -dy as i64,
+                    );
+                    img.save(Path::new(&format!(
+                        "{}/{}_undergrowth_bit.png",
+                        batchoutfolder, laz
+                    )))
+                    .expect("could not save output png");
+
+                    fs::copy(
+                        Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
+                        Path::new(&format!("{}/{}_vege_bit.pgw", batchoutfolder, laz)),
+                    )
+                    .expect("Could not copy file");
+
+                    fs::copy(
+                        Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
+                        Path::new(&format!("{}/{}_undergrowth_bit.pgw", batchoutfolder, laz)),
+                    )
+                    .expect("Could not copy file");
+                }
             }
 
             if Path::new(&format!("temp{}/out2.dxf", thread)).exists() {
