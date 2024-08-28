@@ -313,7 +313,7 @@ pub fn process_tile(
         println!("{}Cliff generation", thread_name);
         cliffs::makecliffs(thread).unwrap();
     }
-    if !vegeonly && !contoursonly && !cliffssonly {
+    if !vegeonly && !contoursonly && !cliffsonly {
         let detectbuildings: bool =
             conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
         if detectbuildings {
@@ -326,6 +326,10 @@ pub fn process_tile(
         render::render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
         println!("{}Rendering png map without depressions", thread_name);
         render::render(thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+    } else if contoursonly {
+        let mut img = RgbaImage::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
+        render::draw_curves(&mut img, thread, false, false).unwrap();
+        println!("{}Rendering formlines", thread_name);
     } else {
         println!("{}Skipped rendering", thread_name);
     }
@@ -340,7 +344,6 @@ pub fn batch_process(thread: &String) {
     let savetempfiles: bool = conf.general_section().get("savetempfiles").unwrap() == "1";
     let savetempfolders: bool = conf.general_section().get("savetempfolders").unwrap() == "1";
 
-    let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
     let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
     let contoursonly: bool = conf.general_section().get("contoursonly").unwrap_or("0") == "1";
 

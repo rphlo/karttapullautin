@@ -1,3 +1,6 @@
+use crate::canvas::Canvas;
+use crate::util::{read_lines, read_lines_no_alloc};
+use image::ImageBuffer;
 use image::Rgba;
 use imageproc::drawing::{draw_filled_circle_mut, draw_line_segment_mut};
 use ini::Ini;
@@ -10,9 +13,6 @@ use std::f64::consts::PI;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
-
-use crate::canvas::Canvas;
-use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
@@ -1122,6 +1122,7 @@ pub fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
     imgyellow.save_as(&format!("{}/low.png", tmpfolder));
     Ok(())
 }
+
 pub fn render(
     thread: &String,
     angle_deg: f64,
@@ -1129,6 +1130,432 @@ pub fn render(
     nodepressions: bool,
 ) -> Result<(), Box<dyn Error>> {
     println!("Rendering...");
+    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let scalefactor: f64 = conf
+        .general_section()
+        .get("scalefactor")
+        .unwrap_or("1")
+        .parse::<f64>()
+        .unwrap_or(1.0);
+
+    let tmpfolder = format!("temp{}", thread);
+    let angle = -angle_deg / 180.0 * PI;
+
+    // Draw vegetation ----------
+    let path = format!("{}/vegetation.pgw", tmpfolder);
+    let tfw_in = Path::new(&path);
+
+    let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
+    let x0 = lines
+        .nth(4)
+        .expect("no 4 line")
+        .expect("Could not read line 5")
+        .parse::<f64>()
+        .unwrap();
+    let y0 = lines
+        .next()
+        .expect("no 5 line")
+        .expect("Could not read line 6")
+        .parse::<f64>()
+        .unwrap();
+
+    let mut img_reader =
+        image::ImageReader::open(Path::new(&format!("{}/vegetation.png", tmpfolder)))
+            .expect("Opening vegetation image failed");
+    img_reader.no_limits();
+    let img = img_reader.decode().unwrap();
+
+    let mut imgug_reader =
+        image::ImageReader::open(Path::new(&format!("{}/undergrowth.png", tmpfolder)))
+            .expect("Opening undergrowth image failed");
+    imgug_reader.no_limits();
+    let imgug = imgug_reader.decode().unwrap();
+
+    let w = img.width();
+    let h = img.height();
+
+    let eastoff = -((x0 - (-angle).tan() * y0)
+        - ((x0 - (-angle).tan() * y0) / (250.0 / angle.cos())).floor() * (250.0 / angle.cos()))
+        / 254.0
+        * 600.0;
+
+    let new_width = (w as f64 * 600.0 / 254.0 / scalefactor) as u32;
+    let new_height = (h as f64 * 600.0 / 254.0 / scalefactor) as u32;
+    let mut img = image::imageops::resize(
+        &img,
+        new_width,
+        new_height,
+        image::imageops::FilterType::Nearest,
+    );
+
+    let imgug = image::imageops::resize(
+        &imgug,
+        new_width,
+        new_height,
+        image::imageops::FilterType::Nearest,
+    );
+
+    image::imageops::overlay(&mut img, &imgug, 0, 0);
+
+    if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
+        let mut low_reader = image::ImageReader::open(Path::new(&format!("{}/low.png", tmpfolder)))
+            .expect("Opening low image failed");
+        low_reader.no_limits();
+        let low = low_reader.decode().unwrap();
+        let low = image::imageops::resize(
+            &low,
+            new_width,
+            new_height,
+            image::imageops::FilterType::Nearest,
+        );
+        image::imageops::overlay(&mut img, &low, 0, 0);
+    }
+
+    // north lines ----------------
+    if angle != 999.0 {
+        let mut i: f64 = eastoff - 600.0 * 250.0 / 254.0 / angle.cos() * 100.0 / scalefactor;
+        while i < w as f64 * 5.0 * 600.0 / 254.0 / scalefactor {
+            for m in 0..nwidth {
+                draw_line_segment_mut(
+                    &mut img,
+                    (i as f32 + m as f32, 0.0),
+                    (
+                        (i as f32 + (angle.tan() * (h as f64) * 600.0 / 254.0 / scalefactor) as f32)
+                            as f32
+                            + m as f32,
+                        (h as f32 * 600.0 / 254.0 / scalefactor as f32) as f32,
+                    ),
+                    Rgba([0, 0, 200, 255]),
+                );
+            }
+            i += 600.0 * 250.0 / 254.0 / angle.cos() / scalefactor;
+        }
+    }
+
+    draw_curves(&mut img, thread, nodepressions, true).unwrap();
+
+    // dotknolls----------
+    let input_filename = &format!("{}/dotknolls.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = data.split("POINT");
+
+    for (j, rec) in data.enumerate() {
+        let mut x: f64 = 0.0;
+        let mut y: f64 = 0.0;
+        if j > 0 {
+            let val = rec.split('\n').collect::<Vec<&str>>();
+            let layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                let vt = v.trim();
+                if vt == "10" {
+                    x = (val[i + 1].trim().parse::<f64>().unwrap() - x0) * 600.0
+                        / 254.0
+                        / scalefactor;
+                }
+                if vt == "20" {
+                    y = (y0 - val[i + 1].trim().parse::<f64>().unwrap()) * 600.0
+                        / 254.0
+                        / scalefactor;
+                }
+            }
+            if layer == "dotknoll" {
+                let color = Rgba([166, 85, 43, 255]);
+
+                draw_filled_circle_mut(&mut img, (x as i32, y as i32), 7, color)
+            }
+        }
+    }
+    // blocks -------------
+    if Path::new(&format!("{}/blocks.png", tmpfolder)).exists() {
+        let mut blockpurple_reader =
+            image::ImageReader::open(Path::new(&format!("{}/blocks.png", tmpfolder)))
+                .expect("Opening blocks image failed");
+        blockpurple_reader.no_limits();
+        let blockpurple = blockpurple_reader.decode().unwrap();
+        let mut blockpurple = blockpurple.to_rgba8();
+        for p in blockpurple.pixels_mut() {
+            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
+                p[3] = 0;
+            }
+        }
+        let blockpurple = image::imageops::crop(&mut blockpurple, 0, 0, w, h).to_image();
+        let blockpurple_thumb = image::imageops::resize(
+            &blockpurple,
+            new_width as u32,
+            new_height as u32,
+            image::imageops::FilterType::Nearest,
+        );
+
+        for i in 0..3 {
+            for j in 0..3 {
+                image::imageops::overlay(
+                    &mut img,
+                    &blockpurple_thumb,
+                    (i as i64 - 1) * 2,
+                    (j as i64 - 1) * 2,
+                );
+            }
+        }
+        image::imageops::overlay(&mut img, &blockpurple_thumb, 0, 0);
+    }
+    // blueblack -------------
+    if Path::new(&format!("{}/blueblack.png", tmpfolder)).exists() {
+        let mut imgbb_reader =
+            image::ImageReader::open(Path::new(&format!("{}/blueblack.png", tmpfolder)))
+                .expect("Opening blueblack image failed");
+        imgbb_reader.no_limits();
+        let imgbb = imgbb_reader.decode().unwrap();
+        let mut imgbb = imgbb.to_rgba8();
+        for p in imgbb.pixels_mut() {
+            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
+                p[3] = 0;
+            }
+        }
+        let imgbb = image::imageops::crop(&mut imgbb, 0, 0, w, h).to_image();
+        let imgbb_thumb = image::imageops::resize(
+            &imgbb,
+            new_width as u32,
+            new_height as u32,
+            image::imageops::FilterType::Nearest,
+        );
+        image::imageops::overlay(&mut img, &imgbb_thumb, 0, 0);
+    }
+
+    let cliffdebug: bool = conf.general_section().get("cliffdebug").unwrap_or("0") == "1";
+
+    let black = Rgba([0, 0, 0, 255]);
+
+    let mut cliffcolor =
+        HashMap::from_iter([("cliff2", black), ("cliff3", black), ("cliff4", black)]);
+    if cliffdebug {
+        cliffcolor = HashMap::from_iter([
+            ("cliff2", Rgba([100, 0, 100, 255])),
+            ("cliff3", Rgba([0, 100, 100, 255])),
+            ("cliff4", Rgba([100, 100, 0, 255])),
+        ]);
+    }
+    let input_filename = &format!("{}/c2g.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        let mut layer = "";
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split('\n').collect::<Vec<&str>>();
+            layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                let vt = v.trim();
+                if vt == "10" {
+                    xline = i + 1;
+                }
+                if vt == "20" {
+                    yline = i + 1;
+                }
+            }
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
+                    x.push(
+                        (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
+                            / 254.0
+                            / scalefactor,
+                    );
+                    y.push(
+                        (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
+                            / 254.0
+                            / scalefactor,
+                    );
+                }
+            }
+        }
+        let last_idx = x.len() - 1;
+        if x.first() != x.last() || y.first() != y.last() {
+            let dist = ((x[0] - x[last_idx]).powi(2) + (y[0] - y[last_idx]).powi(2)).sqrt();
+            if dist > 0.0 {
+                let dx = x[0] - x[last_idx];
+                let dy = y[0] - y[last_idx];
+                x[0] += dx / dist * 1.5;
+                y[0] += dy / dist * 1.5;
+                x[last_idx] -= dx / dist * 1.5;
+                y[last_idx] -= dy / dist * 1.5;
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[0] as i32, y[0] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black),
+                );
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[last_idx] as i32, y[last_idx] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black),
+                );
+            }
+        }
+        for i in 1..x.len() {
+            for n in 0..6 {
+                for m in 0..6 {
+                    draw_line_segment_mut(
+                        &mut img,
+                        (
+                            (x[i - 1] + (n as f64) - 3.0).floor() as f32,
+                            (y[i - 1] + (m as f64) - 3.0).floor() as f32,
+                        ),
+                        (
+                            (x[i] + (n as f64) - 3.0).floor() as f32,
+                            (y[i] + (m as f64) - 3.0).floor() as f32,
+                        ),
+                        *cliffcolor.get(&layer).unwrap_or(&black),
+                    )
+                }
+            }
+        }
+    }
+
+    let input_filename = &format!("{}/c3g.dxf", tmpfolder);
+    let input = Path::new(input_filename);
+    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data: Vec<&str> = data.split("POLYLINE").collect();
+
+    for (j, rec) in data.iter().enumerate() {
+        let mut x = Vec::<f64>::new();
+        let mut y = Vec::<f64>::new();
+        let mut xline = 0;
+        let mut yline = 0;
+        let mut layer = "";
+        if j > 0 {
+            let r = rec.split("VERTEX").collect::<Vec<&str>>();
+            let apu = r[1];
+            let val = apu.split('\n').collect::<Vec<&str>>();
+            layer = val[2].trim();
+            for (i, v) in val.iter().enumerate() {
+                let vt = v.trim();
+                if vt == "10" {
+                    xline = i + 1;
+                }
+                if vt == "20" {
+                    yline = i + 1;
+                }
+            }
+            for (i, v) in r.iter().enumerate() {
+                if i > 0 {
+                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
+                    x.push(
+                        (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
+                            / 254.0
+                            / scalefactor,
+                    );
+                    y.push(
+                        (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
+                            / 254.0
+                            / scalefactor,
+                    );
+                }
+            }
+        }
+        let last_idx = x.len() - 1;
+        if x.first() != x.last() || y.first() != y.last() {
+            let dist = ((x[0] - x[last_idx]).powi(2) + (y[0] - y[last_idx]).powi(2)).sqrt();
+            if dist > 0.0 {
+                let dx = x[0] - x[last_idx];
+                let dy = y[0] - y[last_idx];
+                x[0] += dx / dist * 1.5;
+                y[0] += dy / dist * 1.5;
+                x[last_idx] -= dx / dist * 1.5;
+                y[last_idx] -= dy / dist * 1.5;
+
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[0] as i32, y[0] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black),
+                );
+                draw_filled_circle_mut(
+                    &mut img,
+                    (x[last_idx] as i32, y[last_idx] as i32),
+                    3,
+                    *cliffcolor.get(&layer).unwrap_or(&black),
+                );
+            }
+        }
+        for i in 1..x.len() {
+            for n in 0..6 {
+                for m in 0..6 {
+                    draw_line_segment_mut(
+                        &mut img,
+                        (
+                            (x[i - 1] + (n as f64) - 3.0).floor() as f32,
+                            (y[i - 1] + (m as f64) - 3.0).floor() as f32,
+                        ),
+                        (
+                            (x[i] + (n as f64) - 3.0).floor() as f32,
+                            (y[i] + (m as f64) - 3.0).floor() as f32,
+                        ),
+                        *cliffcolor.get(&layer).unwrap_or(&black),
+                    )
+                }
+            }
+        }
+    }
+    // high -------------
+    if Path::new(&format!("{}/high.png", tmpfolder)).exists() {
+        let mut high_reader =
+            image::ImageReader::open(Path::new(&format!("{}/high.png", tmpfolder)))
+                .expect("Opening high image failed");
+        high_reader.no_limits();
+        let high = high_reader.decode().unwrap();
+        let high_thumb = image::imageops::resize(
+            &high,
+            new_width as u32,
+            new_height as u32,
+            image::imageops::FilterType::Nearest,
+        );
+        image::imageops::overlay(&mut img, &high_thumb, 0, 0);
+    }
+
+    let mut filename = format!("pullautus{}", thread);
+    if !nodepressions {
+        filename = format!("pullautus_depr{}", thread);
+    }
+    img.save(Path::new(&format!("{}.png", filename)))
+        .expect("could not save output png");
+
+    let path_in = format!("{}/vegetation.pgw", tmpfolder);
+    let file_in = Path::new(&path_in);
+    let pgw_file_out = File::create(format!("{}.pgw", filename)).expect("Unable to create file");
+    let mut pgw_file_out = BufWriter::new(pgw_file_out);
+
+    if let Ok(lines) = read_lines(file_in) {
+        for (i, line) in lines.enumerate() {
+            let ip = line.unwrap_or(String::new());
+            let x: f64 = ip.parse::<f64>().unwrap();
+            if i == 0 || i == 3 {
+                write!(&mut pgw_file_out, "{}\r\n", x / 600.0 * 254.0 * scalefactor)
+                    .expect("Unable to write to file");
+            } else {
+                write!(&mut pgw_file_out, "{}\r\n", ip).expect("Unable to write to file");
+            }
+        }
+    }
+    println!("Done");
+    Ok(())
+}
+
+pub fn draw_curves(
+    canvas: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+    thread: &String,
+    nodepressions: bool,
+    draw_image: bool,
+) -> Result<(), Box<dyn Error>> {
+    // Drawing curves --------------
     let conf = Ini::load_from_file("pullauta.ini").unwrap();
     let scalefactor: f64 = conf
         .general_section()
@@ -1180,12 +1607,14 @@ pub fn render(
         == "1";
 
     let tmpfolder = format!("temp{}", thread);
-    let angle = -angle_deg / 180.0 * PI;
 
     let mut size: f64 = 0.0;
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
+    let mut x0: f64 = 0.0;
+    let mut y0: f64 = 0.0;
     let mut steepness: HashMap<(usize, usize), f64> = HashMap::default();
+
     if formline > 0.0 {
         let path = format!("{}/xyz2.xyz", tmpfolder);
         let xyz_file_in = Path::new(&path);
@@ -1208,6 +1637,8 @@ pub fn render(
             }
         }
 
+        x0 = xstart;
+
         let mut sxmax: usize = usize::MIN;
         let mut symax: usize = usize::MIN;
 
@@ -1221,6 +1652,10 @@ pub fn render(
 
             let xx = ((x - xstart) / size).floor() as usize;
             let yy = ((y - ystart) / size).floor() as usize;
+
+            if y > y0 {
+                y0 = y;
+            }
 
             xyz.insert((xx, yy), h);
 
@@ -1403,98 +1838,6 @@ pub fn render(
         }
     }
 
-    // Draw vegetation ----------
-    let path = format!("{}/vegetation.pgw", tmpfolder);
-    let tfw_in = Path::new(&path);
-
-    let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
-    let x0 = lines
-        .nth(4)
-        .expect("no 4 line")
-        .expect("Could not read line 5")
-        .parse::<f64>()
-        .unwrap();
-    let y0 = lines
-        .next()
-        .expect("no 5 line")
-        .expect("Could not read line 6")
-        .parse::<f64>()
-        .unwrap();
-
-    let mut img_reader =
-        image::ImageReader::open(Path::new(&format!("{}/vegetation.png", tmpfolder)))
-            .expect("Opening vegetation image failed");
-    img_reader.no_limits();
-    let img = img_reader.decode().unwrap();
-
-    let mut imgug_reader =
-        image::ImageReader::open(Path::new(&format!("{}/undergrowth.png", tmpfolder)))
-            .expect("Opening undergrowth image failed");
-    imgug_reader.no_limits();
-    let imgug = imgug_reader.decode().unwrap();
-
-    let w = img.width();
-    let h = img.height();
-
-    let eastoff = -((x0 - (-angle).tan() * y0)
-        - ((x0 - (-angle).tan() * y0) / (250.0 / angle.cos())).floor() * (250.0 / angle.cos()))
-        / 254.0
-        * 600.0;
-
-    let new_width = (w as f64 * 600.0 / 254.0 / scalefactor) as u32;
-    let new_height = (h as f64 * 600.0 / 254.0 / scalefactor) as u32;
-    let mut img = image::imageops::resize(
-        &img,
-        new_width,
-        new_height,
-        image::imageops::FilterType::Nearest,
-    );
-
-    let imgug = image::imageops::resize(
-        &imgug,
-        new_width,
-        new_height,
-        image::imageops::FilterType::Nearest,
-    );
-
-    image::imageops::overlay(&mut img, &imgug, 0, 0);
-
-    if Path::new(&format!("{}/low.png", tmpfolder)).exists() {
-        let mut low_reader = image::ImageReader::open(Path::new(&format!("{}/low.png", tmpfolder)))
-            .expect("Opening low image failed");
-        low_reader.no_limits();
-        let low = low_reader.decode().unwrap();
-        let low = image::imageops::resize(
-            &low,
-            new_width,
-            new_height,
-            image::imageops::FilterType::Nearest,
-        );
-        image::imageops::overlay(&mut img, &low, 0, 0);
-    }
-
-    // north lines ----------------
-    if angle != 999.0 {
-        let mut i: f64 = eastoff - 600.0 * 250.0 / 254.0 / angle.cos() * 100.0 / scalefactor;
-        while i < w as f64 * 5.0 * 600.0 / 254.0 / scalefactor {
-            for m in 0..nwidth {
-                draw_line_segment_mut(
-                    &mut img,
-                    (i as f32 + m as f32, 0.0),
-                    (
-                        (i as f32 + (angle.tan() * (h as f64) * 600.0 / 254.0 / scalefactor) as f32)
-                            as f32
-                            + m as f32,
-                        (h as f32 * 600.0 / 254.0 / scalefactor as f32) as f32,
-                    ),
-                    Rgba([0, 0, 200, 255]),
-                );
-            }
-            i += 600.0 * 250.0 / 254.0 / angle.cos() / scalefactor;
-        }
-    }
-
-    // Drawing curves --------------
     let input_filename = &format!("{}/out2.dxf", tmpfolder);
     let input = Path::new(input_filename);
     let data = fs::read_to_string(input).expect("Can not read input file");
@@ -1543,6 +1886,7 @@ pub fn render(
         if layer.contains("contour") {
             color = Rgba([166, 85, 43, 255]) // brown
         }
+
         if !nodepressions || layer.contains("contour") {
             let mut curvew = 2.0;
             if layer.contains("index") {
@@ -1719,56 +2063,79 @@ pub fn render(
                             .as_str(),
                         );
                     }
-                    if curvew == 1.5 && formline == 2.0 {
-                        let step = ((x[i - 1] - x[i]).powi(2) + (y[i - 1] - y[i]).powi(2)).sqrt();
-                        if i < 4 {
-                            linedist = 0.0
-                        }
-                        linedist += step;
-                        if linedist > dashlength && i > 10 && i < x.len() - 11 {
-                            let mut sum = 0.0;
-                            for k in (i - 4)..(i + 6) {
-                                sum +=
-                                    ((x[k - 1] - x[k]).powi(2) + (y[k - 1] - y[k]).powi(2)).sqrt()
+
+                    if draw_image {
+                        if curvew == 1.5 && formline == 2.0 {
+                            let step =
+                                ((x[i - 1] - x[i]).powi(2) + (y[i - 1] - y[i]).powi(2)).sqrt();
+                            if i < 4 {
+                                linedist = 0.0
                             }
-                            let mut toonearend = false;
-                            for k in (i - 10)..(i + 10) {
-                                if !help2[k] {
-                                    toonearend = true;
-                                    break;
+                            linedist += step;
+                            if linedist > dashlength && i > 10 && i < x.len() - 11 {
+                                let mut sum = 0.0;
+                                for k in (i - 4)..(i + 6) {
+                                    sum += ((x[k - 1] - x[k]).powi(2) + (y[k - 1] - y[k]).powi(2))
+                                        .sqrt()
+                                }
+                                let mut toonearend = false;
+                                for k in (i - 10)..(i + 10) {
+                                    if !help2[k] {
+                                        toonearend = true;
+                                        break;
+                                    }
+                                }
+                                if !toonearend
+                                    && ((x[i - 5] - x[i + 5]).powi(2)
+                                        + (y[i - 5] - y[i + 5]).powi(2))
+                                    .sqrt()
+                                        * 1.138
+                                        > sum
+                                {
+                                    linedist = 0.0;
+                                    gap = gaplength;
+                                    onegapdone = true;
                                 }
                             }
-                            if !toonearend
-                                && ((x[i - 5] - x[i + 5]).powi(2) + (y[i - 5] - y[i + 5]).powi(2))
-                                    .sqrt()
-                                    * 1.138
-                                    > sum
-                            {
-                                linedist = 0.0;
-                                gap = gaplength;
+                            if !onegapdone && (i < x.len() - 9) && i > 6 {
+                                gap = gaplength * 0.82;
                                 onegapdone = true;
+                                linedist = 0.0
                             }
-                        }
-                        if !onegapdone && (i < x.len() - 9) && i > 6 {
-                            gap = gaplength * 0.82;
-                            onegapdone = true;
-                            linedist = 0.0
-                        }
-                        if gap > 0.0 {
-                            gap -= step;
-                            if gap < 0.0 && onegapdone && step > 0.0 {
+                            if gap > 0.0 {
+                                gap -= step;
+                                if gap < 0.0 && onegapdone && step > 0.0 {
+                                    let mut n = -curvew - 0.5;
+                                    while n < curvew + 0.5 {
+                                        let mut m = -curvew - 0.5;
+                                        while m < curvew + 0.5 {
+                                            draw_line_segment_mut(
+                                                canvas,
+                                                (
+                                                    ((-x[i - 1] * gap + (step + gap) * x[i]) / step
+                                                        + n)
+                                                        as f32,
+                                                    ((-y[i - 1] * gap + (step + gap) * y[i]) / step
+                                                        + m)
+                                                        as f32,
+                                                ),
+                                                ((x[i] + n) as f32, (y[i] + m) as f32),
+                                                color,
+                                            );
+                                            m += 1.0;
+                                        }
+                                        n += 1.0;
+                                    }
+                                    gap = 0.0;
+                                }
+                            } else {
                                 let mut n = -curvew - 0.5;
                                 while n < curvew + 0.5 {
                                     let mut m = -curvew - 0.5;
                                     while m < curvew + 0.5 {
                                         draw_line_segment_mut(
-                                            &mut img,
-                                            (
-                                                ((-x[i - 1] * gap + (step + gap) * x[i]) / step + n)
-                                                    as f32,
-                                                ((-y[i - 1] * gap + (step + gap) * y[i]) / step + m)
-                                                    as f32,
-                                            ),
+                                            canvas,
+                                            ((x[i - 1] + n) as f32, (y[i - 1] + m) as f32),
                                             ((x[i] + n) as f32, (y[i] + m) as f32),
                                             color,
                                         );
@@ -1776,15 +2143,14 @@ pub fn render(
                                     }
                                     n += 1.0;
                                 }
-                                gap = 0.0;
                             }
                         } else {
-                            let mut n = -curvew - 0.5;
-                            while n < curvew + 0.5 {
-                                let mut m = -curvew - 0.5;
-                                while m < curvew + 0.5 {
+                            let mut n = -curvew;
+                            while n < curvew {
+                                let mut m = -curvew;
+                                while m < curvew {
                                     draw_line_segment_mut(
-                                        &mut img,
+                                        canvas,
                                         ((x[i - 1] + n) as f32, (y[i - 1] + m) as f32),
                                         ((x[i] + n) as f32, (y[i] + m) as f32),
                                         color,
@@ -1793,21 +2159,6 @@ pub fn render(
                                 }
                                 n += 1.0;
                             }
-                        }
-                    } else {
-                        let mut n = -curvew;
-                        while n < curvew {
-                            let mut m = -curvew;
-                            while m < curvew {
-                                draw_line_segment_mut(
-                                    &mut img,
-                                    ((x[i - 1] + n) as f32, (y[i - 1] + m) as f32),
-                                    ((x[i] + n) as f32, (y[i] + m) as f32),
-                                    color,
-                                );
-                                m += 1.0;
-                            }
-                            n += 1.0;
                         }
                     }
                 } else if formline == 2.0 && formlinestart && !nodepressions {
@@ -1829,323 +2180,5 @@ pub fn render(
         fp.write_all(formline_out.as_bytes())
             .expect("Unable to write file");
     }
-    // dotknolls----------
-    let input_filename = &format!("{}/dotknolls.dxf", tmpfolder);
-    let input = Path::new(input_filename);
-    let data = fs::read_to_string(input).expect("Can not read input file");
-    let data = data.split("POINT");
-
-    for (j, rec) in data.enumerate() {
-        let mut x: f64 = 0.0;
-        let mut y: f64 = 0.0;
-        if j > 0 {
-            let val = rec.split('\n').collect::<Vec<&str>>();
-            let layer = val[2].trim();
-            for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
-                    x = (val[i + 1].trim().parse::<f64>().unwrap() - x0) * 600.0
-                        / 254.0
-                        / scalefactor;
-                }
-                if vt == "20" {
-                    y = (y0 - val[i + 1].trim().parse::<f64>().unwrap()) * 600.0
-                        / 254.0
-                        / scalefactor;
-                }
-            }
-            if layer == "dotknoll" {
-                let color = Rgba([166, 85, 43, 255]);
-
-                draw_filled_circle_mut(&mut img, (x as i32, y as i32), 7, color)
-            }
-        }
-    }
-    // blocks -------------
-    if Path::new(&format!("{}/blocks.png", tmpfolder)).exists() {
-        let mut blockpurple_reader =
-            image::ImageReader::open(Path::new(&format!("{}/blocks.png", tmpfolder)))
-                .expect("Opening blocks image failed");
-        blockpurple_reader.no_limits();
-        let blockpurple = blockpurple_reader.decode().unwrap();
-        let mut blockpurple = blockpurple.to_rgba8();
-        for p in blockpurple.pixels_mut() {
-            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
-                p[3] = 0;
-            }
-        }
-        let blockpurple = image::imageops::crop(&mut blockpurple, 0, 0, w, h).to_image();
-        let blockpurple_thumb = image::imageops::resize(
-            &blockpurple,
-            new_width as u32,
-            new_height as u32,
-            image::imageops::FilterType::Nearest,
-        );
-
-        for i in 0..3 {
-            for j in 0..3 {
-                image::imageops::overlay(
-                    &mut img,
-                    &blockpurple_thumb,
-                    (i as i64 - 1) * 2,
-                    (j as i64 - 1) * 2,
-                );
-            }
-        }
-        image::imageops::overlay(&mut img, &blockpurple_thumb, 0, 0);
-    }
-    // blueblack -------------
-    if Path::new(&format!("{}/blueblack.png", tmpfolder)).exists() {
-        let mut imgbb_reader =
-            image::ImageReader::open(Path::new(&format!("{}/blueblack.png", tmpfolder)))
-                .expect("Opening blueblack image failed");
-        imgbb_reader.no_limits();
-        let imgbb = imgbb_reader.decode().unwrap();
-        let mut imgbb = imgbb.to_rgba8();
-        for p in imgbb.pixels_mut() {
-            if p[0] == 255 && p[1] == 255 && p[2] == 255 {
-                p[3] = 0;
-            }
-        }
-        let imgbb = image::imageops::crop(&mut imgbb, 0, 0, w, h).to_image();
-        let imgbb_thumb = image::imageops::resize(
-            &imgbb,
-            new_width as u32,
-            new_height as u32,
-            image::imageops::FilterType::Nearest,
-        );
-        image::imageops::overlay(&mut img, &imgbb_thumb, 0, 0);
-    }
-
-    let cliffdebug: bool = conf.general_section().get("cliffdebug").unwrap_or("0") == "1";
-
-    let black = Rgba([0, 0, 0, 255]);
-
-    let mut cliffcolor =
-        HashMap::from_iter([("cliff2", black), ("cliff3", black), ("cliff4", black)]);
-    if cliffdebug {
-        cliffcolor = HashMap::from_iter([
-            ("cliff2", Rgba([100, 0, 100, 255])),
-            ("cliff3", Rgba([0, 100, 100, 255])),
-            ("cliff4", Rgba([100, 100, 0, 255])),
-        ]);
-    }
-    let input_filename = &format!("{}/c2g.dxf", tmpfolder);
-    let input = Path::new(input_filename);
-    let data = fs::read_to_string(input).expect("Can not read input file");
-    let data: Vec<&str> = data.split("POLYLINE").collect();
-
-    let mut formline_out = String::new();
-    formline_out.push_str(data[0]);
-
-    for (j, rec) in data.iter().enumerate() {
-        let mut x = Vec::<f64>::new();
-        let mut y = Vec::<f64>::new();
-        let mut xline = 0;
-        let mut yline = 0;
-        let mut layer = "";
-        if j > 0 {
-            let r = rec.split("VERTEX").collect::<Vec<&str>>();
-            let apu = r[1];
-            let val = apu.split('\n').collect::<Vec<&str>>();
-            layer = val[2].trim();
-            for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
-                    xline = i + 1;
-                }
-                if vt == "20" {
-                    yline = i + 1;
-                }
-            }
-            for (i, v) in r.iter().enumerate() {
-                if i > 0 {
-                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
-                    x.push(
-                        (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
-                            / 254.0
-                            / scalefactor,
-                    );
-                    y.push(
-                        (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
-                            / 254.0
-                            / scalefactor,
-                    );
-                }
-            }
-        }
-        let last_idx = x.len() - 1;
-        if x.first() != x.last() || y.first() != y.last() {
-            let dist = ((x[0] - x[last_idx]).powi(2) + (y[0] - y[last_idx]).powi(2)).sqrt();
-            if dist > 0.0 {
-                let dx = x[0] - x[last_idx];
-                let dy = y[0] - y[last_idx];
-                x[0] += dx / dist * 1.5;
-                y[0] += dy / dist * 1.5;
-                x[last_idx] -= dx / dist * 1.5;
-                y[last_idx] -= dy / dist * 1.5;
-                draw_filled_circle_mut(
-                    &mut img,
-                    (x[0] as i32, y[0] as i32),
-                    3,
-                    *cliffcolor.get(&layer).unwrap_or(&black),
-                );
-                draw_filled_circle_mut(
-                    &mut img,
-                    (x[last_idx] as i32, y[last_idx] as i32),
-                    3,
-                    *cliffcolor.get(&layer).unwrap_or(&black),
-                );
-            }
-        }
-        for i in 1..x.len() {
-            for n in 0..6 {
-                for m in 0..6 {
-                    draw_line_segment_mut(
-                        &mut img,
-                        (
-                            (x[i - 1] + (n as f64) - 3.0).floor() as f32,
-                            (y[i - 1] + (m as f64) - 3.0).floor() as f32,
-                        ),
-                        (
-                            (x[i] + (n as f64) - 3.0).floor() as f32,
-                            (y[i] + (m as f64) - 3.0).floor() as f32,
-                        ),
-                        *cliffcolor.get(&layer).unwrap_or(&black),
-                    )
-                }
-            }
-        }
-    }
-
-    let input_filename = &format!("{}/c3g.dxf", tmpfolder);
-    let input = Path::new(input_filename);
-    let data = fs::read_to_string(input).expect("Can not read input file");
-    let data: Vec<&str> = data.split("POLYLINE").collect();
-
-    let mut formline_out = String::new();
-    formline_out.push_str(data[0]);
-
-    for (j, rec) in data.iter().enumerate() {
-        let mut x = Vec::<f64>::new();
-        let mut y = Vec::<f64>::new();
-        let mut xline = 0;
-        let mut yline = 0;
-        let mut layer = "";
-        if j > 0 {
-            let r = rec.split("VERTEX").collect::<Vec<&str>>();
-            let apu = r[1];
-            let val = apu.split('\n').collect::<Vec<&str>>();
-            layer = val[2].trim();
-            for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
-                    xline = i + 1;
-                }
-                if vt == "20" {
-                    yline = i + 1;
-                }
-            }
-            for (i, v) in r.iter().enumerate() {
-                if i > 0 {
-                    let val = v.trim_end().split('\n').collect::<Vec<&str>>();
-                    x.push(
-                        (val[xline].trim().parse::<f64>().unwrap() - x0) * 600.0
-                            / 254.0
-                            / scalefactor,
-                    );
-                    y.push(
-                        (y0 - val[yline].trim().parse::<f64>().unwrap()) * 600.0
-                            / 254.0
-                            / scalefactor,
-                    );
-                }
-            }
-        }
-        let last_idx = x.len() - 1;
-        if x.first() != x.last() || y.first() != y.last() {
-            let dist = ((x[0] - x[last_idx]).powi(2) + (y[0] - y[last_idx]).powi(2)).sqrt();
-            if dist > 0.0 {
-                let dx = x[0] - x[last_idx];
-                let dy = y[0] - y[last_idx];
-                x[0] += dx / dist * 1.5;
-                y[0] += dy / dist * 1.5;
-                x[last_idx] -= dx / dist * 1.5;
-                y[last_idx] -= dy / dist * 1.5;
-
-                draw_filled_circle_mut(
-                    &mut img,
-                    (x[0] as i32, y[0] as i32),
-                    3,
-                    *cliffcolor.get(&layer).unwrap_or(&black),
-                );
-                draw_filled_circle_mut(
-                    &mut img,
-                    (x[last_idx] as i32, y[last_idx] as i32),
-                    3,
-                    *cliffcolor.get(&layer).unwrap_or(&black),
-                );
-            }
-        }
-        for i in 1..x.len() {
-            for n in 0..6 {
-                for m in 0..6 {
-                    draw_line_segment_mut(
-                        &mut img,
-                        (
-                            (x[i - 1] + (n as f64) - 3.0).floor() as f32,
-                            (y[i - 1] + (m as f64) - 3.0).floor() as f32,
-                        ),
-                        (
-                            (x[i] + (n as f64) - 3.0).floor() as f32,
-                            (y[i] + (m as f64) - 3.0).floor() as f32,
-                        ),
-                        *cliffcolor.get(&layer).unwrap_or(&black),
-                    )
-                }
-            }
-        }
-    }
-    // high -------------
-    if Path::new(&format!("{}/high.png", tmpfolder)).exists() {
-        let mut high_reader =
-            image::ImageReader::open(Path::new(&format!("{}/high.png", tmpfolder)))
-                .expect("Opening high image failed");
-        high_reader.no_limits();
-        let high = high_reader.decode().unwrap();
-        let high_thumb = image::imageops::resize(
-            &high,
-            new_width as u32,
-            new_height as u32,
-            image::imageops::FilterType::Nearest,
-        );
-        image::imageops::overlay(&mut img, &high_thumb, 0, 0);
-    }
-
-    let mut filename = format!("pullautus{}", thread);
-    if !nodepressions {
-        filename = format!("pullautus_depr{}", thread);
-    }
-    img.save(Path::new(&format!("{}.png", filename)))
-        .expect("could not save output png");
-
-    let path_in = format!("{}/vegetation.pgw", tmpfolder);
-    let file_in = Path::new(&path_in);
-    let pgw_file_out = File::create(format!("{}.pgw", filename)).expect("Unable to create file");
-    let mut pgw_file_out = BufWriter::new(pgw_file_out);
-
-    if let Ok(lines) = read_lines(file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let x: f64 = ip.parse::<f64>().unwrap();
-            if i == 0 || i == 3 {
-                write!(&mut pgw_file_out, "{}\r\n", x / 600.0 * 254.0 * scalefactor)
-                    .expect("Unable to write to file");
-            } else {
-                write!(&mut pgw_file_out, "{}\r\n", ip).expect("Unable to write to file");
-            }
-        }
-    }
-    println!("Done");
     Ok(())
 }
