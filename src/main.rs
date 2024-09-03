@@ -3,12 +3,14 @@ use regex::Regex;
 use std::env;
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 use std::{thread, time};
 
 fn main() {
     let mut thread: String = String::new();
 
-    let config = Config::load_or_create_default().expect("Could not open or create config file");
+    let config =
+        Arc::new(Config::load_or_create_default().expect("Could not open or create config file"));
 
     let int_re = Regex::new(r"^[1-9]\d*$").unwrap();
 
@@ -227,9 +229,10 @@ fn main() {
     if command.is_empty() && batch && proc > 1 {
         let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
         for i in 0..proc {
+            let config = config.clone();
             let handle = thread::spawn(move || {
                 println!("Starting thread {}", i + 1);
-                pullauta::process::batch_process(&format!("{}", i + 1));
+                pullauta::process::batch_process(&config, &format!("{}", i + 1));
                 println!("Thread {} complete", i + 1);
             });
             thread::sleep(time::Duration::from_millis(100));
@@ -249,7 +252,7 @@ fn main() {
         if thread == "0" {
             thread = String::from("");
         }
-        pullauta::process::batch_process(&thread)
+        pullauta::process::batch_process(&config, &thread)
     }
 
     let zip_files_re = Regex::new(r"\.zip$").unwrap();
