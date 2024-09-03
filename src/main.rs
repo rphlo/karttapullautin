@@ -1,22 +1,16 @@
-use ini::Ini;
+use pullauta::config::Config;
 use regex::Regex;
 use std::env;
-use std::fs::{self, File};
-use std::io::{BufWriter, Write};
+use std::fs;
 use std::path::Path;
 use std::{thread, time};
 
 fn main() {
     let mut thread: String = String::new();
-    if !Path::new("pullauta.ini").exists() {
-        let f =
-            File::create(Path::new(&"pullauta.ini".to_string())).expect("Unable to create file");
-        let mut f = BufWriter::new(f);
-        f.write_all(include_bytes!("../pullauta.default.ini"))
-            .expect("Cannot write file");
-    }
 
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
+    let config = Config::load_or_create_default().expect("Could not open or create config file");
+
+    let conf = config.conf;
 
     let int_re = Regex::new(r"^[1-9]\d*$").unwrap();
 
