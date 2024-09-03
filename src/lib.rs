@@ -1,6 +1,7 @@
 pub mod blocks;
 pub mod canvas;
 pub mod cliffs;
+pub mod config;
 pub mod contours;
 pub mod crop;
 pub mod knolls;
