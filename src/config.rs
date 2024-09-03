@@ -24,6 +24,18 @@ pub struct Config {
     pub vege_bitmode: bool,
     pub zoff: f64,
     pub thinfactor: f64,
+
+    pub skipknolldetection: bool,
+    pub vegemode: bool,
+
+    pub xfactor: f64,
+    pub yfactor: f64,
+    pub zfactor: f64,
+
+    pub contour_interval: f64,
+    pub basemapcontours: f64,
+
+    pub detectbuildings: bool,
 }
 
 impl Config {
@@ -97,6 +109,54 @@ impl Config {
             thinfactor = 1.0;
         }
 
+        let skipknolldetection = gs.get("skipknolldetection").unwrap_or("0") == "1";
+        let vegemode: bool = gs.get("vegemode").unwrap_or("0") == "1";
+        if vegemode {
+            return Err("vegemode=1 not implemented, use perl version"
+                .to_string()
+                .into());
+        }
+
+        let mut xfactor: f64 = gs
+            .get("coordxfactor")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        let mut yfactor: f64 = gs
+            .get("coordyfactor")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        let mut zfactor: f64 = gs
+            .get("coordzfactor")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        if xfactor == 0.0 {
+            xfactor = 1.0;
+        }
+        if yfactor == 0.0 {
+            yfactor = 1.0;
+        }
+        if zfactor == 0.0 {
+            zfactor = 1.0;
+        }
+
+        let contour_interval: f64 = gs
+            .get("contour_interval")
+            .unwrap_or("5")
+            .parse::<f64>()
+            .unwrap_or(5.0);
+
+        let basemapcontours: f64 = gs
+            .get("basemapinterval")
+            .unwrap_or("0")
+            .parse::<f64>()
+            .unwrap_or(0.0);
+
+        let detectbuildings: bool =
+            conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
+
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             proc,
@@ -113,6 +173,14 @@ impl Config {
             vege_bitmode,
             zoff,
             thinfactor,
+            skipknolldetection,
+            vegemode,
+            xfactor,
+            yfactor,
+            zfactor,
+            contour_interval,
+            basemapcontours,
+            detectbuildings,
         })
     }
 }

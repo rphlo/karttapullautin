@@ -259,7 +259,7 @@ fn main() {
     if zip_files_re.is_match(&command.to_lowercase()) {
         let mut zips: Vec<String> = vec![command];
         zips.extend(args);
-        pullauta::process::process_zip(&thread, &zips).unwrap();
+        pullauta::process::process_zip(&config, &thread, &zips).unwrap();
         return;
     }
 
@@ -268,6 +268,6 @@ fn main() {
         if args.len() > 1 {
             norender = args[1].clone() == "norender";
         }
-        pullauta::process::process_tile(&thread, &command, norender).unwrap();
+        pullauta::process::process_tile(&config, &thread, &command, norender).unwrap();
     }
 }

@@ -1,5 +1,4 @@
 use image::{GrayImage, Luma, Rgb, RgbImage, Rgba, RgbaImage};
-use ini::Ini;
 use las::{raw::Header, Reader};
 use rand::distributions;
 use rand::prelude::*;
@@ -20,20 +19,16 @@ use crate::render;
 use crate::util::read_lines;
 use crate::vegetation;
 
-pub fn process_zip(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn Error>> {
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let pnorthlinesangle: f64 = conf
-        .general_section()
-        .get("northlinesangle")
-        .unwrap_or("0")
-        .parse::<f64>()
-        .unwrap_or(0.0);
-    let pnorthlineswidth: usize = conf
-        .general_section()
-        .get("northlineswidth")
-        .unwrap_or("0")
-        .parse::<usize>()
-        .unwrap_or(0);
+pub fn process_zip(
+    config: &Config,
+    thread: &String,
+    filenames: &Vec<String>,
+) -> Result<(), Box<dyn Error>> {
+    let &Config {
+        pnorthlineswidth,
+        pnorthlinesangle,
+        ..
+    } = config;
 
     println!("Rendering shape files");
     unzipmtk(thread, filenames).unwrap();
@@ -66,36 +61,21 @@ pub fn unzipmtk(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn 
 }
 
 pub fn process_tile(
+    config: &Config,
     thread: &String,
     filename: &str,
     skip_rendering: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let skipknolldetection = conf
-        .general_section()
-        .get("skipknolldetection")
-        .unwrap_or("0")
-        == "1";
     let tmpfolder = format!("temp{}", thread);
     fs::create_dir_all(&tmpfolder).expect("Could not create tmp folder");
-    let pnorthlinesangle: f64 = conf
-        .general_section()
-        .get("northlinesangle")
-        .unwrap_or("0")
-        .parse::<f64>()
-        .unwrap_or(0.0);
-    let pnorthlineswidth: usize = conf
-        .general_section()
-        .get("northlineswidth")
-        .unwrap_or("0")
-        .parse::<usize>()
-        .unwrap_or(0);
 
-    let vegemode: bool = conf.general_section().get("vegemode").unwrap_or("0") == "1";
-    if vegemode {
-        println!("vegemode=1 not implemented, use perl version");
-        return Ok(());
-    }
+    let &Config {
+        pnorthlinesangle,
+        pnorthlineswidth,
+        skipknolldetection,
+        ..
+    } = config;
+
     let mut thread_name = String::new();
     if !thread.is_empty() {
         thread_name = format!("Thread {}: ", thread);
@@ -129,55 +109,21 @@ pub fn process_tile(
     }
 
     if !skiplaz2txt {
-        let mut thinfactor: f64 = conf
-            .general_section()
-            .get("thinfactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        if thinfactor == 0.0 {
-            thinfactor = 1.0;
-        }
+        let &Config {
+            thinfactor,
+            xfactor,
+            yfactor,
+            zfactor,
+            zoff,
+            ..
+        } = config;
+
         if thinfactor != 1.0 {
             println!("{}Using thinning factor {}", thread_name, thinfactor);
         }
 
         let mut rng = rand::thread_rng();
         let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
-
-        let mut xfactor: f64 = conf
-            .general_section()
-            .get("coordxfactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let mut yfactor: f64 = conf
-            .general_section()
-            .get("coordyfactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let mut zfactor: f64 = conf
-            .general_section()
-            .get("coordzfactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let zoff: f64 = conf
-            .general_section()
-            .get("zoffset")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
-        if xfactor == 0.0 {
-            xfactor = 1.0;
-        }
-        if yfactor == 0.0 {
-            yfactor = 1.0;
-        }
-        if zfactor == 0.0 {
-            zfactor = 1.0;
-        }
 
         let tmp_filename = format!("{}/xyztemp.xyz", tmpfolder);
         let tmp_file = File::create(tmp_filename).expect("Unable to create file");
@@ -211,15 +157,14 @@ pub fn process_tile(
     }
     println!("{}Done", thread_name);
     println!("{}Knoll detection part 1", thread_name);
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
-    let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
-    let contoursonly: bool = conf.general_section().get("contoursonly").unwrap_or("0") == "1";
+
+    let &Config {
+        scalefactor,
+        vegeonly,
+        cliffsonly,
+        contoursonly,
+        ..
+    } = config;
 
     if vegeonly || cliffsonly {
         contours::xyz2contours(
@@ -249,21 +194,14 @@ pub fn process_tile(
     )
     .expect("Could not copy file");
 
-    let contour_interval: f64 = conf
-        .general_section()
-        .get("contour_interval")
-        .unwrap_or("5")
-        .parse::<f64>()
-        .unwrap_or(5.0);
+    let &Config {
+        contour_interval,
+        basemapcontours,
+        ..
+    } = config;
     let halfinterval = contour_interval / 2.0 * scalefactor;
 
     if !vegeonly && !cliffsonly {
-        let basemapcontours: f64 = conf
-            .general_section()
-            .get("basemapinterval")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
         if basemapcontours != 0.0 {
             println!("{}Basemap contours", thread_name);
             contours::xyz2contours(
@@ -315,9 +253,7 @@ pub fn process_tile(
         cliffs::makecliffs(thread).unwrap();
     }
     if !vegeonly && !contoursonly && !cliffsonly {
-        let detectbuildings: bool =
-            conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
-        if detectbuildings {
+        if config.detectbuildings {
             println!("{}Detecting buildings", thread_name);
             blocks::blocks(thread).unwrap();
         }
@@ -454,11 +390,11 @@ pub fn batch_process(conf: &Config, thread: &String) {
         tmp_fp.flush().unwrap();
 
         if zip_files.is_empty() {
-            process_tile(thread, &format!("temp{}.xyz", thread), false).unwrap();
+            process_tile(conf, thread, &format!("temp{}.xyz", thread), false).unwrap();
         } else {
-            process_tile(thread, &format!("temp{}.xyz", thread), true).unwrap();
+            process_tile(conf, thread, &format!("temp{}.xyz", thread), true).unwrap();
             if !vegeonly && !cliffsonly && !contoursonly {
-                process_zip(thread, &zip_files).unwrap();
+                process_zip(conf, thread, &zip_files).unwrap();
             }
         }
 
