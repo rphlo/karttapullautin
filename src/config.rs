@@ -14,6 +14,16 @@ pub struct Config {
 
     pub pnorthlinesangle: f64,
     pub pnorthlineswidth: usize,
+
+    pub lazfolder: String,
+    pub batchoutfolder: String,
+    pub savetempfiles: bool,
+    pub savetempfolders: bool,
+
+    pub scalefactor: f64,
+    pub vege_bitmode: bool,
+    pub zoff: f64,
+    pub thinfactor: f64,
 }
 
 impl Config {
@@ -62,6 +72,31 @@ impl Config {
             .parse::<u64>()
             .unwrap();
 
+        let lazfolder = gs.get("lazfolder").unwrap_or("").to_string();
+        let batchoutfolder = gs.get("batchoutfolder").unwrap_or("").to_string();
+        let savetempfiles: bool = gs.get("savetempfiles").unwrap() == "1";
+        let savetempfolders: bool = gs.get("savetempfolders").unwrap() == "1";
+
+        let scalefactor: f64 = gs
+            .get("scalefactor")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        let vege_bitmode: bool = gs.get("vege_bitmode").unwrap_or("0") == "1";
+        let zoff = gs
+            .get("zoffset")
+            .unwrap_or("0")
+            .parse::<f64>()
+            .unwrap_or(0.0);
+        let mut thinfactor: f64 = gs
+            .get("thinfactor")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        if thinfactor == 0.0 {
+            thinfactor = 1.0;
+        }
+
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             proc,
@@ -70,6 +105,14 @@ impl Config {
             contoursonly,
             pnorthlinesangle,
             pnorthlineswidth,
+            lazfolder,
+            batchoutfolder,
+            savetempfolders,
+            savetempfiles,
+            scalefactor,
+            vege_bitmode,
+            zoff,
+            thinfactor,
         })
     }
 }
