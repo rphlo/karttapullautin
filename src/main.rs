@@ -10,8 +10,6 @@ fn main() {
 
     let config = Config::load_or_create_default().expect("Could not open or create config file");
 
-    let conf = config.conf;
-
     let int_re = Regex::new(r"^[1-9]\d*$").unwrap();
 
     let mut args: Vec<String> = env::args().collect();
@@ -36,34 +34,13 @@ fn main() {
         );
     }
 
-    let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
-    let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
-    let contoursonly: bool = conf.general_section().get("contoursonly").unwrap_or("0") == "1";
-
-    if (vegeonly && (cliffsonly || contoursonly))
-        || (cliffsonly && (vegeonly || contoursonly))
-        || (contoursonly && (vegeonly || cliffsonly))
-    {
-        println!("Only one of vegeonly, cliffsonly, or contoursonly can be set!\n");
-        return;
-    }
-
-    let batch: bool = conf.general_section().get("batch").unwrap() == "1";
+    let batch: bool = config.batch;
 
     let tmpfolder = format!("temp{}", thread);
     fs::create_dir_all(&tmpfolder).expect("Could not create tmp folder");
-    let pnorthlinesangle: f64 = conf
-        .general_section()
-        .get("northlinesangle")
-        .unwrap_or("0")
-        .parse::<f64>()
-        .unwrap_or(0.0);
-    let pnorthlineswidth: usize = conf
-        .general_section()
-        .get("northlineswidth")
-        .unwrap_or("0")
-        .parse::<usize>()
-        .unwrap_or(0);
+
+    let pnorthlinesangle = config.pnorthlinesangle;
+    let pnorthlineswidth = config.pnorthlineswidth;
 
     if command.is_empty() && Path::new(&format!("{}/vegetation.png", tmpfolder)).exists() && !batch
     {
@@ -246,12 +223,7 @@ fn main() {
         return;
     }
 
-    let proc: u64 = conf
-        .general_section()
-        .get("processes")
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
+    let proc = config.proc;
     if command.is_empty() && batch && proc > 1 {
         let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
         for i in 0..proc {
