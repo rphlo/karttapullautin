@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 
 use crate::blocks;
 use crate::cliffs;
+use crate::config::Config;
 use crate::contours;
 use crate::crop;
 use crate::knolls;
@@ -337,38 +338,25 @@ pub fn process_tile(
     Ok(())
 }
 
-pub fn batch_process(thread: &String) {
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let lazfolder = conf.general_section().get("lazfolder").unwrap_or("");
-    let batchoutfolder = conf.general_section().get("batchoutfolder").unwrap_or("");
-    let savetempfiles: bool = conf.general_section().get("savetempfiles").unwrap() == "1";
-    let savetempfolders: bool = conf.general_section().get("savetempfolders").unwrap() == "1";
+pub fn batch_process(conf: &Config, thread: &String) {
+    let &Config {
+        vegeonly,
+        cliffsonly,
+        contoursonly,
+        savetempfolders,
+        savetempfiles,
+        scalefactor,
+        vege_bitmode,
+        zoff,
+        thinfactor,
+        ..
+    } = conf;
 
-    let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
-    let contoursonly: bool = conf.general_section().get("contoursonly").unwrap_or("0") == "1";
-
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let vege_bitmode: bool = conf.general_section().get("vege_bitmode").unwrap_or("0") == "1";
-    let zoff = conf
-        .general_section()
-        .get("zoffset")
-        .unwrap_or("0")
-        .parse::<f64>()
-        .unwrap_or(0.0);
-    let mut thinfactor: f64 = conf
-        .general_section()
-        .get("thinfactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    if thinfactor == 0.0 {
-        thinfactor = 1.0;
-    }
+    let Config {
+        lazfolder,
+        batchoutfolder,
+        ..
+    } = conf;
 
     let mut rng = rand::thread_rng();
     let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
@@ -381,7 +369,7 @@ pub fn batch_process(thread: &String) {
     fs::create_dir_all(batchoutfolder).expect("Could not create output folder");
 
     let mut zip_files: Vec<String> = Vec::new();
-    for element in Path::new(lazfolder).read_dir().unwrap() {
+    for element in Path::new(&lazfolder).read_dir().unwrap() {
         let path = element.unwrap().path();
         if let Some(extension) = path.extension() {
             if extension == "zip" {
@@ -391,7 +379,7 @@ pub fn batch_process(thread: &String) {
     }
 
     let mut laz_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(lazfolder).read_dir().unwrap() {
+    for element in Path::new(&lazfolder).read_dir().unwrap() {
         let path = element.unwrap().path();
         if let Some(extension) = path.extension() {
             if extension == "laz" || extension == "las" {
@@ -469,10 +457,6 @@ pub fn batch_process(thread: &String) {
             process_tile(thread, &format!("temp{}.xyz", thread), false).unwrap();
         } else {
             process_tile(thread, &format!("temp{}.xyz", thread), true).unwrap();
-            let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
-            let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
-            let contoursonly: bool =
-                conf.general_section().get("contoursonly").unwrap_or("0") == "1";
             if !vegeonly && !cliffsonly && !contoursonly {
                 process_zip(thread, &zip_files).unwrap();
             }
