@@ -1,5 +1,4 @@
 use image::{Rgb, RgbImage};
-use ini::Ini;
 use rand::distributions;
 use rand::prelude::*;
 use std::error::Error;
@@ -7,53 +6,22 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+use crate::config::Config;
 use crate::util::read_lines;
 use crate::util::read_lines_no_alloc;
 
-pub fn makecliffs(thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Identifying cliffs...");
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
 
-    let c1_limit: f64 = conf
-        .general_section()
-        .get("cliff1")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let c2_limit: f64 = conf
-        .general_section()
-        .get("cliff2")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-
-    let cliff_thin: f64 = conf
-        .general_section()
-        .get("cliffthin")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-
-    let steep_factor: f64 = conf
-        .general_section()
-        .get("cliffsteepfactor")
-        .unwrap_or("0.33")
-        .parse::<f64>()
-        .unwrap_or(0.33);
-
-    let flat_place: f64 = conf
-        .general_section()
-        .get("cliffflatplace")
-        .unwrap_or("6.6")
-        .parse::<f64>()
-        .unwrap_or(6.6);
-
-    let mut no_small_ciffs: f64 = conf
-        .general_section()
-        .get("cliffnosmallciffs")
-        .unwrap_or("0")
-        .parse::<f64>()
-        .unwrap_or(0.0);
+    let &Config {
+        c1_limit,
+        c2_limit,
+        cliff_thin,
+        steep_factor,
+        flat_place,
+        mut no_small_ciffs,
+        ..
+    } = config;
 
     if no_small_ciffs == 0.0 {
         no_small_ciffs = 6.0;

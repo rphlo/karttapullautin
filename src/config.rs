@@ -39,12 +39,21 @@ pub struct Config {
 
     pub water_class: String,
 
+    // merge
     pub inidotknolls: f64,
     pub smoothing: f64,
     pub curviness: f64,
     pub indexcontours: f64,
     pub formline: f64,
     pub depression_length: usize,
+
+    // cliffs
+    pub c1_limit: f64,
+    pub c2_limit: f64,
+    pub cliff_thin: f64,
+    pub steep_factor: f64,
+    pub flat_place: f64,
+    pub no_small_ciffs: f64,
 }
 
 impl Config {
@@ -86,12 +95,7 @@ impl Config {
             .parse::<usize>()
             .unwrap_or(0);
 
-        let proc: u64 = conf
-            .general_section()
-            .get("processes")
-            .unwrap()
-            .parse::<u64>()
-            .unwrap();
+        let proc: u64 = gs.get("processes").unwrap().parse::<u64>().unwrap();
 
         let lazfolder = gs.get("lazfolder").unwrap_or("").to_string();
         let batchoutfolder = gs.get("batchoutfolder").unwrap_or("").to_string();
@@ -168,43 +172,75 @@ impl Config {
 
         let water_class = gs.get("waterclass").unwrap_or("9").to_string();
 
-        let inidotknolls: f64 = conf
-            .general_section()
+        let inidotknolls: f64 = gs
             .get("knolls")
             .unwrap_or("0.8")
             .parse::<f64>()
             .unwrap_or(0.8);
-        let smoothing: f64 = conf
-            .general_section()
+        let smoothing: f64 = gs
             .get("smoothing")
             .unwrap_or("1")
             .parse::<f64>()
             .unwrap_or(1.0);
-        let curviness: f64 = conf
-            .general_section()
+        let curviness: f64 = gs
             .get("curviness")
             .unwrap_or("1")
             .parse::<f64>()
             .unwrap_or(1.0);
-        let indexcontours: f64 = conf
-            .general_section()
+        let indexcontours: f64 = gs
             .get("indexcontours")
             .unwrap_or("12.5")
             .parse::<f64>()
             .unwrap_or(12.5);
-        let formline: f64 = conf
-            .general_section()
+        let formline: f64 = gs
             .get("formline")
             .unwrap_or("2")
             .parse::<f64>()
             .unwrap_or(2.0);
 
-        let depression_length: usize = conf
-            .general_section()
+        let depression_length: usize = gs
             .get("depression_length")
             .unwrap_or("181")
             .parse::<usize>()
             .unwrap_or(181);
+
+        // cliffs
+
+        let c1_limit: f64 = gs
+            .get("cliff1")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        let c2_limit: f64 = gs
+            .get("cliff2")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+
+        let cliff_thin: f64 = gs
+            .get("cliffthin")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+
+        let steep_factor: f64 = gs
+            .get("cliffsteepfactor")
+            .unwrap_or("0.33")
+            .parse::<f64>()
+            .unwrap_or(0.33);
+
+        let flat_place: f64 = gs
+            .get("cliffflatplace")
+            .unwrap_or("6.6")
+            .parse::<f64>()
+            .unwrap_or(6.6);
+
+        let no_small_ciffs: f64 = gs
+            .get("cliffnosmallciffs")
+            .unwrap_or("0")
+            .parse::<f64>()
+            .unwrap_or(0.0);
+
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             proc,
@@ -236,6 +272,12 @@ impl Config {
             indexcontours,
             formline,
             depression_length,
+            c1_limit,
+            c2_limit,
+            cliff_thin,
+            steep_factor,
+            flat_place,
+            no_small_ciffs,
         })
     }
 }

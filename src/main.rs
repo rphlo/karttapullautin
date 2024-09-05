@@ -132,7 +132,7 @@ fn main() {
     }
 
     if command == "makecliffs" {
-        pullauta::cliffs::makecliffs(&thread).unwrap();
+        pullauta::cliffs::makecliffs(&config, &thread).unwrap();
         return;
     }
 
