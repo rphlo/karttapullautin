@@ -1,16 +1,20 @@
 use image::{Rgb, RgbImage};
-use ini::Ini;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+use crate::config::Config;
 use crate::util::{read_lines, read_lines_no_alloc};
 
-fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(), Box<dyn Error>> {
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let batchoutfolder = conf.general_section().get("batchoutfolder").unwrap_or("");
+fn merge_png(
+    config: &Config,
+    png_files: Vec<PathBuf>,
+    outfilename: &str,
+    scale: f64,
+) -> Result<(), Box<dyn Error>> {
+    let batchoutfolder = &config.batchoutfolder;
 
     let mut xmin = f64::MAX;
     let mut ymin = f64::MAX;
@@ -108,9 +112,8 @@ fn merge_png(png_files: Vec<PathBuf>, outfilename: &str, scale: f64) -> Result<(
     Ok(())
 }
 
-pub fn pngmergevege(scale: f64) -> Result<(), Box<dyn Error>> {
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let batchoutfolder = conf.general_section().get("batchoutfolder").unwrap_or("");
+pub fn pngmergevege(config: &Config, scale: f64) -> Result<(), Box<dyn Error>> {
+    let batchoutfolder = &config.batchoutfolder;
 
     let mut png_files: Vec<PathBuf> = Vec::new();
     for element in Path::new(batchoutfolder).read_dir().unwrap() {
@@ -124,13 +127,12 @@ pub fn pngmergevege(scale: f64) -> Result<(), Box<dyn Error>> {
         println!("No _vege.png files found in output directory");
         return Ok(());
     }
-    merge_png(png_files, "merged_vege", scale).unwrap();
+    merge_png(config, png_files, "merged_vege", scale).unwrap();
     Ok(())
 }
 
-pub fn pngmerge(scale: f64, depr: bool) -> Result<(), Box<dyn Error>> {
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let batchoutfolder = conf.general_section().get("batchoutfolder").unwrap_or("");
+pub fn pngmerge(config: &Config, scale: f64, depr: bool) -> Result<(), Box<dyn Error>> {
+    let batchoutfolder = &config.batchoutfolder;
 
     let mut png_files: Vec<PathBuf> = Vec::new();
     for element in Path::new(batchoutfolder).read_dir().unwrap() {
@@ -156,13 +158,12 @@ pub fn pngmerge(scale: f64, depr: bool) -> Result<(), Box<dyn Error>> {
     if depr {
         outfilename = "merged_depr";
     }
-    merge_png(png_files, outfilename, scale).unwrap();
+    merge_png(config, png_files, outfilename, scale).unwrap();
     Ok(())
 }
 
-pub fn dxfmerge() -> Result<(), Box<dyn Error>> {
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let batchoutfolder = conf.general_section().get("batchoutfolder").unwrap_or("");
+pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
+    let batchoutfolder = &config.batchoutfolder;
 
     let mut dxf_files: Vec<PathBuf> = Vec::new();
     for element in Path::new(batchoutfolder).read_dir().unwrap() {
@@ -310,12 +311,8 @@ pub fn dxfmerge() -> Result<(), Box<dyn Error>> {
 
     headprinted = false;
 
-    let basemapcontours: f64 = conf
-        .general_section()
-        .get("basemapinterval")
-        .unwrap_or("0")
-        .parse::<f64>()
-        .unwrap_or(0.0);
+    let basemapcontours: f64 = config.basemapcontours;
+
     if basemapcontours > 0.0 {
         let out_file = File::create("merged_basemap.dxf").expect("Unable to create file");
         let mut out = BufWriter::new(out_file);
@@ -505,59 +502,21 @@ pub fn dxfmerge() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn smoothjoin(thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Smooth curves...");
     let tmpfolder = format!("temp{}", thread);
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let inidotknolls: f64 = conf
-        .general_section()
-        .get("knolls")
-        .unwrap_or("0.8")
-        .parse::<f64>()
-        .unwrap_or(0.8);
-    let smoothing: f64 = conf
-        .general_section()
-        .get("smoothing")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let curviness: f64 = conf
-        .general_section()
-        .get("curviness")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let mut indexcontours: f64 = conf
-        .general_section()
-        .get("indexcontours")
-        .unwrap_or("12.5")
-        .parse::<f64>()
-        .unwrap_or(12.5);
-    let formline: f64 = conf
-        .general_section()
-        .get("formline")
-        .unwrap_or("2")
-        .parse::<f64>()
-        .unwrap_or(2.0);
+    let &Config {
+        scalefactor,
+        inidotknolls,
+        smoothing,
+        curviness,
+        mut indexcontours,
+        formline,
+        depression_length,
+        contour_interval,
+        ..
+    } = config;
 
-    let contour_interval: f64 = conf
-        .general_section()
-        .get("contour_interval")
-        .unwrap_or("5")
-        .parse::<f64>()
-        .unwrap_or(5.0);
-    let depression_length: usize = conf
-        .general_section()
-        .get("depression_length")
-        .unwrap_or("181")
-        .parse::<usize>()
-        .unwrap_or(181);
     let halfinterval = contour_interval / 2.0 * scalefactor;
     if formline > 0.0 {
         indexcontours = 5.0 * contour_interval;

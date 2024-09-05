@@ -115,13 +115,13 @@ fn main() {
     }
 
     if command == "dxfmerge" || command == "merge" {
-        pullauta::merge::dxfmerge().unwrap();
+        pullauta::merge::dxfmerge(&config).unwrap();
         if command == "merge" {
             let mut scale = 1.0;
             if !args.is_empty() {
                 scale = args[0].parse::<f64>().unwrap();
             }
-            pullauta::merge::pngmergevege(scale).unwrap();
+            pullauta::merge::pngmergevege(&config, scale).unwrap();
         }
         return;
     }
@@ -145,7 +145,7 @@ fn main() {
         if !args.is_empty() {
             scale = args[0].parse::<f64>().unwrap();
         }
-        pullauta::merge::pngmerge(scale, command == "pngmergedepr").unwrap();
+        pullauta::merge::pngmerge(&config, scale, command == "pngmergedepr").unwrap();
         return;
     }
 
@@ -154,7 +154,7 @@ fn main() {
         if !args.is_empty() {
             scale = args[0].parse::<f64>().unwrap();
         }
-        pullauta::merge::pngmergevege(scale).unwrap();
+        pullauta::merge::pngmergevege(&config, scale).unwrap();
         return;
     }
 
@@ -181,7 +181,7 @@ fn main() {
     }
 
     if command == "smoothjoin" {
-        pullauta::merge::smoothjoin(&thread).unwrap();
+        pullauta::merge::smoothjoin(&config, &thread).unwrap();
     }
 
     if command == "xyzknolls" {
