@@ -262,7 +262,7 @@ pub fn process_tile(
 
     if !vegeonly && !contoursonly {
         println!("{}Cliff generation", thread_name);
-        cliffs::makecliffs(thread).unwrap();
+        cliffs::makecliffs(config, thread).unwrap();
     }
     if !vegeonly && !contoursonly && !cliffsonly {
         if config.detectbuildings {
