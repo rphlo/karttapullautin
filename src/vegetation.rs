@@ -9,7 +9,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-use crate::config::Config;
+use crate::config::{Config, Zone};
 use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
@@ -65,7 +65,6 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
     })
     .expect("Can not read file");
 
-    let zones = &config.zones;
     let thresholds = &config.thresholds;
 
     let &Config {
@@ -225,12 +224,13 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
                             last = firstandlastfactor;
                         }
                     }
-                    for zone in zones.iter() {
-                        let mut parts = zone.split('|');
-                        let low: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                        let high: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                        let roof: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                        let factor: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                    for &Zone {
+                        low,
+                        high,
+                        roof,
+                        factor,
+                    } in config.zones.iter()
+                    {
                         if hh >= low
                             && hh < high
                             && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof

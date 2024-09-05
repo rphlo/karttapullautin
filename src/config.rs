@@ -56,8 +56,8 @@ pub struct Config {
     pub no_small_ciffs: f64,
 
     // vegetation
-    pub zones: Vec<String>,               // TODO
-    pub thresholds: Vec<(f64, f64, f64)>, //TODO
+    pub zones: Vec<Zone>,
+    pub thresholds: Vec<(f64, f64, f64)>,
     pub greenshades: Vec<f64>,
     pub yellowheight: f64,
     pub yellowthreshold: f64,
@@ -97,6 +97,13 @@ pub struct Config {
     pub gaplength: f64,
     pub minimumgap: u32,
     pub label_depressions: bool,
+}
+
+pub struct Zone {
+    pub low: f64,
+    pub high: f64,
+    pub roof: f64,
+    pub factor: f64,
 }
 
 const DEFAULT_CONFIG_FILE: &str = "pullauta.ini";
@@ -207,11 +214,19 @@ impl Config {
         let mut zones = vec![];
         let mut i: u32 = 1;
         loop {
-            let last_zone = gs.get(format!("zone{}", i)).unwrap_or("");
-            if last_zone.is_empty() {
+            let zone = gs.get(format!("zone{}", i)).unwrap_or("");
+            if zone.is_empty() {
                 break;
             }
-            zones.push(last_zone.into());
+
+            let mut parts = zone.split('|');
+
+            zones.push(Zone {
+                low: parts.next().unwrap().parse::<f64>().unwrap(),
+                high: parts.next().unwrap().parse::<f64>().unwrap(),
+                roof: parts.next().unwrap().parse::<f64>().unwrap(),
+                factor: parts.next().unwrap().parse::<f64>().unwrap(),
+            });
             i += 1;
         }
         let thresholds = {
