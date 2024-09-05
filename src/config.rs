@@ -85,7 +85,7 @@ pub struct Config {
     pub waterele: f64,
 
     // render
-    pub buildingcolor: Vec<String>,
+    pub buildingcolor: (u8, u8, u8),
     pub vectorconf: String,
     pub mtkskiplayers: Vec<String>,
     pub cliffdebug: bool,
@@ -283,12 +283,15 @@ impl Config {
         let waterele = parse_typed(gs, "waterelevation", -999999.0);
 
         // render
-        let buildingcolor: Vec<String> = gs
-            .get("buildingcolor")
-            .unwrap_or("0,0,0")
-            .split(',')
-            .map(Into::into)
-            .collect();
+        let buildingcolor: (u8, u8, u8) = {
+            let mut split = gs.get("buildingcolor").unwrap_or("0,0,0").split(',');
+            (
+                split.next().unwrap_or("0").parse::<u8>().unwrap_or(0),
+                split.next().unwrap_or("0").parse::<u8>().unwrap_or(0),
+                split.next().unwrap_or("0").parse::<u8>().unwrap_or(0),
+            )
+        };
+
         let vectorconf = gs.get("vectorconf").unwrap_or("").into();
         let mtkskiplayers: Vec<String> = gs
             .get("mtkskiplayers")
