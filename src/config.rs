@@ -210,8 +210,7 @@ impl Config {
             .parse::<f64>()
             .unwrap_or(0.0);
 
-        let detectbuildings: bool =
-            conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
+        let detectbuildings: bool = gs.get("detectbuildings").unwrap_or("0") == "1";
 
         let water_class = gs.get("waterclass").unwrap_or("9").to_string();
 
@@ -288,10 +287,7 @@ impl Config {
         let mut zones = vec![];
         let mut i: u32 = 1;
         loop {
-            let last_zone = conf
-                .general_section()
-                .get(format!("zone{}", i))
-                .unwrap_or("");
+            let last_zone = gs.get(format!("zone{}", i)).unwrap_or("");
             if last_zone.is_empty() {
                 break;
             }
@@ -302,10 +298,7 @@ impl Config {
             let mut thresholds = vec![];
             let mut i: u32 = 1;
             loop {
-                let last_threshold = conf
-                    .general_section()
-                    .get(format!("thresold{}", i))
-                    .unwrap_or("");
+                let last_threshold = gs.get(format!("thresold{}", i)).unwrap_or("");
                 if last_threshold.is_empty() {
                     break;
                 }
@@ -321,217 +314,174 @@ impl Config {
             thresholds
         };
 
-        let greenshades = conf
-            .general_section()
+        let greenshades = gs
             .get("greenshades")
             .unwrap_or("")
             .split('|')
             .map(|v| v.parse::<f64>().unwrap())
             .collect::<Vec<f64>>();
-        let yellowheight: f64 = conf
-            .general_section()
+        let yellowheight: f64 = gs
             .get("yellowheight")
             .unwrap_or("0.9")
             .parse::<f64>()
             .unwrap_or(0.9);
-        let yellowthreshold: f64 = conf
-            .general_section()
+        let yellowthreshold: f64 = gs
             .get("yellowthresold")
             .unwrap_or("0.9")
             .parse::<f64>()
             .unwrap_or(0.9);
-        let greenground: f64 = conf
-            .general_section()
+        let greenground: f64 = gs
             .get("greenground")
             .unwrap_or("0.9")
             .parse::<f64>()
             .unwrap_or(0.9);
-        let pointvolumefactor: f64 = conf
-            .general_section()
+        let pointvolumefactor: f64 = gs
             .get("pointvolumefactor")
             .unwrap_or("0.1")
             .parse::<f64>()
             .unwrap_or(0.1);
-        let pointvolumeexponent: f64 = conf
-            .general_section()
+        let pointvolumeexponent: f64 = gs
             .get("pointvolumeexponent")
             .unwrap_or("1")
             .parse::<f64>()
             .unwrap_or(1.0);
-        let greenhigh: f64 = conf
-            .general_section()
+        let greenhigh: f64 = gs
             .get("greenhigh")
             .unwrap_or("2")
             .parse::<f64>()
             .unwrap_or(2.0);
-        let topweight: f64 = conf
-            .general_section()
+        let topweight: f64 = gs
             .get("topweight")
             .unwrap_or("0.8")
             .parse::<f64>()
             .unwrap_or(0.8);
-        let greentone: f64 = conf
-            .general_section()
+        let greentone: f64 = gs
             .get("lightgreentone")
             .unwrap_or("200")
             .parse::<f64>()
             .unwrap_or(200.0);
-        let zoffset: f64 = conf
-            .general_section()
+        let zoffset: f64 = gs
             .get("vegezoffset")
             .unwrap_or("0")
             .parse::<f64>()
             .unwrap_or(0.0);
-        let uglimit: f64 = conf
-            .general_section()
+        let uglimit: f64 = gs
             .get("undergrowth")
             .unwrap_or("0.35")
             .parse::<f64>()
             .unwrap_or(0.35);
-        let uglimit2: f64 = conf
-            .general_section()
+        let uglimit2: f64 = gs
             .get("undergrowth2")
             .unwrap_or("0.56")
             .parse::<f64>()
             .unwrap_or(0.56);
-        let addition: i32 = conf
-            .general_section()
+        let addition: i32 = gs
             .get("greendotsize")
             .unwrap_or("0")
             .parse::<i32>()
             .unwrap_or(0);
-        let firstandlastreturnasground = conf
-            .general_section()
+        let firstandlastreturnasground = gs
             .get("firstandlastreturnasground")
             .unwrap_or("")
             .parse::<u64>()
             .unwrap_or(1);
-        let firstandlastfactor = conf
-            .general_section()
+        let firstandlastfactor = gs
             .get("firstandlastreturnfactor")
             .unwrap_or("0")
             .parse::<f64>()
             .unwrap_or(0.0);
-        let lastfactor = conf
-            .general_section()
+        let lastfactor = gs
             .get("lastreturnfactor")
             .unwrap_or("0")
             .parse::<f64>()
             .unwrap_or(0.0);
 
-        let yellowfirstlast = conf
-            .general_section()
+        let yellowfirstlast = gs
             .get("yellowfirstlast")
             .unwrap_or("")
             .parse::<u64>()
             .unwrap_or(1);
-        let vegethin: u32 = conf
-            .general_section()
+        let vegethin: u32 = gs
             .get("vegethin")
             .unwrap_or("0")
             .parse::<u32>()
             .unwrap_or(0);
 
-        let greendetectsize: f64 = conf
-            .general_section()
+        let greendetectsize: f64 = gs
             .get("greendetectsize")
             .unwrap_or("3")
             .parse::<f64>()
             .unwrap_or(3.0);
-        let proceed_yellows: bool = conf
-            .general_section()
-            .get("yellow_smoothing")
-            .unwrap_or("0")
-            == "1";
-        let med: u32 = conf
-            .general_section()
+        let proceed_yellows: bool = gs.get("yellow_smoothing").unwrap_or("0") == "1";
+        let med: u32 = gs
             .get("medianboxsize")
             .unwrap_or("0")
             .parse::<u32>()
             .unwrap_or(0);
-        let med2: u32 = conf
-            .general_section()
+        let med2: u32 = gs
             .get("medianboxsize2")
             .unwrap_or("0")
             .parse::<u32>()
             .unwrap_or(0);
-        let water = conf
-            .general_section()
+        let water = gs
             .get("waterclass")
             .unwrap_or("")
             .parse::<u64>()
             .unwrap_or(0);
-        let buildings = conf
-            .general_section()
+        let buildings = gs
             .get("buildingsclass")
             .unwrap_or("")
             .parse::<u64>()
             .unwrap_or(0);
-        let waterele = conf
-            .general_section()
+        let waterele = gs
             .get("waterelevation")
             .unwrap_or("")
             .parse::<f64>()
             .unwrap_or(-999999.0);
 
         // render
-        let buildingcolor: Vec<String> = conf
-            .general_section()
+        let buildingcolor: Vec<String> = gs
             .get("buildingcolor")
             .unwrap_or("0,0,0")
             .split(',')
             .map(Into::into)
             .collect();
-        let vectorconf = conf
-            .general_section()
-            .get("vectorconf")
-            .unwrap_or("")
-            .into();
-        let mtkskiplayers: Vec<String> = conf
-            .general_section()
+        let vectorconf = gs.get("vectorconf").unwrap_or("").into();
+        let mtkskiplayers: Vec<String> = gs
             .get("mtkskiplayers")
             .unwrap_or("")
             .split(',')
             .map(Into::into)
             .collect();
 
-        let cliffdebug: bool = conf.general_section().get("cliffdebug").unwrap_or("0") == "1";
+        let cliffdebug: bool = gs.get("cliffdebug").unwrap_or("0") == "1";
 
-        let formlinesteepness: f64 = conf
-            .general_section()
+        let formlinesteepness: f64 = gs
             .get("formlinesteepness")
             .unwrap_or("0.37")
             .parse::<f64>()
             .unwrap_or(0.37);
-        let formlineaddition: f64 = conf
-            .general_section()
+        let formlineaddition: f64 = gs
             .get("formlineaddition")
             .unwrap_or("13")
             .parse::<f64>()
             .unwrap_or(13.0);
-        let dashlength: f64 = conf
-            .general_section()
+        let dashlength: f64 = gs
             .get("dashlength")
             .unwrap_or("60")
             .parse::<f64>()
             .unwrap_or(60.0);
-        let gaplength: f64 = conf
-            .general_section()
+        let gaplength: f64 = gs
             .get("gaplength")
             .unwrap_or("12")
             .parse::<f64>()
             .unwrap_or(12.0);
-        let minimumgap: u32 = conf
-            .general_section()
+        let minimumgap: u32 = gs
             .get("minimumgap")
             .unwrap_or("30")
             .parse::<u32>()
             .unwrap_or(30);
-        let label_depressions: bool = conf
-            .general_section()
-            .get("label_formlines_depressions")
-            .unwrap_or("0")
-            == "1";
+        let label_depressions: bool = gs.get("label_formlines_depressions").unwrap_or("0") == "1";
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             proc,
