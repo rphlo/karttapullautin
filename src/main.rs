@@ -110,7 +110,7 @@ fn main() {
     }
 
     if command == "dotknolls" {
-        pullauta::knolls::dotknolls(&thread).unwrap();
+        pullauta::knolls::dotknolls(&config, &thread).unwrap();
         return;
     }
 
@@ -127,7 +127,7 @@ fn main() {
     }
 
     if command == "knolldetector" {
-        pullauta::knolls::knolldetector(&thread).unwrap();
+        pullauta::knolls::knolldetector(&config, &thread).unwrap();
         return;
     }
 
@@ -185,7 +185,7 @@ fn main() {
     }
 
     if command == "xyzknolls" {
-        pullauta::knolls::xyzknolls(&thread).unwrap();
+        pullauta::knolls::xyzknolls(&config, &thread).unwrap();
     }
 
     if command == "unzipmtk" {
@@ -206,6 +206,7 @@ fn main() {
             ground = true;
         }
         pullauta::contours::xyz2contours(
+            &config,
             &thread,
             cinterval,
             &xyzfilein,
