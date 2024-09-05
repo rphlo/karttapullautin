@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 
 use ini::Ini;
 
@@ -132,16 +132,15 @@ impl Config {
             );
         }
 
-        let pnorthlinesangle: f64 = gs
-            .get("northlinesangle")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
-        let pnorthlineswidth: usize = gs
-            .get("northlineswidth")
-            .unwrap_or("0")
-            .parse::<usize>()
-            .unwrap_or(0);
+        fn parse_typed<T: FromStr>(props: &ini::Properties, name: &str, default: T) -> T {
+            props
+                .get(name)
+                .and_then(|s| s.parse::<T>().ok())
+                .unwrap_or(default)
+        }
+
+        let pnorthlinesangle: f64 = parse_typed(gs, "northlinesangle", 0.0);
+        let pnorthlineswidth: usize = parse_typed(gs, "northlineswidth", 0);
 
         let proc: u64 = gs.get("processes").unwrap().parse::<u64>().unwrap();
 
@@ -150,22 +149,10 @@ impl Config {
         let savetempfiles: bool = gs.get("savetempfiles").unwrap() == "1";
         let savetempfolders: bool = gs.get("savetempfolders").unwrap() == "1";
 
-        let scalefactor: f64 = gs
-            .get("scalefactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
+        let scalefactor: f64 = parse_typed(gs, "scalefactor", 1.0);
         let vege_bitmode: bool = gs.get("vege_bitmode").unwrap_or("0") == "1";
-        let zoff = gs
-            .get("zoffset")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
-        let mut thinfactor: f64 = gs
-            .get("thinfactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
+        let zoff = parse_typed(gs, "zoffset", 0.0);
+        let mut thinfactor: f64 = parse_typed(gs, "thinfactor", 1.0);
         if thinfactor == 0.0 {
             thinfactor = 1.0;
         }
@@ -178,21 +165,9 @@ impl Config {
                 .into());
         }
 
-        let mut xfactor: f64 = gs
-            .get("coordxfactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let mut yfactor: f64 = gs
-            .get("coordyfactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let mut zfactor: f64 = gs
-            .get("coordzfactor")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
+        let mut xfactor: f64 = parse_typed(gs, "coordxfactor", 1.0);
+        let mut yfactor: f64 = parse_typed(gs, "coordyfactor", 1.0);
+        let mut zfactor: f64 = parse_typed(gs, "coordzfactor", 1.0);
         if xfactor == 0.0 {
             xfactor = 1.0;
         }
@@ -203,89 +178,29 @@ impl Config {
             zfactor = 1.0;
         }
 
-        let contour_interval: f64 = gs
-            .get("contour_interval")
-            .unwrap_or("5")
-            .parse::<f64>()
-            .unwrap_or(5.0);
+        let contour_interval: f64 = parse_typed(gs, "contour_interval", 5.0);
 
-        let basemapcontours: f64 = gs
-            .get("basemapinterval")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
+        let basemapcontours: f64 = parse_typed(gs, "basemapinterval", 0.0);
 
         let detectbuildings: bool = gs.get("detectbuildings").unwrap_or("0") == "1";
 
         let water_class = gs.get("waterclass").unwrap_or("9").to_string();
 
-        let inidotknolls: f64 = gs
-            .get("knolls")
-            .unwrap_or("0.8")
-            .parse::<f64>()
-            .unwrap_or(0.8);
-        let smoothing: f64 = gs
-            .get("smoothing")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let curviness: f64 = gs
-            .get("curviness")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let indexcontours: f64 = gs
-            .get("indexcontours")
-            .unwrap_or("12.5")
-            .parse::<f64>()
-            .unwrap_or(12.5);
-        let formline: f64 = gs
-            .get("formline")
-            .unwrap_or("2")
-            .parse::<f64>()
-            .unwrap_or(2.0);
+        let inidotknolls: f64 = parse_typed(gs, "knolls", 0.8);
+        let smoothing: f64 = parse_typed(gs, "smoothing", 1.0);
+        let curviness: f64 = parse_typed(gs, "curviness", 1.0);
+        let indexcontours: f64 = parse_typed(gs, "indexcontours", 12.5);
+        let formline: f64 = parse_typed(gs, "formline", 2.0);
 
-        let depression_length: usize = gs
-            .get("depression_length")
-            .unwrap_or("181")
-            .parse::<usize>()
-            .unwrap_or(181);
+        let depression_length: usize = parse_typed(gs, "depression_length", 181);
 
         // cliffs
-        let c1_limit: f64 = gs
-            .get("cliff1")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let c2_limit: f64 = gs
-            .get("cliff2")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-
-        let cliff_thin: f64 = gs
-            .get("cliffthin")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-
-        let steep_factor: f64 = gs
-            .get("cliffsteepfactor")
-            .unwrap_or("0.33")
-            .parse::<f64>()
-            .unwrap_or(0.33);
-
-        let flat_place: f64 = gs
-            .get("cliffflatplace")
-            .unwrap_or("6.6")
-            .parse::<f64>()
-            .unwrap_or(6.6);
-
-        let no_small_ciffs: f64 = gs
-            .get("cliffnosmallciffs")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
+        let c1_limit: f64 = parse_typed(gs, "cliff1", 1.0);
+        let c2_limit: f64 = parse_typed(gs, "cliff2", 1.0);
+        let cliff_thin: f64 = parse_typed(gs, "cliffthin", 1.0);
+        let steep_factor: f64 = parse_typed(gs, "cliffsteepfactor", 0.33);
+        let flat_place: f64 = parse_typed(gs, "cliffflatplace", 6.6);
+        let no_small_ciffs: f64 = parse_typed(gs, "cliffnosmallciffs", 0.0);
 
         // vegetation
 
@@ -325,124 +240,32 @@ impl Config {
             .split('|')
             .map(|v| v.parse::<f64>().unwrap())
             .collect::<Vec<f64>>();
-        let yellowheight: f64 = gs
-            .get("yellowheight")
-            .unwrap_or("0.9")
-            .parse::<f64>()
-            .unwrap_or(0.9);
-        let yellowthreshold: f64 = gs
-            .get("yellowthresold")
-            .unwrap_or("0.9")
-            .parse::<f64>()
-            .unwrap_or(0.9);
-        let greenground: f64 = gs
-            .get("greenground")
-            .unwrap_or("0.9")
-            .parse::<f64>()
-            .unwrap_or(0.9);
-        let pointvolumefactor: f64 = gs
-            .get("pointvolumefactor")
-            .unwrap_or("0.1")
-            .parse::<f64>()
-            .unwrap_or(0.1);
-        let pointvolumeexponent: f64 = gs
-            .get("pointvolumeexponent")
-            .unwrap_or("1")
-            .parse::<f64>()
-            .unwrap_or(1.0);
-        let greenhigh: f64 = gs
-            .get("greenhigh")
-            .unwrap_or("2")
-            .parse::<f64>()
-            .unwrap_or(2.0);
-        let topweight: f64 = gs
-            .get("topweight")
-            .unwrap_or("0.8")
-            .parse::<f64>()
-            .unwrap_or(0.8);
-        let greentone: f64 = gs
-            .get("lightgreentone")
-            .unwrap_or("200")
-            .parse::<f64>()
-            .unwrap_or(200.0);
-        let zoffset: f64 = gs
-            .get("vegezoffset")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
-        let uglimit: f64 = gs
-            .get("undergrowth")
-            .unwrap_or("0.35")
-            .parse::<f64>()
-            .unwrap_or(0.35);
-        let uglimit2: f64 = gs
-            .get("undergrowth2")
-            .unwrap_or("0.56")
-            .parse::<f64>()
-            .unwrap_or(0.56);
-        let addition: i32 = gs
-            .get("greendotsize")
-            .unwrap_or("0")
-            .parse::<i32>()
-            .unwrap_or(0);
-        let firstandlastreturnasground = gs
-            .get("firstandlastreturnasground")
-            .unwrap_or("")
-            .parse::<u64>()
-            .unwrap_or(1);
-        let firstandlastfactor = gs
-            .get("firstandlastreturnfactor")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
-        let lastfactor = gs
-            .get("lastreturnfactor")
-            .unwrap_or("0")
-            .parse::<f64>()
-            .unwrap_or(0.0);
+        let yellowheight: f64 = parse_typed(gs, "yellowheight", 0.9);
+        let yellowthreshold: f64 = parse_typed(gs, "yellowthresold", 0.9);
+        let greenground: f64 = parse_typed(gs, "greenground", 0.9);
+        let pointvolumefactor: f64 = parse_typed(gs, "pointvolumefactor", 0.1);
+        let pointvolumeexponent: f64 = parse_typed(gs, "pointvolumeexponent", 1.0);
+        let greenhigh: f64 = parse_typed(gs, "greenhigh", 2.0);
+        let topweight: f64 = parse_typed(gs, "topweight", 0.8);
+        let greentone: f64 = parse_typed(gs, "lightgreentone", 200.0);
+        let zoffset: f64 = parse_typed(gs, "vegezoffset", 0.0);
+        let uglimit: f64 = parse_typed(gs, "undergrowth", 0.35);
+        let uglimit2: f64 = parse_typed(gs, "undergrowth2", 0.56);
+        let addition: i32 = parse_typed(gs, "greendotsize", 0);
+        let firstandlastreturnasground = parse_typed(gs, "firstandlastreturnasground", 1);
+        let firstandlastfactor = parse_typed(gs, "firstandlastreturnfactor", 0.0);
+        let lastfactor = parse_typed(gs, "lastreturnfactor", 0.0);
 
-        let yellowfirstlast = gs
-            .get("yellowfirstlast")
-            .unwrap_or("")
-            .parse::<u64>()
-            .unwrap_or(1);
-        let vegethin: u32 = gs
-            .get("vegethin")
-            .unwrap_or("0")
-            .parse::<u32>()
-            .unwrap_or(0);
+        let yellowfirstlast = parse_typed(gs, "yellowfirstlast", 1);
+        let vegethin: u32 = parse_typed(gs, "vegethin", 0);
 
-        let greendetectsize: f64 = gs
-            .get("greendetectsize")
-            .unwrap_or("3")
-            .parse::<f64>()
-            .unwrap_or(3.0);
+        let greendetectsize: f64 = parse_typed(gs, "greendetectsize", 3.0);
         let proceed_yellows: bool = gs.get("yellow_smoothing").unwrap_or("0") == "1";
-        let med: u32 = gs
-            .get("medianboxsize")
-            .unwrap_or("0")
-            .parse::<u32>()
-            .unwrap_or(0);
-        let med2: u32 = gs
-            .get("medianboxsize2")
-            .unwrap_or("0")
-            .parse::<u32>()
-            .unwrap_or(0);
-        let water = gs
-            .get("waterclass")
-            .unwrap_or("")
-            .parse::<u64>()
-            .unwrap_or(0);
-        let buildings = gs
-            .get("buildingsclass")
-            .unwrap_or("")
-            .parse::<u64>()
-            .unwrap_or(0);
-        let waterele = gs
-            .get("waterelevation")
-            .unwrap_or("")
-            .parse::<f64>()
-            .unwrap_or(-999999.0);
+        let med: u32 = parse_typed(gs, "medianboxsize", 0);
+        let med2: u32 = parse_typed(gs, "medianboxsize2", 0);
+        let water = parse_typed(gs, "waterclass", 0);
+        let buildings = parse_typed(gs, "buildingsclass", 0);
+        let waterele = parse_typed(gs, "waterelevation", -999999.0);
 
         // render
         let buildingcolor: Vec<String> = gs
@@ -461,31 +284,11 @@ impl Config {
 
         let cliffdebug: bool = gs.get("cliffdebug").unwrap_or("0") == "1";
 
-        let formlinesteepness: f64 = gs
-            .get("formlinesteepness")
-            .unwrap_or("0.37")
-            .parse::<f64>()
-            .unwrap_or(0.37);
-        let formlineaddition: f64 = gs
-            .get("formlineaddition")
-            .unwrap_or("13")
-            .parse::<f64>()
-            .unwrap_or(13.0);
-        let dashlength: f64 = gs
-            .get("dashlength")
-            .unwrap_or("60")
-            .parse::<f64>()
-            .unwrap_or(60.0);
-        let gaplength: f64 = gs
-            .get("gaplength")
-            .unwrap_or("12")
-            .parse::<f64>()
-            .unwrap_or(12.0);
-        let minimumgap: u32 = gs
-            .get("minimumgap")
-            .unwrap_or("30")
-            .parse::<u32>()
-            .unwrap_or(30);
+        let formlinesteepness: f64 = parse_typed(gs, "formlinesteepness", 0.37);
+        let formlineaddition: f64 = parse_typed(gs, "formlineaddition", 13.0);
+        let dashlength: f64 = parse_typed(gs, "dashlength", 60.0);
+        let gaplength: f64 = parse_typed(gs, "gaplength", 12.0);
+        let minimumgap: u32 = parse_typed(gs, "minimumgap", 30);
         let label_depressions: bool = gs.get("label_formlines_depressions").unwrap_or("0") == "1";
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
