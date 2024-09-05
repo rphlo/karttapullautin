@@ -31,16 +31,20 @@ pub fn process_zip(
     } = config;
 
     println!("Rendering shape files");
-    unzipmtk(thread, filenames).unwrap();
+    unzipmtk(config, thread, filenames).unwrap();
 
     println!("Rendering png map with depressions");
-    render::render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+    render::render(config, thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
     println!("Rendering png map without depressions");
-    render::render(thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+    render::render(config, thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
     Ok(())
 }
 
-pub fn unzipmtk(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn Error>> {
+pub fn unzipmtk(
+    config: &Config,
+    thread: &String,
+    filenames: &Vec<String>,
+) -> Result<(), Box<dyn Error>> {
     if Path::new(&format!("temp{}/low.png", thread)).exists() {
         fs::remove_file(format!("temp{}/low.png", thread)).unwrap();
     }
@@ -55,7 +59,7 @@ pub fn unzipmtk(thread: &String, filenames: &Vec<String>) -> Result<(), Box<dyn 
         archive
             .extract(Path::new(&format!("temp{}/", thread)))
             .unwrap();
-        render::mtkshaperender(thread).unwrap();
+        render::mtkshaperender(config, thread).unwrap();
     }
     Ok(())
 }
@@ -272,12 +276,12 @@ pub fn process_tile(
     }
     if !skip_rendering && !vegeonly && !contoursonly && !cliffsonly {
         println!("{}Rendering png map with depressions", thread_name);
-        render::render(thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+        render::render(config, thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
         println!("{}Rendering png map without depressions", thread_name);
-        render::render(thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+        render::render(config, thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
     } else if contoursonly {
         let mut img = RgbaImage::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
-        render::draw_curves(&mut img, thread, false, false).unwrap();
+        render::draw_curves(config, &mut img, thread, false, false).unwrap();
         println!("{}Rendering formlines", thread_name);
     } else {
         println!("{}Skipped rendering", thread_name);
