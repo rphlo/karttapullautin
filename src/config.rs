@@ -38,6 +38,13 @@ pub struct Config {
     pub detectbuildings: bool,
 
     pub water_class: String,
+
+    pub inidotknolls: f64,
+    pub smoothing: f64,
+    pub curviness: f64,
+    pub indexcontours: f64,
+    pub formline: f64,
+    pub depression_length: usize,
 }
 
 impl Config {
@@ -161,6 +168,43 @@ impl Config {
 
         let water_class = gs.get("waterclass").unwrap_or("9").to_string();
 
+        let inidotknolls: f64 = conf
+            .general_section()
+            .get("knolls")
+            .unwrap_or("0.8")
+            .parse::<f64>()
+            .unwrap_or(0.8);
+        let smoothing: f64 = conf
+            .general_section()
+            .get("smoothing")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        let curviness: f64 = conf
+            .general_section()
+            .get("curviness")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        let indexcontours: f64 = conf
+            .general_section()
+            .get("indexcontours")
+            .unwrap_or("12.5")
+            .parse::<f64>()
+            .unwrap_or(12.5);
+        let formline: f64 = conf
+            .general_section()
+            .get("formline")
+            .unwrap_or("2")
+            .parse::<f64>()
+            .unwrap_or(2.0);
+
+        let depression_length: usize = conf
+            .general_section()
+            .get("depression_length")
+            .unwrap_or("181")
+            .parse::<usize>()
+            .unwrap_or(181);
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             proc,
@@ -186,6 +230,12 @@ impl Config {
             basemapcontours,
             detectbuildings,
             water_class,
+            inidotknolls,
+            smoothing,
+            curviness,
+            indexcontours,
+            formline,
+            depression_length,
         })
     }
 }

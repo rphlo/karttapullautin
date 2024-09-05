@@ -250,7 +250,7 @@ pub fn process_tile(
             .unwrap();
         }
         println!("{}Contour generation part 3", thread_name);
-        merge::smoothjoin(thread).unwrap();
+        merge::smoothjoin(config, thread).unwrap();
         println!("{}Contour generation part 4", thread_name);
         knolls::dotknolls(config, thread).unwrap();
     }
