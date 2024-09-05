@@ -17,7 +17,6 @@ use std::path::{Path, PathBuf};
 pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
     let scalefactor = config.scalefactor;
 
-    let buildingcolor = &config.buildingcolor;
     let vectorconf = &config.vectorconf;
     let mtkskip = &config.mtkskiplayers;
 
@@ -75,11 +74,7 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
     let black = (0, 0, 0);
     let brown = (255, 150, 80);
 
-    let purple = (
-        buildingcolor[0].parse::<u8>().unwrap_or(0),
-        buildingcolor[1].parse::<u8>().unwrap_or(0),
-        buildingcolor[2].parse::<u8>().unwrap_or(0),
-    );
+    let purple = config.buildingcolor;
     let yellow = (255, 184, 83);
     let blue = (29, 190, 255);
     let marsh = (0, 10, 220);
