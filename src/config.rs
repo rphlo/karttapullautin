@@ -99,14 +99,19 @@ pub struct Config {
     pub label_depressions: bool,
 }
 
+const DEFAULT_CONFIG_FILE: &str = "pullauta.ini";
+
 impl Config {
     pub fn load_or_create_default() -> Result<Self, Box<dyn std::error::Error>> {
-        let path = Path::new("pullauta.ini");
+        let path = Path::new(DEFAULT_CONFIG_FILE);
         // populate the default if no file was found
         if !path.exists() {
             std::fs::write(path, include_bytes!("../pullauta.default.ini"))?;
         }
+        Self::from_file(path)
+    }
 
+    fn from_file(path: &Path) -> Result<Self, Box<dyn std::error::Error>> {
         let conf = Ini::load_from_file(path)?;
 
         let gs = conf.general_section();
@@ -557,5 +562,18 @@ impl Config {
             minimumgap,
             label_depressions,
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::path::Path;
+
+    use super::Config;
+
+    #[test]
+    fn should_load_config_template_successfully() {
+        Config::from_file(Path::new("pullauta.default.ini"))
+            .expect("Could not load and parse the default config template");
     }
 }
