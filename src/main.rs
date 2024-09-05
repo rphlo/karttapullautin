@@ -137,7 +137,7 @@ fn main() {
     }
 
     if command == "makevege" {
-        pullauta::vegetation::makevege(&thread).unwrap();
+        pullauta::vegetation::makevege(&config, &thread).unwrap();
     }
 
     if command == "pngmerge" || command == "pngmergedepr" {

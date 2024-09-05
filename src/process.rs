@@ -257,7 +257,7 @@ pub fn process_tile(
 
     if !cliffsonly && !contoursonly {
         println!("{}Vegetation generation", thread_name);
-        vegetation::makevege(thread).unwrap();
+        vegetation::makevege(config, thread).unwrap();
     }
 
     if !vegeonly && !contoursonly {

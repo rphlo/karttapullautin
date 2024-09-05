@@ -54,6 +54,35 @@ pub struct Config {
     pub steep_factor: f64,
     pub flat_place: f64,
     pub no_small_ciffs: f64,
+
+    // vegetation
+    pub zones: Vec<String>,               // TODO
+    pub thresholds: Vec<(f64, f64, f64)>, //TODO
+    pub greenshades: Vec<f64>,
+    pub yellowheight: f64,
+    pub yellowthreshold: f64,
+    pub greenground: f64,
+    pub pointvolumefactor: f64,
+    pub pointvolumeexponent: f64,
+    pub greenhigh: f64,
+    pub topweight: f64,
+    pub greentone: f64,
+    pub zoffset: f64,
+    pub uglimit: f64,
+    pub uglimit2: f64,
+    pub addition: i32,
+    pub firstandlastreturnasground: u64,
+    pub firstandlastfactor: f64,
+    pub lastfactor: f64,
+    pub yellowfirstlast: u64,
+    pub vegethin: u32,
+    pub greendetectsize: f64,
+    pub proceed_yellows: bool,
+    pub med: u32,
+    pub med2: u32,
+    pub water: u64,
+    pub buildings: u64,
+    pub waterele: f64,
 }
 
 impl Config {
@@ -241,6 +270,197 @@ impl Config {
             .parse::<f64>()
             .unwrap_or(0.0);
 
+        // vegetation
+
+        let mut zones = vec![];
+        let mut i: u32 = 1;
+        loop {
+            let last_zone = conf
+                .general_section()
+                .get(format!("zone{}", i))
+                .unwrap_or("");
+            if last_zone.is_empty() {
+                break;
+            }
+            zones.push(last_zone.into());
+            i += 1;
+        }
+        let thresholds = {
+            let mut thresholds = vec![];
+            let mut i: u32 = 1;
+            loop {
+                let last_threshold = conf
+                    .general_section()
+                    .get(format!("thresold{}", i))
+                    .unwrap_or("");
+                if last_threshold.is_empty() {
+                    break;
+                }
+                // parse the threshold values
+                let mut parts = last_threshold.split('|');
+                let v0: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let v1: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+                let v2: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+
+                thresholds.push((v0, v1, v2));
+                i += 1;
+            }
+            thresholds
+        };
+
+        let greenshades = conf
+            .general_section()
+            .get("greenshades")
+            .unwrap_or("")
+            .split('|')
+            .map(|v| v.parse::<f64>().unwrap())
+            .collect::<Vec<f64>>();
+        let yellowheight: f64 = conf
+            .general_section()
+            .get("yellowheight")
+            .unwrap_or("0.9")
+            .parse::<f64>()
+            .unwrap_or(0.9);
+        let yellowthreshold: f64 = conf
+            .general_section()
+            .get("yellowthresold")
+            .unwrap_or("0.9")
+            .parse::<f64>()
+            .unwrap_or(0.9);
+        let greenground: f64 = conf
+            .general_section()
+            .get("greenground")
+            .unwrap_or("0.9")
+            .parse::<f64>()
+            .unwrap_or(0.9);
+        let pointvolumefactor: f64 = conf
+            .general_section()
+            .get("pointvolumefactor")
+            .unwrap_or("0.1")
+            .parse::<f64>()
+            .unwrap_or(0.1);
+        let pointvolumeexponent: f64 = conf
+            .general_section()
+            .get("pointvolumeexponent")
+            .unwrap_or("1")
+            .parse::<f64>()
+            .unwrap_or(1.0);
+        let greenhigh: f64 = conf
+            .general_section()
+            .get("greenhigh")
+            .unwrap_or("2")
+            .parse::<f64>()
+            .unwrap_or(2.0);
+        let topweight: f64 = conf
+            .general_section()
+            .get("topweight")
+            .unwrap_or("0.8")
+            .parse::<f64>()
+            .unwrap_or(0.8);
+        let greentone: f64 = conf
+            .general_section()
+            .get("lightgreentone")
+            .unwrap_or("200")
+            .parse::<f64>()
+            .unwrap_or(200.0);
+        let zoffset: f64 = conf
+            .general_section()
+            .get("vegezoffset")
+            .unwrap_or("0")
+            .parse::<f64>()
+            .unwrap_or(0.0);
+        let uglimit: f64 = conf
+            .general_section()
+            .get("undergrowth")
+            .unwrap_or("0.35")
+            .parse::<f64>()
+            .unwrap_or(0.35);
+        let uglimit2: f64 = conf
+            .general_section()
+            .get("undergrowth2")
+            .unwrap_or("0.56")
+            .parse::<f64>()
+            .unwrap_or(0.56);
+        let addition: i32 = conf
+            .general_section()
+            .get("greendotsize")
+            .unwrap_or("0")
+            .parse::<i32>()
+            .unwrap_or(0);
+        let firstandlastreturnasground = conf
+            .general_section()
+            .get("firstandlastreturnasground")
+            .unwrap_or("")
+            .parse::<u64>()
+            .unwrap_or(1);
+        let firstandlastfactor = conf
+            .general_section()
+            .get("firstandlastreturnfactor")
+            .unwrap_or("0")
+            .parse::<f64>()
+            .unwrap_or(0.0);
+        let lastfactor = conf
+            .general_section()
+            .get("lastreturnfactor")
+            .unwrap_or("0")
+            .parse::<f64>()
+            .unwrap_or(0.0);
+
+        let yellowfirstlast = conf
+            .general_section()
+            .get("yellowfirstlast")
+            .unwrap_or("")
+            .parse::<u64>()
+            .unwrap_or(1);
+        let vegethin: u32 = conf
+            .general_section()
+            .get("vegethin")
+            .unwrap_or("0")
+            .parse::<u32>()
+            .unwrap_or(0);
+
+        let greendetectsize: f64 = conf
+            .general_section()
+            .get("greendetectsize")
+            .unwrap_or("3")
+            .parse::<f64>()
+            .unwrap_or(3.0);
+        let proceed_yellows: bool = conf
+            .general_section()
+            .get("yellow_smoothing")
+            .unwrap_or("0")
+            == "1";
+        let med: u32 = conf
+            .general_section()
+            .get("medianboxsize")
+            .unwrap_or("0")
+            .parse::<u32>()
+            .unwrap_or(0);
+        let med2: u32 = conf
+            .general_section()
+            .get("medianboxsize2")
+            .unwrap_or("0")
+            .parse::<u32>()
+            .unwrap_or(0);
+        let water = conf
+            .general_section()
+            .get("waterclass")
+            .unwrap_or("")
+            .parse::<u64>()
+            .unwrap_or(0);
+        let buildings = conf
+            .general_section()
+            .get("buildingsclass")
+            .unwrap_or("")
+            .parse::<u64>()
+            .unwrap_or(0);
+        let waterele = conf
+            .general_section()
+            .get("waterelevation")
+            .unwrap_or("")
+            .parse::<f64>()
+            .unwrap_or(-999999.0);
+
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             proc,
@@ -278,6 +498,33 @@ impl Config {
             steep_factor,
             flat_place,
             no_small_ciffs,
+            zones,
+            thresholds,
+            greenshades,
+            yellowheight,
+            yellowthreshold,
+            greenground,
+            pointvolumefactor,
+            pointvolumeexponent,
+            greenhigh,
+            topweight,
+            greentone,
+            zoffset,
+            uglimit,
+            uglimit2,
+            addition,
+            firstandlastreturnasground,
+            firstandlastfactor,
+            lastfactor,
+            yellowfirstlast,
+            vegethin,
+            greendetectsize,
+            proceed_yellows,
+            med,
+            med2,
+            water,
+            buildings,
+            waterele,
         })
     }
 }
