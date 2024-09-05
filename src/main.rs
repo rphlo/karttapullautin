@@ -47,9 +47,11 @@ fn main() {
     if command.is_empty() && Path::new(&format!("{}/vegetation.png", tmpfolder)).exists() && !batch
     {
         println!("Rendering png map with depressions");
-        pullauta::render::render(&thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+        pullauta::render::render(&config, &thread, pnorthlinesangle, pnorthlineswidth, false)
+            .unwrap();
         println!("Rendering png map without depressions");
-        pullauta::render::render(&thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+        pullauta::render::render(&config, &thread, pnorthlinesangle, pnorthlineswidth, true)
+            .unwrap();
         println!("\nAll done!");
         return;
     }
@@ -189,11 +191,11 @@ fn main() {
     }
 
     if command == "unzipmtk" {
-        pullauta::process::unzipmtk(&thread, &args).unwrap();
+        pullauta::process::unzipmtk(&config, &thread, &args).unwrap();
     }
 
     if command == "mtkshaperender" {
-        pullauta::render::mtkshaperender(&thread).unwrap();
+        pullauta::render::mtkshaperender(&config, &thread).unwrap();
     }
 
     if command == "xyz2contours" {
@@ -222,7 +224,7 @@ fn main() {
         let angle: f64 = args[0].parse::<f64>().unwrap();
         let nwidth: usize = args[1].parse::<usize>().unwrap();
         let nodepressions: bool = args.len() > 2 && args[2] == "nodepressions";
-        pullauta::render::render(&thread, angle, nwidth, nodepressions).unwrap();
+        pullauta::render::render(&config, &thread, angle, nwidth, nodepressions).unwrap();
         return;
     }
 

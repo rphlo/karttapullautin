@@ -83,6 +83,20 @@ pub struct Config {
     pub water: u64,
     pub buildings: u64,
     pub waterele: f64,
+
+    // render
+    pub buildingcolor: Vec<String>,
+    pub vectorconf: String,
+    pub mtkskiplayers: Vec<String>,
+    pub cliffdebug: bool,
+
+    pub formlinesteepness: f64,
+    // pub formline: f64,
+    pub formlineaddition: f64,
+    pub dashlength: f64,
+    pub gaplength: f64,
+    pub minimumgap: u32,
+    pub label_depressions: bool,
 }
 
 impl Config {
@@ -234,7 +248,6 @@ impl Config {
             .unwrap_or(181);
 
         // cliffs
-
         let c1_limit: f64 = gs
             .get("cliff1")
             .unwrap_or("1")
@@ -461,6 +474,64 @@ impl Config {
             .parse::<f64>()
             .unwrap_or(-999999.0);
 
+        // render
+        let buildingcolor: Vec<String> = conf
+            .general_section()
+            .get("buildingcolor")
+            .unwrap_or("0,0,0")
+            .split(',')
+            .map(Into::into)
+            .collect();
+        let vectorconf = conf
+            .general_section()
+            .get("vectorconf")
+            .unwrap_or("")
+            .into();
+        let mtkskiplayers: Vec<String> = conf
+            .general_section()
+            .get("mtkskiplayers")
+            .unwrap_or("")
+            .split(',')
+            .map(Into::into)
+            .collect();
+
+        let cliffdebug: bool = conf.general_section().get("cliffdebug").unwrap_or("0") == "1";
+
+        let formlinesteepness: f64 = conf
+            .general_section()
+            .get("formlinesteepness")
+            .unwrap_or("0.37")
+            .parse::<f64>()
+            .unwrap_or(0.37);
+        let formlineaddition: f64 = conf
+            .general_section()
+            .get("formlineaddition")
+            .unwrap_or("13")
+            .parse::<f64>()
+            .unwrap_or(13.0);
+        let dashlength: f64 = conf
+            .general_section()
+            .get("dashlength")
+            .unwrap_or("60")
+            .parse::<f64>()
+            .unwrap_or(60.0);
+        let gaplength: f64 = conf
+            .general_section()
+            .get("gaplength")
+            .unwrap_or("12")
+            .parse::<f64>()
+            .unwrap_or(12.0);
+        let minimumgap: u32 = conf
+            .general_section()
+            .get("minimumgap")
+            .unwrap_or("30")
+            .parse::<u32>()
+            .unwrap_or(30);
+        let label_depressions: bool = conf
+            .general_section()
+            .get("label_formlines_depressions")
+            .unwrap_or("0")
+            == "1";
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             proc,
@@ -525,6 +596,16 @@ impl Config {
             water,
             buildings,
             waterele,
+            buildingcolor,
+            vectorconf,
+            mtkskiplayers,
+            cliffdebug,
+            formlinesteepness,
+            formlineaddition,
+            dashlength,
+            gaplength,
+            minimumgap,
+            label_depressions,
         })
     }
 }

@@ -1,9 +1,9 @@
 use crate::canvas::Canvas;
+use crate::config::Config;
 use crate::util::{read_lines, read_lines_no_alloc};
 use image::ImageBuffer;
 use image::Rgba;
 use imageproc::drawing::{draw_filled_circle_mut, draw_line_segment_mut};
-use ini::Ini;
 use regex::Regex;
 use rustc_hash::FxHashMap as HashMap;
 use shapefile::dbase::{FieldValue, Record};
@@ -14,27 +14,13 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-pub fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let buildingcolor: Vec<&str> = conf
-        .general_section()
-        .get("buildingcolor")
-        .unwrap_or("0,0,0")
-        .split(',')
-        .collect();
-    let vectorconf = conf.general_section().get("vectorconf").unwrap_or("");
-    let mtkskip: Vec<&str> = conf
-        .general_section()
-        .get("mtkskiplayers")
-        .unwrap_or("")
-        .split(',')
-        .collect();
+pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
+    let scalefactor = config.scalefactor;
+
+    let buildingcolor = &config.buildingcolor;
+    let vectorconf = &config.vectorconf;
+    let mtkskip = &config.mtkskiplayers;
+
     let mut vectorconf_lines: Vec<String> = vec![];
     if !vectorconf.is_empty() {
         let vectorconf_data =
@@ -323,7 +309,7 @@ pub fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
                     image = "yellow";
                 }
 
-                if mtkskip.contains(&luokka.as_str()) {
+                if mtkskip.contains(&luokka) {
                     vari = unsetcolor;
                 }
             } else {
@@ -1124,19 +1110,15 @@ pub fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn render(
+    config: &Config,
     thread: &String,
     angle_deg: f64,
     nwidth: usize,
     nodepressions: bool,
 ) -> Result<(), Box<dyn Error>> {
     println!("Rendering...");
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
+
+    let scalefactor = config.scalefactor;
 
     let tmpfolder = format!("temp{}", thread);
     let angle = -angle_deg / 180.0 * PI;
@@ -1232,7 +1214,7 @@ pub fn render(
         }
     }
 
-    draw_curves(&mut img, thread, nodepressions, true).unwrap();
+    draw_curves(config, &mut img, thread, nodepressions, true).unwrap();
 
     // dotknolls----------
     let input_filename = &format!("{}/dotknolls.dxf", tmpfolder);
@@ -1322,13 +1304,11 @@ pub fn render(
         image::imageops::overlay(&mut img, &imgbb_thumb, 0, 0);
     }
 
-    let cliffdebug: bool = conf.general_section().get("cliffdebug").unwrap_or("0") == "1";
-
     let black = Rgba([0, 0, 0, 255]);
 
     let mut cliffcolor =
         HashMap::from_iter([("cliff2", black), ("cliff3", black), ("cliff4", black)]);
-    if cliffdebug {
+    if config.cliffdebug {
         cliffcolor = HashMap::from_iter([
             ("cliff2", Rgba([100, 0, 100, 255])),
             ("cliff3", Rgba([0, 100, 100, 255])),
@@ -1550,61 +1530,25 @@ pub fn render(
 }
 
 pub fn draw_curves(
+    config: &Config,
     canvas: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
     thread: &String,
     nodepressions: bool,
     draw_image: bool,
 ) -> Result<(), Box<dyn Error>> {
     // Drawing curves --------------
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let mut formlinesteepness: f64 = conf
-        .general_section()
-        .get("formlinesteepness")
-        .unwrap_or("0.37")
-        .parse::<f64>()
-        .unwrap_or(0.37);
+    let &Config {
+        scalefactor,
+        mut formlinesteepness,
+        formline,
+        formlineaddition,
+        dashlength,
+        gaplength,
+        minimumgap,
+        label_depressions,
+        ..
+    } = config;
     formlinesteepness *= scalefactor;
-    let formline: f64 = conf
-        .general_section()
-        .get("formline")
-        .unwrap_or("2")
-        .parse::<f64>()
-        .unwrap_or(2.0);
-    let formlineaddition: f64 = conf
-        .general_section()
-        .get("formlineaddition")
-        .unwrap_or("13")
-        .parse::<f64>()
-        .unwrap_or(13.0);
-    let dashlength: f64 = conf
-        .general_section()
-        .get("dashlength")
-        .unwrap_or("60")
-        .parse::<f64>()
-        .unwrap_or(60.0);
-    let gaplength: f64 = conf
-        .general_section()
-        .get("gaplength")
-        .unwrap_or("12")
-        .parse::<f64>()
-        .unwrap_or(12.0);
-    let minimumgap: u32 = conf
-        .general_section()
-        .get("minimumgap")
-        .unwrap_or("30")
-        .parse::<u32>()
-        .unwrap_or(30);
-    let label_depressions: bool = conf
-        .general_section()
-        .get("label_formlines_depressions")
-        .unwrap_or("0")
-        == "1";
 
     let tmpfolder = format!("temp{}", thread);
 
