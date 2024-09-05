@@ -36,6 +36,8 @@ pub struct Config {
     pub basemapcontours: f64,
 
     pub detectbuildings: bool,
+
+    pub water_class: String,
 }
 
 impl Config {
@@ -51,9 +53,9 @@ impl Config {
         let gs = conf.general_section();
 
         // only one can be set at a time
-        let vegeonly: bool = conf.general_section().get("vegeonly").unwrap_or("0") == "1";
-        let cliffsonly: bool = conf.general_section().get("cliffsonly").unwrap_or("0") == "1";
-        let contoursonly: bool = conf.general_section().get("contoursonly").unwrap_or("0") == "1";
+        let vegeonly: bool = gs.get("vegeonly").unwrap_or("0") == "1";
+        let cliffsonly: bool = gs.get("cliffsonly").unwrap_or("0") == "1";
+        let contoursonly: bool = gs.get("contoursonly").unwrap_or("0") == "1";
 
         if (vegeonly && (cliffsonly || contoursonly))
             || (cliffsonly && (vegeonly || contoursonly))
@@ -157,6 +159,8 @@ impl Config {
         let detectbuildings: bool =
             conf.general_section().get("detectbuildings").unwrap_or("0") == "1";
 
+        let water_class = gs.get("waterclass").unwrap_or("9").to_string();
+
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             proc,
@@ -181,6 +185,7 @@ impl Config {
             contour_interval,
             basemapcontours,
             detectbuildings,
+            water_class,
         })
     }
 }

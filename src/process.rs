@@ -168,6 +168,7 @@ pub fn process_tile(
 
     if vegeonly || cliffsonly {
         contours::xyz2contours(
+            config,
             thread,
             scalefactor * 0.3,
             "xyztemp.xyz",
@@ -178,6 +179,7 @@ pub fn process_tile(
         .expect("contour generation failed");
     } else {
         contours::xyz2contours(
+            config,
             thread,
             scalefactor * 0.3,
             "xyztemp.xyz",
@@ -205,6 +207,7 @@ pub fn process_tile(
         if basemapcontours != 0.0 {
             println!("{}Basemap contours", thread_name);
             contours::xyz2contours(
+                config,
                 thread,
                 basemapcontours,
                 "xyz2.xyz",
@@ -216,15 +219,16 @@ pub fn process_tile(
         }
         if !skipknolldetection {
             println!("{}Knoll detection part 2", thread_name);
-            knolls::knolldetector(thread).unwrap();
+            knolls::knolldetector(&config, thread).unwrap();
         }
         println!("{}Contour generation part 1", thread_name);
-        knolls::xyzknolls(thread).unwrap();
+        knolls::xyzknolls(&config, thread).unwrap();
 
         println!("{}Contour generation part 2", thread_name);
         if !skipknolldetection {
             // contours 2.5
             contours::xyz2contours(
+                config,
                 thread,
                 halfinterval,
                 "xyz_knolls.xyz",
@@ -234,13 +238,21 @@ pub fn process_tile(
             )
             .unwrap();
         } else {
-            contours::xyz2contours(thread, halfinterval, "xyztemp.xyz", "null", "out.dxf", true)
-                .unwrap();
+            contours::xyz2contours(
+                config,
+                thread,
+                halfinterval,
+                "xyztemp.xyz",
+                "null",
+                "out.dxf",
+                true,
+            )
+            .unwrap();
         }
         println!("{}Contour generation part 3", thread_name);
         merge::smoothjoin(thread).unwrap();
         println!("{}Contour generation part 4", thread_name);
-        knolls::dotknolls(thread).unwrap();
+        knolls::dotknolls(config, thread).unwrap();
     }
 
     if !cliffsonly && !contoursonly {

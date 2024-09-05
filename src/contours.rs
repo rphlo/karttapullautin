@@ -1,13 +1,14 @@
-use ini::Ini;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+use crate::config::Config;
 use crate::util::read_lines_no_alloc;
 
 pub fn xyz2contours(
+    config: &Config,
     thread: &String,
     cinterval: f64,
     xyzfilein: &str,
@@ -17,15 +18,8 @@ pub fn xyz2contours(
 ) -> Result<(), Box<dyn Error>> {
     println!("Generating curves...");
 
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let water_class = conf.general_section().get("waterclass").unwrap_or("9");
+    let scalefactor = config.scalefactor;
+    let water_class = &config.water_class;
 
     let tmpfolder = format!("temp{}", thread);
 

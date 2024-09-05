@@ -1,23 +1,18 @@
 use image::{GrayImage, Luma};
 use imageproc::drawing::draw_line_segment_mut;
-use ini::Ini;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+use crate::config::Config;
 use crate::util::{read_lines, read_lines_no_alloc};
 
-pub fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Identifying dotknolls...");
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
+
+    let scalefactor = config.scalefactor;
 
     let tmpfolder = format!("temp{}", thread);
 
@@ -183,21 +178,11 @@ pub fn dotknolls(thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Done");
     Ok(())
 }
-pub fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Detecting knolls...");
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-    let contour_interval: f64 = conf
-        .general_section()
-        .get("contour_interval")
-        .unwrap_or("5")
-        .parse::<f64>()
-        .unwrap_or(5.0);
+    let scalefactor = config.scalefactor;
+    let contour_interval = config.contour_interval;
+
     let halfinterval = contour_interval / 2.0 * scalefactor;
 
     let interval = 0.3 * scalefactor;
@@ -932,22 +917,10 @@ pub fn knolldetector(thread: &String) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn xyzknolls(thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
     println!("Identifying knolls...");
-    let conf = Ini::load_from_file("pullauta.ini").unwrap();
-    let scalefactor: f64 = conf
-        .general_section()
-        .get("scalefactor")
-        .unwrap_or("1")
-        .parse::<f64>()
-        .unwrap_or(1.0);
-
-    let contour_interval: f64 = conf
-        .general_section()
-        .get("contour_interval")
-        .unwrap_or("5")
-        .parse::<f64>()
-        .unwrap_or(5.0);
+    let scalefactor = config.scalefactor;
+    let contour_interval = config.contour_interval;
 
     let interval = contour_interval / 2.0 * scalefactor;
 
