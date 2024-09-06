@@ -1,3 +1,4 @@
+use log::info;
 use pullauta::config::Config;
 use regex::Regex;
 use std::env;
@@ -7,6 +8,9 @@ use std::sync::Arc;
 use std::{thread, time};
 
 fn main() {
+    // setup and configure logging, default to INFO when RUST_LOG is not set
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
     let mut thread: String = String::new();
 
     let config =
@@ -46,13 +50,13 @@ fn main() {
 
     if command.is_empty() && Path::new(&format!("{}/vegetation.png", tmpfolder)).exists() && !batch
     {
-        println!("Rendering png map with depressions");
+        info!("Rendering png map with depressions");
         pullauta::render::render(&config, &thread, pnorthlinesangle, pnorthlineswidth, false)
             .unwrap();
-        println!("Rendering png map without depressions");
+        info!("Rendering png map without depressions");
         pullauta::render::render(&config, &thread, pnorthlinesangle, pnorthlineswidth, true)
             .unwrap();
-        println!("\nAll done!");
+        info!("\nAll done!");
         return;
     }
 
@@ -62,47 +66,47 @@ fn main() {
     }
 
     if command == "cliffgeneralize" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "ground" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "ground2" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "groundfix" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "profile" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "makecliffsold" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "makeheight" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "xyzfixer" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
     if command == "vege" {
-        println!("Not implemented in this version, use the perl version");
+        info!("Not implemented in this version, use the perl version");
         return;
     }
 
@@ -234,9 +238,9 @@ fn main() {
         for i in 0..proc {
             let config = config.clone();
             let handle = thread::spawn(move || {
-                println!("Starting thread {}", i + 1);
+                info!("Starting thread {}", i + 1);
                 pullauta::process::batch_process(&config, &format!("{}", i + 1));
-                println!("Thread {} complete", i + 1);
+                info!("Thread {} complete", i + 1);
             });
             thread::sleep(time::Duration::from_millis(100));
             handles.push(handle);
