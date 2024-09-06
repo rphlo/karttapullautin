@@ -15,10 +15,20 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Check
-        run: cargo check --all-features
+        run: cargo check --all-features --all-targets
 
       - name: Build
         run: cargo build
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Unit Tests
+        run: cargo test
 
   lint:
     name: Lint (clippy)
@@ -32,7 +42,7 @@ jobs:
         # strict version that does not allow _any_ wclippy warnings to pass
       # - run: cargo clippy -- -D warnings
         # allows warnings to pass (but still not errors)
-      - run: cargo clippy
+      - run: cargo clippy --all-features --all-targets
 
   format:
     name: Format (rustfmt)
