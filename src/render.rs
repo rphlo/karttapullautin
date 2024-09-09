@@ -31,7 +31,7 @@ pub fn mtkshaperender(thread: &String) -> Result<(), Box<dyn Error>> {
     let vectorconf = conf.general_section().get("vectorconf").unwrap_or("");
     let mtkskip: Vec<&str> = conf
         .general_section()
-        .get("mtkstip")
+        .get("mtkskiplayers")
         .unwrap_or("")
         .split(',')
         .collect();
