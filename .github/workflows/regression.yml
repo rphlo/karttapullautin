@@ -31,7 +31,7 @@ jobs:
         mv pullautus_depr.png pullautus_depr_pr.png
         rm -rf temp/
 
-    - name: Checkout main branch
+    - name: Checkout master branch
       run: |
         git fetch origin master
         git checkout master
@@ -44,14 +44,15 @@ jobs:
         mv pullautus.png pullautus_main.png
         mv pullautus_depr.png pullautus_depr_main.png
 
-    - name: Compare results
+    - name: Compare results (pngcomp)
       id: compare
       run: |
         # Compare the results from both branches
-        # install imagemagic to do the comparison ( Seems to work and already be included with ubuntu-latest)
-        sudo apt install imagemagick 
-        compare -metric PSNR pullautus_main.png pullautus_pr.png difference.png
-        compare -metric PSNR pullautus_depr_main.png pullautus_depr_pr.png difference_depr.png
+        sudo apt install pngnq 
+        printf "\n\n##### Comparing without depressions:\n"
+        pngcomp pullautus_main.png pullautus_pr.png | tee pngcomp.txt
+        printf "\n\n##### Comparing with depressions:\n"
+        pngcomp pullautus_depr_main.png pullautus_depr_pr.png | tee pngcomp_depr.txt
     
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -60,9 +61,28 @@ jobs:
         path: |
           pullautus_main.png
           pullautus_pr.png
-          difference.png
+          pngcomp.txt
           pullautus_depr_main.png
           pullautus_depr_pr.png
-          difference_depr.png
+          pngcomp_depr.txt
         overwrite: true # we need subsequent runs to overwrite the result
+
+    - name: Check for differences
+      run: |
+        # Analyze metrics: if there is a change this step should fail!
+
+        # Here we could check any of the metrics output by pngcomp. for now we check the
+        # percentage of overlapping/correct pixels and fail the job if it is less than 100%
+        value=$(sed -rn 's/Percentage correct pixels: ([0-9]+\.[0-9]+)$/\1/p' pngcomp.txt)
+        value_depr=$(sed -rn 's/Percentage correct pixels: ([0-9]+\.[0-9]+)$/\1/p' pngcomp_depr.txt)
+
+        if (( $(echo "$value < 100.0" | bc -l) )); then
+          echo "Percentage of correct pixels (without depressions) is $value < 100%. Output has changed!";
+          exit 1
+        fi
+
+        if (( $(echo "$value_depr < 100.0" | bc -l) )); then
+          echo "Percentage of correct pixels (with depressions) is $value_depr < 100%. Output has changed!";
+          exit 1
+        fi
 
