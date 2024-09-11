@@ -9,7 +9,21 @@ use std::{thread, time};
 
 fn main() {
     // setup and configure logging, default to INFO when RUST_LOG is not set
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format(|buf, record| {
+            use std::io::Write;
+            let ts = buf.timestamp_seconds();
+            let level_style = buf.default_level_style(record.level());
+            writeln!(
+                buf,
+                "{} {:?} {level_style}{}{level_style:#} {}",
+                ts,
+                std::thread::current().id(),
+                record.level(),
+                record.args()
+            )
+        })
+        .init();
 
     let mut thread: String = String::new();
 
