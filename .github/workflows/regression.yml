@@ -31,18 +31,14 @@ jobs:
         mv pullautus_depr.png pullautus_depr_pr.png
         rm -rf temp/
 
-    - name: Checkout master branch
+    - name: Download, extract and run latest release
       run: |
-        git fetch origin master
-        git checkout master
-
-    - name: Run code on master branch
-      id: run_main_branch
-      run: |
-        echo "Running code on main branch"
-        cargo run --release -- test_file.laz
-        mv pullautus.png pullautus_main.png
-        mv pullautus_depr.png pullautus_depr_main.png
+        # in a new folder to make sure we have a clean environment
+        mkdir latest_release && cd latest_release
+        curl -L https://github.com/rphlo/karttapullautin/releases/latest/download/karttapullautin-x86_64-linux.tar.gz | tar xvz
+        ./pullauta ../test_file.laz
+        mv pullautus.png ../pullautus_main.png
+        mv pullautus_depr.png ../pullautus_depr_main.png
 
     - name: Compare results (pngcomp)
       id: compare
