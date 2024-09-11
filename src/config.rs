@@ -5,7 +5,7 @@ use ini::Ini;
 /// The config parsed from the .ini configuration file.
 pub struct Config {
     pub batch: bool,
-    pub proc: u64,
+    pub processes: u64,
 
     // only one can be set at a time
     pub vegeonly: bool,
@@ -67,7 +67,7 @@ pub struct Config {
     pub greenhigh: f64,
     pub topweight: f64,
     pub greentone: f64,
-    pub zoffset: f64,
+    pub vegezoffset: f64,
     pub uglimit: f64,
     pub uglimit2: f64,
     pub addition: i32,
@@ -149,7 +149,7 @@ impl Config {
         let pnorthlinesangle: f64 = parse_typed(gs, "northlinesangle", 0.0);
         let pnorthlineswidth: usize = parse_typed(gs, "northlineswidth", 0);
 
-        let proc: u64 = gs.get("processes").unwrap().parse::<u64>().unwrap();
+        let processes: u64 = gs.get("processes").unwrap().parse::<u64>().unwrap();
 
         let lazfolder = gs.get("lazfolder").unwrap_or("").to_string();
         let batchoutfolder = gs.get("batchoutfolder").unwrap_or("").to_string();
@@ -263,7 +263,7 @@ impl Config {
         let greenhigh: f64 = parse_typed(gs, "greenhigh", 2.0);
         let topweight: f64 = parse_typed(gs, "topweight", 0.8);
         let greentone: f64 = parse_typed(gs, "lightgreentone", 200.0);
-        let zoffset: f64 = parse_typed(gs, "vegezoffset", 0.0);
+        let vegezoffset: f64 = parse_typed(gs, "vegezoffset", 0.0);
         let uglimit: f64 = parse_typed(gs, "undergrowth", 0.35);
         let uglimit2: f64 = parse_typed(gs, "undergrowth2", 0.56);
         let addition: i32 = parse_typed(gs, "greendotsize", 0);
@@ -310,7 +310,7 @@ impl Config {
         let label_depressions: bool = gs.get("label_formlines_depressions").unwrap_or("0") == "1";
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
-            proc,
+            processes,
             vegeonly,
             cliffsonly,
             contoursonly,
@@ -356,7 +356,7 @@ impl Config {
             greenhigh,
             topweight,
             greentone,
-            zoffset,
+            vegezoffset,
             uglimit,
             uglimit2,
             addition,

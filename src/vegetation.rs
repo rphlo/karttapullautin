@@ -77,7 +77,7 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
         greenhigh,
         topweight,
         greentone,
-        zoffset,
+        vegezoffset: zoffset,
         uglimit,
         uglimit2,
         addition,

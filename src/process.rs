@@ -321,7 +321,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
     fs::create_dir_all(batchoutfolder).expect("Could not create output folder");
 
     let mut zip_files: Vec<String> = Vec::new();
-    for element in Path::new(&lazfolder).read_dir().unwrap() {
+    for element in Path::new(lazfolder).read_dir().unwrap() {
         let path = element.unwrap().path();
         if let Some(extension) = path.extension() {
             if extension == "zip" {
@@ -331,7 +331,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
     }
 
     let mut laz_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(&lazfolder).read_dir().unwrap() {
+    for element in Path::new(lazfolder).read_dir().unwrap() {
         let path = element.unwrap().path();
         if let Some(extension) = path.extension() {
             if extension == "laz" || extension == "las" {

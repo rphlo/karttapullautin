@@ -228,7 +228,7 @@ fn main() {
         return;
     }
 
-    let proc = config.proc;
+    let proc = config.processes;
     if command.is_empty() && batch && proc > 1 {
         let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
         for i in 0..proc {
