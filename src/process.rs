@@ -1,5 +1,6 @@
 use image::{GrayImage, Luma, Rgb, RgbImage, Rgba, RgbaImage};
 use las::{raw::Header, Reader};
+use log::info;
 use rand::distributions;
 use rand::prelude::*;
 use regex::Regex;
@@ -84,7 +85,7 @@ pub fn process_tile(
     if !thread.is_empty() {
         thread_name = format!("Thread {}: ", thread);
     }
-    println!("{}Preparing input file", thread_name);
+    info!("{}Preparing input file", thread_name);
     let mut skiplaz2txt: bool = false;
     if Regex::new(r".xyz$")
         .unwrap()
