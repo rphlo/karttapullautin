@@ -31,12 +31,12 @@ pub fn process_zip(
         ..
     } = config;
 
-    println!("Rendering shape files");
+    info!("Rendering shape files");
     unzipmtk(config, thread, filenames).unwrap();
 
-    println!("Rendering png map with depressions");
+    info!("Rendering png map with depressions");
     render::render(config, thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
-    println!("Rendering png map without depressions");
+    info!("Rendering png map without depressions");
     render::render(config, thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
     Ok(())
 }
@@ -124,7 +124,7 @@ pub fn process_tile(
         } = config;
 
         if thinfactor != 1.0 {
-            println!("{}Using thinning factor {}", thread_name, thinfactor);
+            info!("{}Using thinning factor {}", thread_name, thinfactor);
         }
 
         let mut rng = rand::thread_rng();
@@ -160,8 +160,8 @@ pub fn process_tile(
         )
         .expect("Could not copy file to tmpfolder");
     }
-    println!("{}Done", thread_name);
-    println!("{}Knoll detection part 1", thread_name);
+    info!("{}Done", thread_name);
+    info!("{}Knoll detection part 1", thread_name);
 
     let &Config {
         scalefactor,
@@ -210,7 +210,7 @@ pub fn process_tile(
 
     if !vegeonly && !cliffsonly {
         if basemapcontours != 0.0 {
-            println!("{}Basemap contours", thread_name);
+            info!("{}Basemap contours", thread_name);
             contours::xyz2contours(
                 config,
                 thread,
@@ -223,13 +223,13 @@ pub fn process_tile(
             .expect("contour generation failed");
         }
         if !skipknolldetection {
-            println!("{}Knoll detection part 2", thread_name);
+            info!("{}Knoll detection part 2", thread_name);
             knolls::knolldetector(&config, thread).unwrap();
         }
-        println!("{}Contour generation part 1", thread_name);
+        info!("{}Contour generation part 1", thread_name);
         knolls::xyzknolls(&config, thread).unwrap();
 
-        println!("{}Contour generation part 2", thread_name);
+        info!("{}Contour generation part 2", thread_name);
         if !skipknolldetection {
             // contours 2.5
             contours::xyz2contours(
@@ -254,40 +254,40 @@ pub fn process_tile(
             )
             .unwrap();
         }
-        println!("{}Contour generation part 3", thread_name);
+        info!("{}Contour generation part 3", thread_name);
         merge::smoothjoin(config, thread).unwrap();
-        println!("{}Contour generation part 4", thread_name);
+        info!("{}Contour generation part 4", thread_name);
         knolls::dotknolls(config, thread).unwrap();
     }
 
     if !cliffsonly && !contoursonly {
-        println!("{}Vegetation generation", thread_name);
+        info!("{}Vegetation generation", thread_name);
         vegetation::makevege(config, thread).unwrap();
     }
 
     if !vegeonly && !contoursonly {
-        println!("{}Cliff generation", thread_name);
+        info!("{}Cliff generation", thread_name);
         cliffs::makecliffs(config, thread).unwrap();
     }
     if !vegeonly && !contoursonly && !cliffsonly {
         if config.detectbuildings {
-            println!("{}Detecting buildings", thread_name);
+            info!("{}Detecting buildings", thread_name);
             blocks::blocks(thread).unwrap();
         }
     }
     if !skip_rendering && !vegeonly && !contoursonly && !cliffsonly {
-        println!("{}Rendering png map with depressions", thread_name);
+        info!("{}Rendering png map with depressions", thread_name);
         render::render(config, thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
-        println!("{}Rendering png map without depressions", thread_name);
+        info!("{}Rendering png map without depressions", thread_name);
         render::render(config, thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
     } else if contoursonly {
         let mut img = RgbaImage::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
         render::draw_curves(config, &mut img, thread, false, false).unwrap();
-        println!("{}Rendering formlines", thread_name);
+        info!("{}Rendering formlines", thread_name);
     } else {
-        println!("{}Skipped rendering", thread_name);
+        info!("{}Skipped rendering", thread_name);
     }
-    println!("\n\n{}All done!", thread_name);
+    info!("{}All done!", thread_name);
     Ok(())
 }
 
@@ -344,11 +344,11 @@ pub fn batch_process(conf: &Config, thread: &String) {
     for laz_path in &laz_files {
         let laz = laz_path.as_path().file_name().unwrap().to_str().unwrap();
         if Path::new(&format!("{}/{}.png", batchoutfolder, laz)).exists() {
-            println!("Skipping {}.png it exists already in output folder.", laz);
+            info!("Skipping {}.png it exists already in output folder.", laz);
             continue;
         }
 
-        println!("{}{} -> {}.png", thread_name, laz, laz);
+        info!("{}{} -> {}.png", thread_name, laz, laz);
         File::create(format!("{}/{}.png", batchoutfolder, laz)).unwrap();
         if Path::new(&format!("header{}.xyz", thread)).exists() {
             fs::remove_file(format!("header{}.xyz", thread)).unwrap();

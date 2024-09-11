@@ -1,5 +1,6 @@
 use image::{GrayImage, Luma};
 use imageproc::drawing::draw_line_segment_mut;
+use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::{self, File};
@@ -10,7 +11,7 @@ use crate::config::Config;
 use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Identifying dotknolls...");
+    info!("Identifying dotknolls...");
 
     let scalefactor = config.scalefactor;
 
@@ -175,11 +176,11 @@ pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
 
     f.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
         .expect("Can not write to file");
-    println!("Done");
+    info!("Done");
     Ok(())
 }
 pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Detecting knolls...");
+    info!("Detecting knolls...");
     let scalefactor = config.scalefactor;
     let contour_interval = config.contour_interval;
 
@@ -913,12 +914,12 @@ pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Err
     f.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
         .expect("Can not write to file");
 
-    println!("Done");
+    info!("Done");
     Ok(())
 }
 
 pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Identifying knolls...");
+    info!("Identifying knolls...");
     let scalefactor = config.scalefactor;
     let contour_interval = config.contour_interval;
 
@@ -1211,6 +1212,6 @@ pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
     })
     .expect("could not read file");
 
-    println!("Done");
+    info!("Done");
     Ok(())
 }

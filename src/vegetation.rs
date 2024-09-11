@@ -2,6 +2,7 @@ use image::{GrayImage, Luma, Rgb, RgbImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut, draw_line_segment_mut};
 use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
+use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::f32::consts::SQRT_2;
@@ -13,7 +14,7 @@ use crate::config::{Config, Zone};
 use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Generating vegetation...");
+    info!("Generating vegetation...");
 
     let tmpfolder = format!("temp{}", thread);
 
@@ -697,6 +698,6 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
     )
     .expect("Cannot write pgw file");
 
-    println!("Done");
+    info!("Done");
     Ok(())
 }
