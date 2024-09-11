@@ -47,12 +47,12 @@ jobs:
     - name: Compare results (pngcomp)
       id: compare
       run: |
-        # Compare the results from both branches
+        # Compare the results from both branches, output results as step summary
         sudo apt install pngnq 
-        printf "\n\n##### Comparing without depressions:\n"
-        pngcomp pullautus_main.png pullautus_pr.png | tee pngcomp.txt
-        printf "\n\n##### Comparing with depressions:\n"
-        pngcomp pullautus_depr_main.png pullautus_depr_pr.png | tee pngcomp_depr.txt
+        printf "\n\n##### Comparing without depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
+        pngcomp pullautus_main.png pullautus_pr.png | tee -a pngcomp.txt $GITHUB_STEP_SUMMARY
+        printf "\n\n##### Comparing with depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
+        pngcomp pullautus_depr_main.png pullautus_depr_pr.png | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
     
     - name: Upload results
       uses: actions/upload-artifact@v4
@@ -77,12 +77,12 @@ jobs:
         value_depr=$(sed -rn 's/Percentage correct pixels: ([0-9]+\.[0-9]+)$/\1/p' pngcomp_depr.txt)
 
         if (( $(echo "$value < 100.0" | bc -l) )); then
-          echo "Percentage of correct pixels (without depressions) is $value < 100%. Output has changed!";
+          echo "Percentage of correct pixels (without depressions) is $value < 100%. Output has changed!" | tee -a $GITHUB_STEP_SUMMARY
           exit 1
         fi
 
         if (( $(echo "$value_depr < 100.0" | bc -l) )); then
-          echo "Percentage of correct pixels (with depressions) is $value_depr < 100%. Output has changed!";
+          echo "Percentage of correct pixels (with depressions) is $value_depr < 100%. Output has changed!" | tee -a $GITHUB_STEP_SUMMARY
           exit 1
         fi
 
