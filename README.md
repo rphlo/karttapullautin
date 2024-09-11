@@ -33,6 +33,12 @@ You can run the `pullauta` executable with the path to your file as argument:
     
     ./pullauta L3323H3.laz
 
+> Note: By defaut messages with the log level _info_ will be printed to the console. To show more information (eg. timings of each operation),
+> set the `RUST_LOG` environment variable to `debug` or specify it on the command line like so:
+> ```bash
+> RUST_LOG=debug ./pullauta [..]
+> ```
+
 As output Karttapullautin writes two 600 dpi png map images. One without depressions and one with purple depressions. It also writes contours and cliffs as dxf files to temp folder to be post processed, for example using Open Orienteering Mapper or OCAD.
 
 You can re-render png map files (like with changed north line settings) by running the binary without arguments.  
