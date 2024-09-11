@@ -1,4 +1,5 @@
 use image::{Rgb, RgbImage};
+use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::{self, File};
@@ -124,7 +125,7 @@ pub fn pngmergevege(config: &Config, scale: f64) -> Result<(), Box<dyn Error>> {
         }
     }
     if png_files.is_empty() {
-        println!("No _vege.png files found in output directory");
+        info!("No _vege.png files found in output directory");
         return Ok(());
     }
     merge_png(config, png_files, "merged_vege", scale).unwrap();
@@ -151,7 +152,7 @@ pub fn pngmerge(config: &Config, scale: f64, depr: bool) -> Result<(), Box<dyn E
     }
 
     if png_files.is_empty() {
-        println!("No files to merge found in output directory");
+        info!("No files to merge found in output directory");
         return Ok(());
     }
     let mut outfilename = "merged";
@@ -176,7 +177,7 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
     }
 
     if dxf_files.is_empty() {
-        println!("No dxf files found in output directory");
+        info!("No dxf files found in output directory");
         return Ok(());
     }
 
@@ -503,7 +504,7 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
 }
 
 pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Smooth curves...");
+    info!("Smooth curves...");
     let tmpfolder = format!("temp{}", thread);
     let &Config {
         scalefactor,
@@ -1133,6 +1134,6 @@ pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     let fp = File::create(output).expect("Unable to create file");
     let mut fp = BufWriter::new(fp);
     fp.write_all(out.as_bytes()).expect("Unable to write file");
-    println!("Done");
+    info!("Done");
     Ok(())
 }

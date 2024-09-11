@@ -1,3 +1,4 @@
+use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::File;
@@ -16,7 +17,7 @@ pub fn xyz2contours(
     dxffile: &str,
     ground: bool,
 ) -> Result<(), Box<dyn Error>> {
-    println!("Generating curves...");
+    info!("Generating curves...");
 
     let scalefactor = config.scalefactor;
     let water_class = &config.water_class;
@@ -510,7 +511,7 @@ pub fn xyz2contours(
         .expect("Cannot read file");
         f.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
             .expect("Cannot write dxf file");
-        println!("Done");
+        info!("Done");
     }
     Ok(())
 }

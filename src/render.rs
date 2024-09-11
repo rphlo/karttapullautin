@@ -4,6 +4,7 @@ use crate::util::{read_lines, read_lines_no_alloc};
 use image::ImageBuffer;
 use image::Rgba;
 use imageproc::drawing::{draw_filled_circle_mut, draw_line_segment_mut};
+use log::info;
 use regex::Regex;
 use rustc_hash::FxHashMap as HashMap;
 use shapefile::dbase::{FieldValue, Record};
@@ -33,7 +34,7 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
     }
     let tmpfolder = format!("temp{}", thread);
     if !Path::new(&format!("{}/vegetation.pgw", &tmpfolder)).exists() {
-        println!("Could not find vegetation file");
+        info!("Could not find vegetation file");
         return Ok(());
     }
 
@@ -1111,7 +1112,7 @@ pub fn render(
     nwidth: usize,
     nodepressions: bool,
 ) -> Result<(), Box<dyn Error>> {
-    println!("Rendering...");
+    info!("Rendering...");
 
     let scalefactor = config.scalefactor;
 
@@ -1520,7 +1521,7 @@ pub fn render(
             }
         }
     }
-    println!("Done");
+    info!("Done");
     Ok(())
 }
 

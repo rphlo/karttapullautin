@@ -2,6 +2,7 @@ use image::{Rgb, RgbImage, Rgba, RgbaImage};
 use imageproc::drawing::draw_filled_rect_mut;
 use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
+use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::path::Path;
@@ -9,7 +10,7 @@ use std::path::Path;
 use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Identifying blocks...");
+    info!("Identifying blocks...");
     let tmpfolder = format!("temp{}", thread);
     let path = format!("{}/xyz2.xyz", tmpfolder);
     let xyz_file_in = Path::new(&path);
@@ -121,6 +122,6 @@ pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
 
     img.save(Path::new(&format!("{}/blocks.png", tmpfolder)))
         .expect("error saving png");
-    println!("Done");
+    info!("Done");
     Ok(())
 }

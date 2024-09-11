@@ -1,4 +1,5 @@
 use image::{Rgb, RgbImage};
+use log::info;
 use rand::distributions;
 use rand::prelude::*;
 use std::error::Error;
@@ -11,7 +12,7 @@ use crate::util::read_lines;
 use crate::util::read_lines_no_alloc;
 
 pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
-    println!("Identifying cliffs...");
+    info!("Identifying cliffs...");
 
     let &Config {
         c1_limit,
@@ -447,6 +448,6 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
         .expect("Cannot write dxf file");
     img.save(Path::new(&format!("{}/c2.png", tmpfolder)))
         .expect("could not save output png");
-    println!("Done");
+    info!("Done");
     Ok(())
 }
