@@ -14,12 +14,14 @@ fn main() {
             use std::io::Write;
             let ts = buf.timestamp_seconds();
             let level_style = buf.default_level_style(record.level());
+
             writeln!(
                 buf,
-                "{} {:?} {level_style}{}{level_style:#} {}",
+                "[{} {:?} {level_style}{}{level_style:#} {}] {}",
                 ts,
                 std::thread::current().id(),
                 record.level(),
+                record.module_path().unwrap_or(""),
                 record.args()
             )
         })
