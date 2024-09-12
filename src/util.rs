@@ -62,3 +62,68 @@ where
 
     Ok(())
 }
+
+/// Helper struct to time operations. Keeps track of the total time taken until the object is
+/// dropped, as well as timing between individual sub-sections of the operation.
+/// Timing information is printed using debug level log messages.
+pub struct Timing {
+    name: &'static str,
+    start: Instant,
+    current_section: Option<TimingSection>,
+}
+
+struct TimingSection {
+    name: &'static str,
+    start: Instant,
+}
+
+impl Timing {
+    /// Start a new timing from now.
+    pub fn start_now(name: &'static str) -> Self {
+        debug!("[timing: {name}] Starting timing");
+        Self {
+            name,
+            start: Instant::now(),
+            current_section: None,
+        }
+    }
+
+    /// Start a new timing section. This will end any already existing sections.
+    pub fn start_section(&mut self, name: &'static str) {
+        let now = self.end_section().unwrap_or(Instant::now());
+
+        debug!("[timing: {}] Entering section '{}'", self.name, name);
+
+        self.current_section = Some(TimingSection { name, start: now })
+    }
+
+    /// Ends the currnently active section and returns its end time, or does nothing
+    /// if no section is active and returns `None`.
+    pub fn end_section(&mut self) -> Option<Instant> {
+        if let Some(s) = self.current_section.take() {
+            //
+            let now = Instant::now();
+            debug!(
+                "[timing: {}] Leaving section '{}', which took {:.3?}",
+                self.name,
+                s.name,
+                now - s.start
+            );
+            Some(now)
+        } else {
+            None
+        }
+    }
+}
+
+impl Drop for Timing {
+    fn drop(&mut self) {
+        self.end_section();
+
+        debug!(
+            "[timing: {}] Stopping timing. Total: {:.3?} elapsed.",
+            self.name,
+            self.start.elapsed()
+        );
+    }
+}
