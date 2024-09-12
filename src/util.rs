@@ -50,7 +50,7 @@ where
 
     let elapsed = start.elapsed();
     debug!(
-        "Read {} lines in {:?} ({:?}/line), total {} bytes ({:.2} bytes / second, {:?} / byte, {:.2} bytes / line)",
+        "Read {} lines in {:.2?} ({:.2?}/line), total {} bytes ({:.2} bytes/second, {:?}/byte, {:.2} bytes/line)",
         line_count,
         elapsed,
         elapsed / line_count,
