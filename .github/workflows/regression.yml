@@ -18,8 +18,8 @@ jobs:
 
     - name: Download LAZ file
       env:
-        REGRESSION_LAZ_FILE_URL: ${{ secrets.REGRESSION_LAZ_FILE_URL }}
-      run: curl -L "$REGRESSION_LAZ_FILE_URL" -o test_file.laz
+        KP_TEST_LAZ_URL: ${{ vars.KP_TEST_LAZ_URL }}
+      run: curl -L "$KP_TEST_LAZ_URL" -o test_file.laz
 
     - name: Run code on PR branch
       id: run_pr_branch
