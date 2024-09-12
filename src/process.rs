@@ -18,6 +18,7 @@ use crate::knolls;
 use crate::merge;
 use crate::render;
 use crate::util::read_lines;
+use crate::util::Timing;
 use crate::vegetation;
 
 pub fn process_zip(
@@ -71,6 +72,7 @@ pub fn process_tile(
     filename: &str,
     skip_rendering: bool,
 ) -> Result<(), Box<dyn Error>> {
+    let mut timing = Timing::start_now("process_tile");
     let tmpfolder = format!("temp{}", thread);
     fs::create_dir_all(&tmpfolder).expect("Could not create tmp folder");
 
@@ -86,6 +88,7 @@ pub fn process_tile(
         thread_name = format!("Thread {}: ", thread);
     }
     info!("{}Preparing input file", thread_name);
+    timing.start_section("prepare input file");
     let mut skiplaz2txt: bool = false;
     if Regex::new(r".xyz$")
         .unwrap()
@@ -161,6 +164,7 @@ pub fn process_tile(
         .expect("Could not copy file to tmpfolder");
     }
     info!("{}Done", thread_name);
+    timing.start_section("knoll detection part 1");
     info!("{}Knoll detection part 1", thread_name);
 
     let &Config {
@@ -224,12 +228,15 @@ pub fn process_tile(
         }
         if !skipknolldetection {
             info!("{}Knoll detection part 2", thread_name);
+            timing.start_section("knoll detection part 2");
             knolls::knolldetector(&config, thread).unwrap();
         }
         info!("{}Contour generation part 1", thread_name);
+        timing.start_section("contour generation part 1");
         knolls::xyzknolls(&config, thread).unwrap();
 
         info!("{}Contour generation part 2", thread_name);
+        timing.start_section("contour generation part 2");
         if !skipknolldetection {
             // contours 2.5
             contours::xyz2contours(
@@ -255,23 +262,29 @@ pub fn process_tile(
             .unwrap();
         }
         info!("{}Contour generation part 3", thread_name);
+        timing.start_section("contour generation part 3");
         merge::smoothjoin(config, thread).unwrap();
+
         info!("{}Contour generation part 4", thread_name);
+        timing.start_section("contour generation part 4");
         knolls::dotknolls(config, thread).unwrap();
     }
 
     if !cliffsonly && !contoursonly {
         info!("{}Vegetation generation", thread_name);
+        timing.start_section("vegetation generation");
         vegetation::makevege(config, thread).unwrap();
     }
 
     if !vegeonly && !contoursonly {
         info!("{}Cliff generation", thread_name);
+        timing.start_section("cliff generation");
         cliffs::makecliffs(config, thread).unwrap();
     }
     if !vegeonly && !contoursonly && !cliffsonly {
         if config.detectbuildings {
             info!("{}Detecting buildings", thread_name);
+            timing.start_section("detecting buildings");
             blocks::blocks(thread).unwrap();
         }
     }
