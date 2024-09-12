@@ -26,6 +26,7 @@ pub fn process_zip(
     thread: &String,
     filenames: &Vec<String>,
 ) -> Result<(), Box<dyn Error>> {
+    let mut timing = Timing::start_now("process_zip");
     let &Config {
         pnorthlineswidth,
         pnorthlinesangle,
@@ -33,12 +34,17 @@ pub fn process_zip(
     } = config;
 
     info!("Rendering shape files");
+    timing.start_section("unzip and render shape files");
     unzipmtk(config, thread, filenames).unwrap();
 
     info!("Rendering png map with depressions");
+    timing.start_section("Rendering png map with depressions");
     render::render(config, thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+
     info!("Rendering png map without depressions");
+    timing.start_section("Rendering png map without depressions");
     render::render(config, thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+
     Ok(())
 }
 
@@ -87,8 +93,10 @@ pub fn process_tile(
     if !thread.is_empty() {
         thread_name = format!("Thread {}: ", thread);
     }
+
+    timing.start_section("preparing input file");
     info!("{}Preparing input file", thread_name);
-    timing.start_section("prepare input file");
+
     let mut skiplaz2txt: bool = false;
     if Regex::new(r".xyz$")
         .unwrap()
@@ -164,8 +172,9 @@ pub fn process_tile(
         .expect("Could not copy file to tmpfolder");
     }
     info!("{}Done", thread_name);
-    timing.start_section("knoll detection part 1");
+
     info!("{}Knoll detection part 1", thread_name);
+    timing.start_section("knoll detection part 1");
 
     let &Config {
         scalefactor,
@@ -290,13 +299,17 @@ pub fn process_tile(
     }
     if !skip_rendering && !vegeonly && !contoursonly && !cliffsonly {
         info!("{}Rendering png map with depressions", thread_name);
+        timing.start_section("rendering png map with depressions");
         render::render(config, thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+
         info!("{}Rendering png map without depressions", thread_name);
+        timing.start_section("rendering png map without depressions");
         render::render(config, thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
     } else if contoursonly {
+        info!("{}Rendering formlines", thread_name);
+        timing.start_section("rendering formlines");
         let mut img = RgbaImage::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
         render::draw_curves(config, &mut img, thread, false, false).unwrap();
-        info!("{}Rendering formlines", thread_name);
     } else {
         info!("{}Skipped rendering", thread_name);
     }
