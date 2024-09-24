@@ -160,6 +160,12 @@ impl Config {
         let vege_bitmode: bool = gs.get("vege_bitmode").unwrap_or("0") == "1";
         let zoff = parse_typed(gs, "zoffset", 0.0);
         let mut thinfactor: f64 = parse_typed(gs, "thinfactor", 1.0);
+        if !(0.0..=1.0).contains(&thinfactor) {
+            panic!(
+                "Value {} of `thinfactor` is outside the allowed range of 0.0 to 1.0",
+                thinfactor
+            );
+        }
         if thinfactor == 0.0 {
             thinfactor = 1.0;
         }
@@ -205,6 +211,12 @@ impl Config {
         let c1_limit: f64 = parse_typed(gs, "cliff1", 1.0);
         let c2_limit: f64 = parse_typed(gs, "cliff2", 1.0);
         let cliff_thin: f64 = parse_typed(gs, "cliffthin", 1.0);
+        if !(0.0..=1.0).contains(&cliff_thin) {
+            panic!(
+                "Value {} of `cliffthin` is outside the allowed range of 0.0 to 1.0",
+                cliff_thin
+            );
+        }
         let steep_factor: f64 = parse_typed(gs, "cliffsteepfactor", 0.33);
         let flat_place: f64 = parse_typed(gs, "cliffflatplace", 6.6);
         let no_small_ciffs: f64 = parse_typed(gs, "cliffnosmallciffs", 0.0);
