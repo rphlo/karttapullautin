@@ -161,10 +161,11 @@ impl Config {
         let zoff = parse_typed(gs, "zoffset", 0.0);
         let mut thinfactor: f64 = parse_typed(gs, "thinfactor", 1.0);
         if !(0.0..=1.0).contains(&thinfactor) {
-            panic!(
+            return Err(format!(
                 "Value {} of `thinfactor` is outside the allowed range of 0.0 to 1.0",
                 thinfactor
-            );
+            )
+            .into());
         }
         if thinfactor == 0.0 {
             thinfactor = 1.0;
@@ -212,10 +213,11 @@ impl Config {
         let c2_limit: f64 = parse_typed(gs, "cliff2", 1.0);
         let cliff_thin: f64 = parse_typed(gs, "cliffthin", 1.0);
         if !(0.0..=1.0).contains(&cliff_thin) {
-            panic!(
+            return Err(format!(
                 "Value {} of `cliffthin` is outside the allowed range of 0.0 to 1.0",
                 cliff_thin
-            );
+            )
+            .into());
         }
         let steep_factor: f64 = parse_typed(gs, "cliffsteepfactor", 0.33);
         let flat_place: f64 = parse_typed(gs, "cliffflatplace", 6.6);
