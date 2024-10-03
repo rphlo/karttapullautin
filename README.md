@@ -38,6 +38,7 @@ You can run the `pullauta` executable with the path to your file as argument:
 > ```bash
 > RUST_LOG=debug ./pullauta [..]
 > ```
+> Other log level available is _warn_, in which no info of current run will be displayed.
 
 As output Karttapullautin writes two 600 dpi png map images. One without depressions and one with purple depressions. It also writes contours and cliffs as dxf files to temp folder to be post processed, for example using Open Orienteering Mapper or OCAD.
 
