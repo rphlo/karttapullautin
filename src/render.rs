@@ -122,10 +122,8 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                     }
                 }
                 let mut versuh = 0.0;
-                if let Some(fv) = record.get("VERSUH") {
-                    if let FieldValue::Numeric(Some(f_versuh)) = fv {
-                        versuh = *f_versuh;
-                    }
+                if let Some(FieldValue::Numeric(Some(f_versuh))) = record.get("VERSUH") {
+                    versuh = *f_versuh;
                 }
                 // water streams
                 if ["36311", "36312"].contains(&luokka.as_str()) {
@@ -338,10 +336,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.to_string().trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -364,10 +362,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -390,10 +388,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -416,10 +414,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -442,10 +440,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -468,10 +466,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -497,10 +495,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::new();
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -527,10 +525,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -553,10 +551,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -580,10 +578,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -607,10 +605,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -634,10 +632,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -660,10 +658,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -686,10 +684,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -713,10 +711,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -738,10 +736,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -763,10 +761,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -787,10 +785,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -811,10 +809,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -835,10 +833,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -859,10 +857,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
@@ -883,10 +881,10 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
                             let mut is_ok = true;
                             for keyval in keyvals.iter() {
                                 let mut r = String::from("");
-                                if let Some(recordfv) = record.get(&keyval.1) {
-                                    if let FieldValue::Character(Some(record_str)) = recordfv {
-                                        r = record_str.to_string().trim().to_string();
-                                    }
+                                if let Some(FieldValue::Character(Some(record_str))) =
+                                    record.get(&keyval.1)
+                                {
+                                    r = record_str.trim().to_string();
                                 }
                                 if keyval.0 == "=" {
                                     if r != keyval.2 {
