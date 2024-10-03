@@ -1783,8 +1783,13 @@ pub fn draw_curves(
     let data = fs::read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
-    let mut formline_out = String::new();
-    formline_out.push_str(data[0]);
+    let filename = &format!("{}/formlines.dxf", tmpfolder);
+    let output = Path::new(filename);
+    let fp = File::create(output).expect("Unable to create file");
+    let mut fp = BufWriter::new(fp);
+
+    fp.write_all(data[0].as_bytes())
+        .expect("Could not write file");
 
     for (j, rec) in data.iter().enumerate() {
         let mut x = Vec::<f64>::new();
@@ -1976,32 +1981,28 @@ pub fn draw_curves(
             let mut gap = 0.0;
             let mut formlinestart = false;
 
-            let f_label;
-            if layer.contains("depression") && label_depressions {
-                f_label = "formline_depression";
+            let f_label = if layer.contains("depression") && label_depressions {
+                "formline_depression"
             } else {
-                f_label = "formline"
+                "formline"
             };
 
             for i in 1..x.len() {
                 if curvew != 1.5 || formline == 0.0 || help2[i] || smallringtest {
                     if formline == 2.0 && !nodepressions && curvew == 1.5 {
                         if !formlinestart {
-                            formline_out.push_str(
-                                format!("POLYLINE\r\n 66\r\n1\r\n  8\r\n{}\r\n  0\r\n", f_label)
-                                    .as_str(),
-                            );
+                            write!(fp, "POLYLINE\r\n 66\r\n1\r\n  8\r\n{}\r\n  0\r\n", f_label)
+                                .expect("Could not write file");
                             formlinestart = true;
                         }
-                        formline_out.push_str(
-                            format!(
-                                "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
-                                f_label,
-                                x[i] / 600.0 * 254.0 * scalefactor + x0,
-                                -y[i] / 600.0 * 254.0 * scalefactor + y0
-                            )
-                            .as_str(),
-                        );
+                        write!(
+                            fp,
+                            "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",
+                            f_label,
+                            x[i] / 600.0 * 254.0 * scalefactor + x0,
+                            -y[i] / 600.0 * 254.0 * scalefactor + y0
+                        )
+                        .expect("Could not write file");
                     }
 
                     if draw_image {
@@ -2102,23 +2103,20 @@ pub fn draw_curves(
                         }
                     }
                 } else if formline == 2.0 && formlinestart && !nodepressions {
-                    formline_out.push_str("SEQEND\r\n  0\r\n");
+                    fp.write_all(b"SEQEND\r\n  0\r\n")
+                        .expect("Could not write file");
                     formlinestart = false;
                 }
             }
             if formline == 2.0 && formlinestart && !nodepressions {
-                formline_out.push_str("SEQEND\r\n  0\r\n");
+                fp.write_all(b"SEQEND\r\n  0\r\n")
+                    .expect("Could not write file");
             }
         }
     }
     if formline == 2.0 && !nodepressions {
-        formline_out.push_str("ENDSEC\r\n  0\r\nEOF\r\n");
-        let filename = &format!("{}/formlines.dxf", tmpfolder);
-        let output = Path::new(filename);
-        let fp = File::create(output).expect("Unable to create file");
-        let mut fp = BufWriter::new(fp);
-        fp.write_all(formline_out.as_bytes())
-            .expect("Unable to write file");
+        fp.write_all(b"ENDSEC\r\n  0\r\nEOF\r\n")
+            .expect("Could not write file");
     }
     Ok(())
 }

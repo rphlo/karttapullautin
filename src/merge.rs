@@ -598,10 +598,18 @@ pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     dxfheadtmp = dxfheadtmp.split("ENDSEC").collect::<Vec<&str>>()[0];
     dxfheadtmp = dxfheadtmp.split("HEADER").collect::<Vec<&str>>()[1];
     let dxfhead = &format!("HEADER{}ENDSEC", dxfheadtmp);
-    let mut out = String::new();
-    out.push_str("  0\r\nSECTION\r\n  2\r\n");
-    out.push_str(dxfhead);
-    out.push_str("\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n");
+
+    let output_filename = &format!("{}/out2.dxf", tmpfolder);
+    let output = Path::new(output_filename);
+    let fp = File::create(output).expect("Unable to create file");
+    let mut fp = BufWriter::new(fp);
+
+    fp.write_all(b"  0\r\nSECTION\r\n  2\r\n")
+        .expect("Could not write file");
+    fp.write_all(dxfhead.as_bytes())
+        .expect("Could not write file");
+    fp.write_all(b"\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n")
+        .expect("Could not write file");
 
     let depr_filename = &format!("{}/depressions.txt", tmpfolder);
     let depr_output = Path::new(depr_filename);
@@ -1108,32 +1116,28 @@ pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
                 {
                     layer.push_str("_intermed");
                 }
-                out.push_str(
-                    format!(
-                        "POLYLINE\r\n 66\r\n1\r\n  8\r\n{}\r\n 38\r\n{}\r\n  0\r\n",
-                        layer, h
-                    )
-                    .as_str(),
-                );
+                write!(
+                    fp,
+                    "POLYLINE\r\n 66\r\n1\r\n  8\r\n{}\r\n 38\r\n{}\r\n  0\r\n",
+                    layer, h
+                )
+                .expect("Unable to write file");
+
                 for k in 0..el_x_len {
-                    out.push_str(
-                        format!(
-                            "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n 30\r\n{}\r\n  0\r\n",
-                            layer, el_x[l][k], el_y[l][k], h
-                        )
-                        .as_str(),
-                    );
+                    write!(
+                        fp,
+                        "VERTEX\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n 30\r\n{}\r\n  0\r\n",
+                        layer, el_x[l][k], el_y[l][k], h
+                    )
+                    .expect("Unable to write file");
                 }
-                out.push_str("SEQEND\r\n  0\r\n");
+                fp.write_all(b"SEQEND\r\n  0\r\n")
+                    .expect("Unable to write file");
             } // -- if not dotkoll
         }
     }
-    out.push_str("ENDSEC\r\n  0\r\nEOF\r\n");
-    let output_filename = &format!("{}/out2.dxf", tmpfolder);
-    let output = Path::new(output_filename);
-    let fp = File::create(output).expect("Unable to create file");
-    let mut fp = BufWriter::new(fp);
-    fp.write_all(out.as_bytes()).expect("Unable to write file");
+    fp.write_all(b"ENDSEC\r\n  0\r\nEOF\r\n")
+        .expect("Unable to write file");
     info!("Done");
     Ok(())
 }

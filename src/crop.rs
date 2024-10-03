@@ -94,13 +94,17 @@ pub fn pointdxfcrop(
     let data = fs::read_to_string(input).expect("Should have been able to read the file");
     let mut data: Vec<&str> = data.split("POINT").collect();
     let dxfhead = data[0];
-    let mut out = String::new();
-    out.push_str(dxfhead);
+
+    let fp = File::create(output).expect("Unable to create file");
+    let mut fp = BufWriter::new(fp);
+
+    fp.write_all(dxfhead.as_bytes())
+        .expect("Could not write file");
+
     let (d2, ending) = data[data.len() - 1]
         .split_once("ENDSEC")
         .unwrap_or((data[data.len() - 1], ""));
     let last_idx = data.len() - 1;
-    let end = format!("ENDSEC{}", ending);
     data[last_idx] = d2;
     for (j, rec) in data.iter().enumerate() {
         if j > 0 {
@@ -108,13 +112,10 @@ pub fn pointdxfcrop(
             let val4 = val[4].trim().parse::<f64>().unwrap_or(0.0);
             let val6 = val[6].trim().parse::<f64>().unwrap_or(0.0);
             if val4 >= minx && val4 <= maxx && val6 >= miny && val6 <= maxy {
-                out.push_str(&format!("POINT{}", rec));
+                write!(fp, "POINT{}", rec).expect("Could not write file");
             }
         }
     }
-    out.push_str(&end);
-    let fp = File::create(output).expect("Unable to create file");
-    let mut fp = BufWriter::new(fp);
-    fp.write_all(out.as_bytes()).expect("Unable to write file");
+    write!(fp, "ENDSEC{}", ending).expect("Could not write file");
     Ok(())
 }
