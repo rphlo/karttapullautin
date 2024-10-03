@@ -413,10 +413,10 @@ pub fn xyz2contours(
                         .expect("Cannot write to output file");
                     let mut res = (x, y);
 
-                    let (x, y) = *curves.get(&k).unwrap();
+                    let (x, y) = *curves.get(k).unwrap();
                     write!(&mut f, "{},{};", x as f64 / 100.0, y as f64 / 100.0)
                         .expect("Cannot write to output file");
-                    curves.remove(&k);
+                    curves.remove(k);
 
                     let mut head = (x, y);
 

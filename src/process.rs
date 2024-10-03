@@ -24,7 +24,7 @@ use crate::vegetation;
 pub fn process_zip(
     config: &Config,
     thread: &String,
-    filenames: &Vec<String>,
+    filenames: &[String],
 ) -> Result<(), Box<dyn Error>> {
     let mut timing = Timing::start_now("process_zip");
     let &Config {
@@ -290,12 +290,10 @@ pub fn process_tile(
         timing.start_section("cliff generation");
         cliffs::makecliffs(config, thread).unwrap();
     }
-    if !vegeonly && !contoursonly && !cliffsonly {
-        if config.detectbuildings {
-            info!("{}Detecting buildings", thread_name);
-            timing.start_section("detecting buildings");
-            blocks::blocks(thread).unwrap();
-        }
+    if !vegeonly && !contoursonly && !cliffsonly && config.detectbuildings {
+        info!("{}Detecting buildings", thread_name);
+        timing.start_section("detecting buildings");
+        blocks::blocks(thread).unwrap();
     }
     if !skip_rendering && !vegeonly && !contoursonly && !cliffsonly {
         info!("{}Rendering png map with depressions", thread_name);
