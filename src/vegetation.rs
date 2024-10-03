@@ -564,11 +564,11 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
             }
             let xx = ((x / bf32 / step).floor()) as u64;
             let yy = ((y / bf32 / step).floor()) as u64;
-            let foo = *ug.get(&(xx, yy)).unwrap_or(&0) as f64
+            let value = *ug.get(&(xx, yy)).unwrap_or(&0) as f64
                 / (*ug.get(&(xx, yy)).unwrap_or(&0) as f64
                     + { *ugg.get(&(xx, yy)).unwrap_or(&0.0) }
                     + 0.01);
-            if foo > uglimit {
+            if value > uglimit {
                 draw_line_segment_mut(
                     &mut imgug,
                     (
@@ -630,7 +630,7 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
                     )
                 }
             }
-            if foo > uglimit2 {
+            if value > uglimit2 {
                 draw_line_segment_mut(
                     &mut imgug,
                     (tmpfactor * x, tmpfactor * (hf32 * bf32 - y - bf32 * 3.0)),

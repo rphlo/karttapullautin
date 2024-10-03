@@ -1155,12 +1155,8 @@ pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
             }
         }
         let mut range = *dist.get(&l).unwrap_or(&0.0) * 0.8 - 1.0;
-        if range < 1.0 {
-            range = 1.0;
-        }
-        if range > 12.0 {
-            range = 12.0;
-        }
+        range = range.clamp(1.0, 12.0);
+
         for iii in 0..((range * 2.0 + 1.0) as usize) {
             for jjj in 0..((range * 2.0 + 1.0) as usize) {
                 let ii: f64 = xx - range + iii as f64;

@@ -1068,6 +1068,8 @@ pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
                     xa[el_x_len - 1] = el_x[l][el_x_len - 1];
                     ya[el_x_len - 1] = el_y[l][el_x_len - 1];
                 }
+
+                #[allow(clippy::manual_memcpy)]
                 for k in 0..el_x_len {
                     el_x[l][k] = xa[k];
                     el_y[l][k] = ya[k];

@@ -1,3 +1,6 @@
+// we use a lot of manual indices instead of `take` and `skip`, so allow that
+#![allow(clippy::needless_range_loop)]
+
 pub mod blocks;
 pub mod canvas;
 pub mod cliffs;

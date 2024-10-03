@@ -281,12 +281,9 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
                     if steep.is_nan() {
                         steep = -flat_place;
                     }
-                    if steep < 0.0 {
-                        steep = 0.0;
-                    }
-                    if steep > 17.0 {
-                        steep = 17.0;
-                    }
+
+                    steep = steep.clamp(0.0, 17.0);
+
                     let bonus =
                         (c2_limit - c1_limit) * (1.0 - (no_small_ciffs - steep) / no_small_ciffs);
                     let limit = c1_limit + bonus;
