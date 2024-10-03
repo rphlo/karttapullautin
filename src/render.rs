@@ -1199,7 +1199,7 @@ pub fn render(
                         (i as f32 + (angle.tan() * (h as f64) * 600.0 / 254.0 / scalefactor) as f32)
                             as f32
                             + m as f32,
-                        (h as f32 * 600.0 / 254.0 / scalefactor as f32) as f32,
+                        (h as f32 * 600.0 / 254.0 / scalefactor as f32),
                     ),
                     Rgba([0, 0, 200, 255]),
                 );
@@ -1258,8 +1258,8 @@ pub fn render(
         let blockpurple = image::imageops::crop(&mut blockpurple, 0, 0, w, h).to_image();
         let blockpurple_thumb = image::imageops::resize(
             &blockpurple,
-            new_width as u32,
-            new_height as u32,
+            new_width,
+            new_height,
             image::imageops::FilterType::Nearest,
         );
 
@@ -1291,8 +1291,8 @@ pub fn render(
         let imgbb = image::imageops::crop(&mut imgbb, 0, 0, w, h).to_image();
         let imgbb_thumb = image::imageops::resize(
             &imgbb,
-            new_width as u32,
-            new_height as u32,
+            new_width,
+            new_height,
             image::imageops::FilterType::Nearest,
         );
         image::imageops::overlay(&mut img, &imgbb_thumb, 0, 0);
@@ -1488,8 +1488,8 @@ pub fn render(
         let high = high_reader.decode().unwrap();
         let high_thumb = image::imageops::resize(
             &high,
-            new_width as u32,
-            new_height as u32,
+            new_width,
+            new_height,
             image::imageops::FilterType::Nearest,
         );
         image::imageops::overlay(&mut img, &high_thumb, 0, 0);
