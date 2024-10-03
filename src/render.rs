@@ -1781,13 +1781,19 @@ pub fn draw_curves(
     let data = fs::read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
-    let filename = &format!("{}/formlines.dxf", tmpfolder);
-    let output = Path::new(filename);
-    let fp = File::create(output).expect("Unable to create file");
-    let mut fp = BufWriter::new(fp);
+    // only create the file if condition is met
+    let mut fp = if formline == 2.0 && !nodepressions {
+        let filename = &format!("{}/formlines.dxf", tmpfolder);
+        let output = Path::new(filename);
+        let fp = File::create(output).expect("Unable to create file");
+        let mut fp = BufWriter::new(fp);
+        fp.write_all(data[0].as_bytes())
+            .expect("Could not write file");
 
-    fp.write_all(data[0].as_bytes())
-        .expect("Could not write file");
+        Some(fp)
+    } else {
+        None
+    };
 
     for (j, rec) in data.iter().enumerate() {
         let mut x = Vec::<f64>::new();
@@ -1987,7 +1993,7 @@ pub fn draw_curves(
 
             for i in 1..x.len() {
                 if curvew != 1.5 || formline == 0.0 || help2[i] || smallringtest {
-                    if formline == 2.0 && !nodepressions && curvew == 1.5 {
+                    if let (Some(fp), true) = (fp.as_mut(), curvew == 1.5) {
                         if !formlinestart {
                             write!(fp, "POLYLINE\r\n 66\r\n1\r\n  8\r\n{}\r\n  0\r\n", f_label)
                                 .expect("Could not write file");
@@ -2100,19 +2106,19 @@ pub fn draw_curves(
                             }
                         }
                     }
-                } else if formline == 2.0 && formlinestart && !nodepressions {
+                } else if let (Some(fp), true) = (fp.as_mut(), formlinestart) {
                     fp.write_all(b"SEQEND\r\n  0\r\n")
                         .expect("Could not write file");
                     formlinestart = false;
                 }
             }
-            if formline == 2.0 && formlinestart && !nodepressions {
+            if let (Some(fp), true) = (fp.as_mut(), formlinestart) {
                 fp.write_all(b"SEQEND\r\n  0\r\n")
                     .expect("Could not write file");
             }
         }
     }
-    if formline == 2.0 && !nodepressions {
+    if let Some(fp) = fp.as_mut() {
         fp.write_all(b"ENDSEC\r\n  0\r\nEOF\r\n")
             .expect("Could not write file");
     }

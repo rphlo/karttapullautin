@@ -128,8 +128,8 @@ impl Config {
         let cliffsonly: bool = gs.get("cliffsonly").unwrap_or("0") == "1";
         let contoursonly: bool = gs.get("contoursonly").unwrap_or("0") == "1";
 
-        #[allow(clippy::nonminimal_bool)]
         // clippy complains about this, but we want it like this for understandability
+        #[allow(clippy::nonminimal_bool)]
         if (vegeonly && (cliffsonly || contoursonly))
             || (cliffsonly && (vegeonly || contoursonly))
             || (contoursonly && (vegeonly || cliffsonly))
