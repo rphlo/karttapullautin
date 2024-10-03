@@ -51,7 +51,7 @@ pub fn process_zip(
 pub fn unzipmtk(
     config: &Config,
     thread: &String,
-    filenames: &Vec<String>,
+    filenames: &[String],
 ) -> Result<(), Box<dyn Error>> {
     if Path::new(&format!("temp{}/low.png", thread)).exists() {
         fs::remove_file(format!("temp{}/low.png", thread)).unwrap();
@@ -238,11 +238,11 @@ pub fn process_tile(
         if !skipknolldetection {
             info!("{}Knoll detection part 2", thread_name);
             timing.start_section("knoll detection part 2");
-            knolls::knolldetector(&config, thread).unwrap();
+            knolls::knolldetector(config, thread).unwrap();
         }
         info!("{}Contour generation part 1", thread_name);
         timing.start_section("contour generation part 1");
-        knolls::xyzknolls(&config, thread).unwrap();
+        knolls::xyzknolls(config, thread).unwrap();
 
         info!("{}Contour generation part 2", thread_name);
         timing.start_section("contour generation part 2");
@@ -662,7 +662,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
                 img.save(Path::new(&format!("{}/{}_vege.png", batchoutfolder, laz)))
                     .expect("could not save output png");
 
-                let pgw_file_out = File::create(&format!("{}/{}_vege.pgw", batchoutfolder, laz))
+                let pgw_file_out = File::create(format!("{}/{}_vege.pgw", batchoutfolder, laz))
                     .expect("Unable to create file");
                 let mut pgw_file_out = BufWriter::new(pgw_file_out);
                 write!(

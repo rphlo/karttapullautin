@@ -24,14 +24,14 @@ pub fn xyz2contours(
 
     let tmpfolder = format!("temp{}", thread);
 
-    let mut xmin: f64 = std::f64::MAX;
-    let mut xmax: f64 = std::f64::MIN;
+    let mut xmin: f64 = f64::MAX;
+    let mut xmax: f64 = f64::MIN;
 
-    let mut ymin: f64 = std::f64::MAX;
-    let mut ymax: f64 = std::f64::MIN;
+    let mut ymin: f64 = f64::MAX;
+    let mut ymax: f64 = f64::MIN;
 
-    let mut hmin: f64 = std::f64::MAX;
-    let mut hmax: f64 = std::f64::MIN;
+    let mut hmin: f64 = f64::MAX;
+    let mut hmax: f64 = f64::MIN;
 
     let path = format!("{}/{}", tmpfolder, xyzfilein);
     let xyz_file_in = Path::new(&path);
