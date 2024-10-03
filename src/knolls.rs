@@ -139,7 +139,6 @@ pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
             let y: f64 = r[2].parse::<f64>().unwrap();
             let mut ok = true;
             let mut i = (x - xstart) / scalefactor - 3.0;
-            let mut layer = String::new();
             while i < (x - xstart) / scalefactor + 4.0 && ok {
                 let mut j = (y - ystart) / scalefactor - 3.0;
                 while j < (y - ystart) / scalefactor + 4.0 && ok {
@@ -156,14 +155,14 @@ pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
                 }
                 i += 1.0;
             }
-            if !ok {
-                layer = String::from("ugly");
-            }
-            if depression {
-                layer.push_str("dotknoll")
-            } else {
-                layer.push_str("udepression")
-            }
+
+            let layer = match (ok, depression) {
+                (true, true) => "dotknoll",
+                (true, false) => "udepression",
+                (false, true) => "uglydotknoll",
+                (false, false) => "uglyudepression",
+            };
+
             write!(
                 &mut f,
                 "POINT\r\n  8\r\n{}\r\n 10\r\n{}\r\n 20\r\n{}\r\n 50\r\n0\r\n  0\r\n",
