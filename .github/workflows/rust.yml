@@ -39,10 +39,9 @@ jobs:
         with:
           components: clippy
 
-        # strict version that does not allow _any_ wclippy warnings to pass
-      # - run: cargo clippy -- -D warnings
-        # allows warnings to pass (but still not errors)
-      - run: cargo clippy --all-features --all-targets
+      # strict version that does not allow _any_ clippy warnings to pass
+      # this prevents us from introducing potential issues.
+      - run: cargo clippy --all-features --all-targets -- -D warnings
 
   format:
     name: Format (rustfmt)
