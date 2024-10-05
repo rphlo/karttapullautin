@@ -5,13 +5,13 @@ use rand::prelude::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::config::Config;
 use crate::util::read_lines;
 use crate::util::read_lines_no_alloc;
 
-pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying cliffs...");
 
     let &Config {
@@ -38,8 +38,6 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
 
     let mut hmin: f64 = f64::MAX;
     let mut hmax: f64 = f64::MIN;
-
-    let tmpfolder = PathBuf::from(&format!("temp{}", thread));
 
     let xyz_file_in = tmpfolder.join("xyztemp.xyz");
 

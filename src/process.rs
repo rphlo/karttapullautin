@@ -24,6 +24,7 @@ use crate::vegetation;
 pub fn process_zip(
     config: &Config,
     thread: &String,
+    tmpfolder: &Path,
     filenames: &[String],
 ) -> Result<(), Box<dyn Error>> {
     let mut timing = Timing::start_now("process_zip");
@@ -35,39 +36,56 @@ pub fn process_zip(
 
     info!("Rendering shape files");
     timing.start_section("unzip and render shape files");
-    unzipmtk(config, thread, filenames).unwrap();
+    unzipmtk(config, tmpfolder, filenames).unwrap();
 
     info!("Rendering png map with depressions");
     timing.start_section("Rendering png map with depressions");
-    render::render(config, thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+    render::render(
+        config,
+        thread,
+        tmpfolder,
+        pnorthlinesangle,
+        pnorthlineswidth,
+        false,
+    )
+    .unwrap();
 
     info!("Rendering png map without depressions");
     timing.start_section("Rendering png map without depressions");
-    render::render(config, thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+    render::render(
+        config,
+        thread,
+        tmpfolder,
+        pnorthlinesangle,
+        pnorthlineswidth,
+        true,
+    )
+    .unwrap();
 
     Ok(())
 }
 
 pub fn unzipmtk(
     config: &Config,
-    thread: &String,
+    tmpfolder: &Path,
     filenames: &[String],
 ) -> Result<(), Box<dyn Error>> {
-    if Path::new(&format!("temp{}/low.png", thread)).exists() {
-        fs::remove_file(format!("temp{}/low.png", thread)).unwrap();
+    let low_file = tmpfolder.join("low.png");
+    if low_file.exists() {
+        fs::remove_file(low_file).unwrap();
     }
-    if Path::new(&format!("temp{}/high.png", thread)).exists() {
-        fs::remove_file(format!("temp{}/high.png", thread)).unwrap();
+
+    let high_file = tmpfolder.join("high.png");
+    if high_file.exists() {
+        fs::remove_file(high_file).unwrap();
     }
 
     for zip_name in filenames.iter() {
         let fname = Path::new(&zip_name);
         let file = fs::File::open(fname).unwrap();
         let mut archive = zip::ZipArchive::new(file).unwrap();
-        archive
-            .extract(Path::new(&format!("temp{}/", thread)))
-            .unwrap();
-        render::mtkshaperender(config, thread).unwrap();
+        archive.extract(tmpfolder).unwrap();
+        render::mtkshaperender(config, tmpfolder).unwrap();
     }
     Ok(())
 }
@@ -75,12 +93,12 @@ pub fn unzipmtk(
 pub fn process_tile(
     config: &Config,
     thread: &String,
+    tmpfolder: &Path,
     filename: &str,
     skip_rendering: bool,
 ) -> Result<(), Box<dyn Error>> {
     let mut timing = Timing::start_now("process_tile");
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
-    fs::create_dir_all(&tmpfolder).expect("Could not create tmp folder");
+    fs::create_dir_all(tmpfolder).expect("Could not create tmp folder");
 
     let &Config {
         pnorthlinesangle,
@@ -184,7 +202,7 @@ pub fn process_tile(
     if vegeonly || cliffsonly {
         contours::xyz2contours(
             config,
-            thread,
+            tmpfolder,
             scalefactor * 0.3,
             "xyztemp.xyz",
             "xyz_03.xyz",
@@ -195,7 +213,7 @@ pub fn process_tile(
     } else {
         contours::xyz2contours(
             config,
-            thread,
+            tmpfolder,
             scalefactor * 0.3,
             "xyztemp.xyz",
             "xyz_03.xyz",
@@ -220,7 +238,7 @@ pub fn process_tile(
             info!("{}Basemap contours", thread_name);
             contours::xyz2contours(
                 config,
-                thread,
+                tmpfolder,
                 basemapcontours,
                 "xyz2.xyz",
                 "",
@@ -232,11 +250,11 @@ pub fn process_tile(
         if !skipknolldetection {
             info!("{}Knoll detection part 2", thread_name);
             timing.start_section("knoll detection part 2");
-            knolls::knolldetector(config, thread).unwrap();
+            knolls::knolldetector(config, tmpfolder).unwrap();
         }
         info!("{}Contour generation part 1", thread_name);
         timing.start_section("contour generation part 1");
-        knolls::xyzknolls(config, thread).unwrap();
+        knolls::xyzknolls(config, tmpfolder).unwrap();
 
         info!("{}Contour generation part 2", thread_name);
         timing.start_section("contour generation part 2");
@@ -244,7 +262,7 @@ pub fn process_tile(
             // contours 2.5
             contours::xyz2contours(
                 config,
-                thread,
+                tmpfolder,
                 halfinterval,
                 "xyz_knolls.xyz",
                 "null",
@@ -255,7 +273,7 @@ pub fn process_tile(
         } else {
             contours::xyz2contours(
                 config,
-                thread,
+                tmpfolder,
                 halfinterval,
                 "xyztemp.xyz",
                 "null",
@@ -266,42 +284,58 @@ pub fn process_tile(
         }
         info!("{}Contour generation part 3", thread_name);
         timing.start_section("contour generation part 3");
-        merge::smoothjoin(config, thread).unwrap();
+        merge::smoothjoin(config, tmpfolder).unwrap();
 
         info!("{}Contour generation part 4", thread_name);
         timing.start_section("contour generation part 4");
-        knolls::dotknolls(config, thread).unwrap();
+        knolls::dotknolls(config, tmpfolder).unwrap();
     }
 
     if !cliffsonly && !contoursonly {
         info!("{}Vegetation generation", thread_name);
         timing.start_section("vegetation generation");
-        vegetation::makevege(config, thread).unwrap();
+        vegetation::makevege(config, tmpfolder).unwrap();
     }
 
     if !vegeonly && !contoursonly {
         info!("{}Cliff generation", thread_name);
         timing.start_section("cliff generation");
-        cliffs::makecliffs(config, thread).unwrap();
+        cliffs::makecliffs(config, tmpfolder).unwrap();
     }
     if !vegeonly && !contoursonly && !cliffsonly && config.detectbuildings {
         info!("{}Detecting buildings", thread_name);
         timing.start_section("detecting buildings");
-        blocks::blocks(thread).unwrap();
+        blocks::blocks(tmpfolder).unwrap();
     }
     if !skip_rendering && !vegeonly && !contoursonly && !cliffsonly {
         info!("{}Rendering png map with depressions", thread_name);
         timing.start_section("rendering png map with depressions");
-        render::render(config, thread, pnorthlinesangle, pnorthlineswidth, false).unwrap();
+        render::render(
+            config,
+            thread,
+            tmpfolder,
+            pnorthlinesangle,
+            pnorthlineswidth,
+            false,
+        )
+        .unwrap();
 
         info!("{}Rendering png map without depressions", thread_name);
         timing.start_section("rendering png map without depressions");
-        render::render(config, thread, pnorthlinesangle, pnorthlineswidth, true).unwrap();
+        render::render(
+            config,
+            thread,
+            tmpfolder,
+            pnorthlinesangle,
+            pnorthlineswidth,
+            true,
+        )
+        .unwrap();
     } else if contoursonly {
         info!("{}Rendering formlines", thread_name);
         timing.start_section("rendering formlines");
         let mut img = RgbaImage::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
-        render::draw_curves(config, &mut img, thread, false, false).unwrap();
+        render::draw_curves(config, &mut img, tmpfolder, false, false).unwrap();
     } else {
         info!("{}Skipped rendering", thread_name);
     }
@@ -424,12 +458,27 @@ pub fn batch_process(conf: &Config, thread: &String) {
         }
         tmp_fp.flush().unwrap();
 
+        let tmpfolder = PathBuf::from(format!("temp{}", thread));
         if zip_files.is_empty() {
-            process_tile(conf, thread, &format!("temp{}.xyz", thread), false).unwrap();
+            process_tile(
+                conf,
+                thread,
+                &tmpfolder,
+                &format!("temp{}.xyz", thread),
+                false,
+            )
+            .unwrap();
         } else {
-            process_tile(conf, thread, &format!("temp{}.xyz", thread), true).unwrap();
+            process_tile(
+                conf,
+                thread,
+                &tmpfolder,
+                &format!("temp{}.xyz", thread),
+                true,
+            )
+            .unwrap();
             if !vegeonly && !cliffsonly && !contoursonly {
-                process_zip(conf, thread, &zip_files).unwrap();
+                process_zip(conf, thread, &tmpfolder, &zip_files).unwrap();
             }
         }
 

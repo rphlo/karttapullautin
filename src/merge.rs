@@ -503,9 +503,8 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Smooth curves...");
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
     let &Config {
         scalefactor,

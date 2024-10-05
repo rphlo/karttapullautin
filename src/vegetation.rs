@@ -8,15 +8,13 @@ use std::error::Error;
 use std::f32::consts::SQRT_2;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::config::{Config, Zone};
 use crate::util::{read_lines, read_lines_no_alloc};
 
-pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
-
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
     let path = tmpfolder.join("xyz2.xyz");
     let xyz_file_in = Path::new(&path);
