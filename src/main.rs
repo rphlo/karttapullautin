@@ -1,6 +1,5 @@
 use log::info;
 use pullauta::config::Config;
-use regex::Regex;
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -33,23 +32,27 @@ fn main() {
     let config =
         Arc::new(Config::load_or_create_default().expect("Could not open or create config file"));
 
-    let int_re = Regex::new(r"^[1-9]\d*$").unwrap();
-
     let mut args: Vec<String> = env::args().collect();
 
     args.remove(0); // program name
 
-    if !args.is_empty() && int_re.is_match(&args[0]) {
+    if !args.is_empty() && args[0].trim().parse::<usize>().is_ok() {
         thread = args.remove(0);
     }
 
-    let mut command: String = String::new();
-    if !args.is_empty() {
-        command = args.remove(0);
-    }
+    let command = if !args.is_empty() {
+        args.remove(0)
+    } else {
+        String::new()
+    };
 
-    let accepted_files_re = Regex::new(r"\.(las|laz|xyz)$").unwrap();
-    if command.is_empty() || accepted_files_re.is_match(&command.to_lowercase()) {
+    let command_lowercase = command.to_lowercase();
+
+    if command.is_empty()
+        || command_lowercase.ends_with(".las")
+        || command_lowercase.ends_with(".laz")
+        || command_lowercase.ends_with(".xyz")
+    {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
         println!(
             "Karttapullautin v{}\nThere is no warranty. Use it at your own risk!\n",
@@ -293,15 +296,17 @@ fn main() {
         pullauta::process::batch_process(&config, &thread)
     }
 
-    let zip_files_re = Regex::new(r"\.zip$").unwrap();
-    if zip_files_re.is_match(&command.to_lowercase()) {
+    if command_lowercase.ends_with(".zip") {
         let mut zips: Vec<String> = vec![command];
         zips.extend(args);
         pullauta::process::process_zip(&config, &thread, &tmpfolder, &zips).unwrap();
         return;
     }
 
-    if accepted_files_re.is_match(&command.to_lowercase()) {
+    if command_lowercase.ends_with(".las")
+        || command_lowercase.ends_with(".laz")
+        || command_lowercase.ends_with(".xyz")
+    {
         let mut norender: bool = false;
         if args.len() > 1 {
             norender = args[1].clone() == "norender";

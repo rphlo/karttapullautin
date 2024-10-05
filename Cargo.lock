@@ -1070,7 +1070,6 @@ dependencies = [
  "las",
  "log",
  "rand",
- "regex",
  "rust-ini",
  "rustc-hash 2.0.0",
  "shapefile",

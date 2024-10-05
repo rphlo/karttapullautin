@@ -3,7 +3,6 @@ use las::{raw::Header, Reader};
 use log::info;
 use rand::distributions;
 use rand::prelude::*;
-use regex::Regex;
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
@@ -116,10 +115,7 @@ pub fn process_tile(
     info!("{}Preparing input file", thread_name);
 
     let mut skiplaz2txt: bool = false;
-    if Regex::new(r".xyz$")
-        .unwrap()
-        .is_match(&filename.to_lowercase())
-    {
+    if filename.to_lowercase().ends_with(".xyz") {
         if let Ok(lines) = read_lines(Path::new(filename)) {
             let mut i: u32 = 0;
             for line in lines {
