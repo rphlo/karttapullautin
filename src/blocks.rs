@@ -4,22 +4,20 @@ use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
-use std::error::Error;
-use std::path::Path;
+use std::{error::Error, path::PathBuf};
 
 use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     info!("Identifying blocks...");
-    let tmpfolder = format!("temp{}", thread);
-    let path = format!("{}/xyz2.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
+    let tmpfolder = PathBuf::from(format!("temp{}", thread));
+    let xyz_file_in = tmpfolder.join("xyz2.xyz");
     let mut size: f64 = f64::NAN;
     let mut xstartxyz: f64 = f64::NAN;
     let mut ystartxyz: f64 = f64::NAN;
     let mut xmax: u64 = u64::MIN;
     let mut ymax: u64 = u64::MIN;
-    if let Ok(lines) = read_lines(xyz_file_in) {
+    if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
             let mut parts = ip.split(' ');
@@ -63,9 +61,7 @@ pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     let black = Rgb([0, 0, 0]);
     let white = Rgba([255, 255, 255, 255]);
 
-    let path = format!("{}/xyztemp.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
-
+    let xyz_file_in = tmpfolder.join("xyztemp.xyz");
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.split(' ');
         let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
@@ -107,20 +103,18 @@ pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
     .expect("error reading xyz file");
 
     let filter_size = 2;
-    img.save(Path::new(&format!("{}/blocks.png", tmpfolder)))
+    img.save(tmpfolder.join("blocks.png"))
         .expect("error saving png");
-    img2.save(Path::new(&format!("{}/blocks2.png", tmpfolder)))
+    img2.save(tmpfolder.join("blocks2.png"))
         .expect("error saving png");
-    let mut img =
-        image::open(Path::new(&format!("{}/blocks.png", tmpfolder))).expect("Opening image failed");
-    let img2 = image::open(Path::new(&format!("{}/blocks2.png", tmpfolder)))
-        .expect("Opening image failed");
+    let mut img = image::open(tmpfolder.join("blocks.png")).expect("Opening image failed");
+    let img2 = image::open(tmpfolder.join("blocks2.png")).expect("Opening image failed");
 
     image::imageops::overlay(&mut img, &img2, 0, 0);
 
     img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
 
-    img.save(Path::new(&format!("{}/blocks.png", tmpfolder)))
+    img.save(tmpfolder.join("blocks.png"))
         .expect("error saving png");
     info!("Done");
     Ok(())

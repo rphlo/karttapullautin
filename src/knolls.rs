@@ -5,7 +5,7 @@ use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
-use std::path::Path;
+use std::path::PathBuf;
 
 use crate::config::Config;
 use crate::util::{read_lines, read_lines_no_alloc};
@@ -15,16 +15,15 @@ pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
 
     let scalefactor = config.scalefactor;
 
-    let tmpfolder = format!("temp{}", thread);
+    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
-    let path = format!("{}/xyz_knolls.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
+    let xyz_file_in = tmpfolder.join("xyz_knolls.xyz");
 
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
+    if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
             let mut parts = ip.split(' ');
@@ -72,16 +71,14 @@ pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
         Luma([0xff]),
     );
 
-    let f = File::create(Path::new(&format!("{}/dotknolls.dxf", tmpfolder)))
-        .expect("Unable to create file");
+    let f = File::create(tmpfolder.join("dotknolls.dxf")).expect("Unable to create file");
     let mut f = BufWriter::new(f);
     write!(&mut f,
         "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
         xstart, ystart, xmax * size + xstart, ymax * size + ystart
     ).expect("Cannot write dxf file");
 
-    let input_filename = &format!("{}/out2.dxf", tmpfolder);
-    let input = Path::new(input_filename);
+    let input = tmpfolder.join("out2.dxf");
     let data = fs::read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
@@ -127,9 +124,7 @@ pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
         }
     }
 
-    let input_filename = &format!("{}/dotknolls.txt", tmpfolder);
-    let input = Path::new(input_filename);
-
+    let input = tmpfolder.join("dotknolls.txt");
     read_lines_no_alloc(input, |line| {
         let parts = line.split(' ');
         let r = parts.collect::<Vec<&str>>();
@@ -186,15 +181,15 @@ pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Err
     let halfinterval = contour_interval / 2.0 * scalefactor;
 
     let interval = 0.3 * scalefactor;
-    let tmpfolder = format!("temp{}", thread);
-    let path = format!("{}/xyz_03.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
+    let tmpfolder = PathBuf::from(format!("temp{}", thread));
+
+    let xyz_file_in = tmpfolder.join("xyz_03.xyz");
 
     let mut size: f64 = f64::NAN;
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
+    if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
             let mut parts = ip.split(' ');
@@ -243,11 +238,10 @@ pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Err
     })
     .expect("Could not read file");
 
-    let data = fs::read_to_string(Path::new(&format!("{}/contours03.dxf", tmpfolder)))
+    let data = fs::read_to_string(tmpfolder.join("contours03.dxf"))
         .expect("Should have been able to read the file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
-    let f = File::create(Path::new(&format!("{}/detected.dxf", tmpfolder)))
-        .expect("Unable to create file");
+    let f = File::create(tmpfolder.join("detected.dxf")).expect("Unable to create file");
     let mut f = BufWriter::new(f);
     write!(&mut f,
         "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
@@ -800,8 +794,7 @@ pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Err
 
     let canditates = new_candidates;
 
-    let file_pins =
-        File::create(Path::new(&format!("{}/pins.txt", tmpfolder))).expect("Unable to create file");
+    let file_pins = File::create(tmpfolder.join("pins.txt")).expect("Unable to create file");
     let mut file_pins = BufWriter::new(file_pins);
 
     for l in 0..data.len() {
@@ -924,16 +917,15 @@ pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
 
     let interval = contour_interval / 2.0 * scalefactor;
 
-    let tmpfolder = format!("temp{}", thread);
+    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
-    let path = format!("{}/xyz_03.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
+    let xyz_file_in = tmpfolder.join("xyz_03.xyz");
 
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
+    if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
             let mut parts = ip.split(' ');
@@ -953,7 +945,7 @@ pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
     let mut xmax: u64 = 0;
     let mut ymax: u64 = 0;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    read_lines_no_alloc(xyz_file_in, |line| {
+    read_lines_no_alloc(&xyz_file_in, |line| {
         let mut parts = line.split(' ');
         let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
         let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
@@ -1010,8 +1002,7 @@ pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
     }
     let mut pins: Vec<Pin> = Vec::new();
 
-    let path = format!("{}/pins.txt", tmpfolder);
-    let pins_file_in = Path::new(&path);
+    let pins_file_in = tmpfolder.join("pins.txt");
     if pins_file_in.exists() {
         read_lines_no_alloc(pins_file_in, |line| {
             let mut r = line.trim().split(',');
@@ -1176,8 +1167,7 @@ pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
         }
     }
 
-    let f2 = File::create(Path::new(&format!("{}/xyz_knolls.xyz", tmpfolder)))
-        .expect("Unable to create file");
+    let f2 = File::create(tmpfolder.join("xyz_knolls.xyz")).expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
     read_lines_no_alloc(xyz_file_in, |line| {

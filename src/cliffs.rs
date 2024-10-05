@@ -5,7 +5,7 @@ use rand::prelude::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::Path;
+use std::path::PathBuf;
 
 use crate::config::Config;
 use crate::util::read_lines;
@@ -39,10 +39,9 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     let mut hmin: f64 = f64::MAX;
     let mut hmax: f64 = f64::MIN;
 
-    let tmpfolder = format!("temp{}", thread);
+    let tmpfolder = PathBuf::from(&format!("temp{}", thread));
 
-    let path = format!("{}/xyztemp.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
+    let xyz_file_in = tmpfolder.join("xyztemp.xyz");
 
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.split(' ');
@@ -76,14 +75,13 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     })
     .expect("Could not read input file");
 
-    let path = format!("{}/xyz2.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
+    let xyz_file_in = tmpfolder.join("xyz2.xyz");
     let mut size: f64 = f64::NAN;
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
     let mut sxmax: usize = usize::MIN;
     let mut symax: usize = usize::MIN;
-    if let Ok(lines) = read_lines(xyz_file_in) {
+    if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
             let mut parts = ip.split(' ');
@@ -159,13 +157,12 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
             (((xmax - xmin) / 3.0).ceil() + 1.0) as usize
         ];
 
-    let path = format!("{}/xyztemp.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
+    let xyz_file_in = tmpfolder.join("xyztemp.xyz");
 
     let mut rng = rand::thread_rng();
     let randdist = distributions::Bernoulli::new(cliff_thin).unwrap();
 
-    read_lines_no_alloc(xyz_file_in, |line| {
+    read_lines_no_alloc(&xyz_file_in, |line| {
         if cliff_thin == 1.0 || rng.sample(randdist) {
             let mut parts = line.split(' ');
             let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
@@ -184,14 +181,12 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     let w = ((xmax - xmin).floor() / 3.0) as usize;
     let h = ((ymax - ymin).floor() / 3.0) as usize;
 
-    let f2 =
-        File::create(Path::new(&format!("{}/c2g.dxf", tmpfolder))).expect("Unable to create file");
+    let f2 = File::create(tmpfolder.join("c2g.dxf")).expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
     write!(&mut f2,"  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n", xmin, ymin, xmax, ymax).expect("Cannot write dxf file");
 
-    let f3 =
-        File::create(Path::new(&format!("{}/c3g.dxf", tmpfolder))).expect("Unable to create file");
+    let f3 = File::create(tmpfolder.join("c3g.dxf")).expect("Unable to create file");
     let mut f3 = BufWriter::new(f3);
 
     write!(&mut f3, "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
@@ -356,15 +351,14 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     f2.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
         .expect("Cannot write dxf file");
     let c2_limit = 2.6 * 2.75;
-    let path = format!("{}/xyz2.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
     let mut list_alt =
         vec![
             vec![Vec::<(f64, f64, f64)>::new(); (((ymax - ymin) / 3.0).ceil() + 1.0) as usize];
             (((xmax - xmin) / 3.0).ceil() + 1.0) as usize
         ];
 
-    read_lines_no_alloc(xyz_file_in, |line| {
+    let xyz_file_in = tmpfolder.join("xyz2.xyz");
+    read_lines_no_alloc(&xyz_file_in, |line| {
         if cliff_thin == 1.0 || rng.sample(randdist) {
             let mut parts = line.split(' ');
             let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
@@ -443,7 +437,7 @@ pub fn makecliffs(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
 
     f3.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
         .expect("Cannot write dxf file");
-    img.save(Path::new(&format!("{}/c2.png", tmpfolder)))
+    img.save(tmpfolder.join("c2.png"))
         .expect("could not save output png");
     info!("Done");
     Ok(())

@@ -132,7 +132,7 @@ impl Canvas {
     }
 
     #[inline]
-    pub fn save_as(&mut self, filename: &str) {
+    pub fn save_as(&mut self, filename: &std::path::Path) {
         let d = self.data();
         let mut file = File::create(filename).unwrap();
         let bytes = d.as_bytes();
@@ -140,7 +140,7 @@ impl Canvas {
     }
 
     #[inline]
-    pub fn load_from(filename: &str) -> Canvas {
+    pub fn load_from(filename: &std::path::Path) -> Canvas {
         let data = Data::from_filename(filename).unwrap();
         let image = Image::from_encoded(data).unwrap();
         let mut c = Canvas::new(image.width(), image.height());

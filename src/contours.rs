@@ -3,7 +3,7 @@ use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::Path;
+use std::path::PathBuf;
 
 use crate::config::Config;
 use crate::util::read_lines_no_alloc;
@@ -22,7 +22,7 @@ pub fn xyz2contours(
     let scalefactor = config.scalefactor;
     let water_class = &config.water_class;
 
-    let tmpfolder = format!("temp{}", thread);
+    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
     let mut xmin: f64 = f64::MAX;
     let mut xmax: f64 = f64::MIN;
@@ -33,10 +33,8 @@ pub fn xyz2contours(
     let mut hmin: f64 = f64::MAX;
     let mut hmax: f64 = f64::MIN;
 
-    let path = format!("{}/{}", tmpfolder, xyzfilein);
-    let xyz_file_in = Path::new(&path);
-
-    read_lines_no_alloc(xyz_file_in, |line| {
+    let xyz_file_in = tmpfolder.join(xyzfilein);
+    read_lines_no_alloc(&xyz_file_in, |line| {
         let mut parts = line.trim().split(' ');
 
         let p0 = parts.next().unwrap();
@@ -228,8 +226,7 @@ pub fn xyz2contours(
     }
 
     if !xyzfileout.is_empty() && xyzfileout != "null" {
-        let path = format!("{}/{}", tmpfolder, xyzfileout);
-        let xyz_file_out = Path::new(&path);
+        let xyz_file_out = tmpfolder.join(xyzfileout);
         let f = File::create(xyz_file_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
         for x in 0..w + 1 {
@@ -245,10 +242,9 @@ pub fn xyz2contours(
         let v = cinterval;
 
         let mut level: f64 = (hmin / v).floor() * v;
-        let path = format!("{}/temp_polylines.txt", tmpfolder);
-        let polyline_out = Path::new(&path);
+        let polyline_out = tmpfolder.join("temp_polylines.txt");
 
-        let f = File::create(polyline_out).expect("Unable to create file");
+        let f = File::create(&polyline_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
 
         loop {
@@ -470,8 +466,7 @@ pub fn xyz2contours(
         // explicitly flush and drop to close the file
         drop(f);
 
-        let f = File::create(Path::new(&format!("{}/{}", tmpfolder, dxffile)))
-            .expect("Unable to create file");
+        let f = File::create(tmpfolder.join(dxffile)).expect("Unable to create file");
         let mut f = BufWriter::new(f);
 
         write!(

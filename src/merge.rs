@@ -505,7 +505,8 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
 
 pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
     info!("Smooth curves...");
-    let tmpfolder = format!("temp{}", thread);
+    let tmpfolder = PathBuf::from(format!("temp{}", thread));
+
     let &Config {
         scalefactor,
         inidotknolls,
@@ -524,13 +525,12 @@ pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     }
 
     let interval = halfinterval;
-    let path = format!("{}/xyz_knolls.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
+    let xyz_file_in = tmpfolder.join("xyz_knolls.xyz");
     let mut size: f64 = f64::NAN;
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
+    if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
             let mut parts = ip.split(' ');
@@ -590,8 +590,7 @@ pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
             steepness[i as usize][j as usize] = high - low;
         }
     }
-    let input_filename = &format!("{}/out.dxf", tmpfolder);
-    let input = Path::new(input_filename);
+    let input = tmpfolder.join("out.dxf");
     let data = fs::read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
     let mut dxfheadtmp = data[0];
@@ -599,8 +598,7 @@ pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     dxfheadtmp = dxfheadtmp.split("HEADER").collect::<Vec<&str>>()[1];
     let dxfhead = &format!("HEADER{}ENDSEC", dxfheadtmp);
 
-    let output_filename = &format!("{}/out2.dxf", tmpfolder);
-    let output = Path::new(output_filename);
+    let output = tmpfolder.join("out2.dxf");
     let fp = File::create(output).expect("Unable to create file");
     let mut fp = BufWriter::new(fp);
 
@@ -611,18 +609,15 @@ pub fn smoothjoin(config: &Config, thread: &String) -> Result<(), Box<dyn Error>
     fp.write_all(b"\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n")
         .expect("Could not write file");
 
-    let depr_filename = &format!("{}/depressions.txt", tmpfolder);
-    let depr_output = Path::new(depr_filename);
+    let depr_output = tmpfolder.join("depressions.txt");
     let depr_fp = File::create(depr_output).expect("Unable to create file");
     let mut depr_fp = BufWriter::new(depr_fp);
 
-    let dotknoll_filename = &format!("{}/dotknolls.txt", tmpfolder);
-    let dotknoll_output = Path::new(dotknoll_filename);
+    let dotknoll_output = tmpfolder.join("dotknolls.txt");
     let dotknoll_fp = File::create(dotknoll_output).expect("Unable to create file");
     let mut dotknoll_fp = BufWriter::new(dotknoll_fp);
 
-    let knollhead_filename = &format!("{}/knollheads.txt", tmpfolder);
-    let knollhead_output = Path::new(knollhead_filename);
+    let knollhead_output = tmpfolder.join("knollheads.txt");
     let knollhead_fp = File::create(knollhead_output).expect("Unable to create file");
     let mut knollhead_fp = BufWriter::new(knollhead_fp);
 

@@ -79,7 +79,7 @@ pub fn process_tile(
     skip_rendering: bool,
 ) -> Result<(), Box<dyn Error>> {
     let mut timing = Timing::start_now("process_tile");
-    let tmpfolder = format!("temp{}", thread);
+    let tmpfolder = PathBuf::from(format!("temp{}", thread));
     fs::create_dir_all(&tmpfolder).expect("Could not create tmp folder");
 
     let &Config {
@@ -141,7 +141,7 @@ pub fn process_tile(
         let mut rng = rand::thread_rng();
         let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
 
-        let tmp_filename = format!("{}/xyztemp.xyz", tmpfolder);
+        let tmp_filename = tmpfolder.join("xyztemp.xyz");
         let tmp_file = File::create(tmp_filename).expect("Unable to create file");
         let mut tmp_fp = BufWriter::new(tmp_file);
 
@@ -165,11 +165,8 @@ pub fn process_tile(
         }
         tmp_fp.flush().unwrap();
     } else {
-        fs::copy(
-            Path::new(filename),
-            Path::new(&format!("{}/xyztemp.xyz", tmpfolder)),
-        )
-        .expect("Could not copy file to tmpfolder");
+        fs::copy(Path::new(filename), tmpfolder.join("xyztemp.xyz"))
+            .expect("Could not copy file to tmpfolder");
     }
     info!("{}Done", thread_name);
 
@@ -208,11 +205,8 @@ pub fn process_tile(
         .expect("contour generation failed");
     }
 
-    fs::copy(
-        format!("{}/xyz_03.xyz", tmpfolder),
-        format!("{}/xyz2.xyz", tmpfolder),
-    )
-    .expect("Could not copy file");
+    fs::copy(tmpfolder.join("xyz_03.xyz"), tmpfolder.join("xyz2.xyz"))
+        .expect("Could not copy file");
 
     let &Config {
         contour_interval,
