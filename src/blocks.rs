@@ -4,13 +4,12 @@ use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, path::Path};
 
 use crate::util::{read_lines, read_lines_no_alloc};
 
-pub fn blocks(thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying blocks...");
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
     let xyz_file_in = tmpfolder.join("xyz2.xyz");
     let mut size: f64 = f64::NAN;
     let mut xstartxyz: f64 = f64::NAN;

@@ -3,14 +3,14 @@ use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::config::Config;
 use crate::util::read_lines_no_alloc;
 
 pub fn xyz2contours(
     config: &Config,
-    thread: &String,
+    tmpfolder: &Path,
     cinterval: f64,
     xyzfilein: &str,
     xyzfileout: &str,
@@ -21,8 +21,6 @@ pub fn xyz2contours(
 
     let scalefactor = config.scalefactor;
     let water_class = &config.water_class;
-
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
     let mut xmin: f64 = f64::MAX;
     let mut xmax: f64 = f64::MIN;

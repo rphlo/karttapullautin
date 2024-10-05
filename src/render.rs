@@ -12,9 +12,9 @@ use std::error::Error;
 use std::f64::consts::PI;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     let scalefactor = config.scalefactor;
 
     let vectorconf = &config.vectorconf;
@@ -30,7 +30,6 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
             .map(|x| x.to_string())
             .collect();
     }
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
     if !tmpfolder.join("vegetation.pgw").exists() {
         info!("Could not find vegetation file");
         return Ok(());
@@ -1103,6 +1102,7 @@ pub fn mtkshaperender(config: &Config, thread: &String) -> Result<(), Box<dyn Er
 pub fn render(
     config: &Config,
     thread: &String,
+    tmpfolder: &Path,
     angle_deg: f64,
     nwidth: usize,
     nodepressions: bool,
@@ -1111,7 +1111,6 @@ pub fn render(
 
     let scalefactor = config.scalefactor;
 
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
     let angle = -angle_deg / 180.0 * PI;
 
     // Draw vegetation ----------
@@ -1201,7 +1200,7 @@ pub fn render(
         }
     }
 
-    draw_curves(config, &mut img, thread, nodepressions, true).unwrap();
+    draw_curves(config, &mut img, tmpfolder, nodepressions, true).unwrap();
 
     // dotknolls----------
     let input = tmpfolder.join("dotknolls.dxf");
@@ -1517,7 +1516,7 @@ pub fn render(
 pub fn draw_curves(
     config: &Config,
     canvas: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
-    thread: &String,
+    tmpfolder: &Path,
     nodepressions: bool,
     draw_image: bool,
 ) -> Result<(), Box<dyn Error>> {
@@ -1534,8 +1533,6 @@ pub fn draw_curves(
         ..
     } = config;
     formlinesteepness *= scalefactor;
-
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
     let mut size: f64 = 0.0;
     let mut xstart: f64 = 0.0;

@@ -5,17 +5,15 @@ use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::config::Config;
 use crate::util::{read_lines, read_lines_no_alloc};
 
-pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying dotknolls...");
 
     let scalefactor = config.scalefactor;
-
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
     let xyz_file_in = tmpfolder.join("xyz_knolls.xyz");
 
@@ -173,7 +171,7 @@ pub fn dotknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>>
     info!("Done");
     Ok(())
 }
-pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Detecting knolls...");
     let scalefactor = config.scalefactor;
     let contour_interval = config.contour_interval;
@@ -181,7 +179,6 @@ pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Err
     let halfinterval = contour_interval / 2.0 * scalefactor;
 
     let interval = 0.3 * scalefactor;
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
     let xyz_file_in = tmpfolder.join("xyz_03.xyz");
 
@@ -910,14 +907,12 @@ pub fn knolldetector(config: &Config, thread: &String) -> Result<(), Box<dyn Err
     Ok(())
 }
 
-pub fn xyzknolls(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
+pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying knolls...");
     let scalefactor = config.scalefactor;
     let contour_interval = config.contour_interval;
 
     let interval = contour_interval / 2.0 * scalefactor;
-
-    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
     let xyz_file_in = tmpfolder.join("xyz_03.xyz");
 
