@@ -8,7 +8,7 @@ use std::error::Error;
 use std::f32::consts::SQRT_2;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::config::{Config, Zone};
 use crate::util::{read_lines, read_lines_no_alloc};
@@ -16,9 +16,9 @@ use crate::util::{read_lines, read_lines_no_alloc};
 pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
 
-    let tmpfolder = format!("temp{}", thread);
+    let tmpfolder = PathBuf::from(format!("temp{}", thread));
 
-    let path = format!("{}/xyz2.xyz", tmpfolder);
+    let path = tmpfolder.join("xyz2.xyz");
     let xyz_file_in = Path::new(&path);
 
     let mut xstart: f64 = 0.0;
@@ -91,7 +91,7 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
     } = config;
     let greenshades = &config.greenshades;
 
-    let path = format!("{}/xyztemp.xyz", tmpfolder);
+    let path = tmpfolder.join("xyztemp.xyz");
     let xyz_file_in = Path::new(&path);
 
     let xmin = xstart;
@@ -419,23 +419,20 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
     }
 
     imgye2
-        .save(Path::new(&format!("{}/yellow.png", tmpfolder)))
+        .save(tmpfolder.join("yellow.png"))
         .expect("could not save output png");
     imggr1
-        .save(Path::new(&format!("{}/greens.png", tmpfolder)))
+        .save(tmpfolder.join("greens.png"))
         .expect("could not save output png");
 
-    let mut img =
-        image::open(Path::new(&format!("{}/greens.png", tmpfolder))).expect("Opening image failed");
-    let img2 =
-        image::open(Path::new(&format!("{}/yellow.png", tmpfolder))).expect("Opening image failed");
+    let mut img = image::open(tmpfolder.join("greens.png")).expect("Opening image failed");
+    let img2 = image::open(tmpfolder.join("yellow.png")).expect("Opening image failed");
     image::imageops::overlay(&mut img, &img2, 0, 0);
-    img.save(Path::new(&format!("{}/vegetation.png", tmpfolder)))
+    img.save(tmpfolder.join("vegetation.png"))
         .expect("could not save output png");
 
     if vege_bitmode {
-        let g_img = image::open(Path::new(&format!("{}/greens.png", tmpfolder)))
-            .expect("Opening image failed");
+        let g_img = image::open(tmpfolder.join("greens.png")).expect("Opening image failed");
         let mut g_img = g_img.to_rgb8();
         for pixel in g_img.pixels_mut() {
             let mut found = false;
@@ -451,17 +448,15 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
             }
         }
         g_img
-            .save(Path::new(&format!("{}/greens_bit.png", tmpfolder)))
+            .save(tmpfolder.join("greens_bit.png"))
             .expect("could not save output png");
-        let g_img = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder)))
-            .expect("Opening image failed");
+        let g_img = image::open(tmpfolder.join("greens_bit.png")).expect("Opening image failed");
         let g_img = g_img.to_luma8();
         g_img
-            .save(Path::new(&format!("{}/greens_bit.png", tmpfolder)))
+            .save(tmpfolder.join("greens_bit.png"))
             .expect("could not save output png");
 
-        let y_img = image::open(Path::new(&format!("{}/yellow.png", tmpfolder)))
-            .expect("Opening image failed");
+        let y_img = image::open(tmpfolder.join("yellow.png")).expect("Opening image failed");
         let mut y_img = y_img.to_rgba8();
         for pixel in y_img.pixels_mut() {
             if pixel[0] == ye2[0] && pixel[1] == ye2[1] && pixel[2] == ye2[2] && pixel[3] == ye2[3]
@@ -472,22 +467,20 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
             }
         }
         y_img
-            .save(Path::new(&format!("{}/yellow_bit.png", tmpfolder)))
+            .save(tmpfolder.join("yellow_bit.png"))
             .expect("could not save output png");
-        let y_img = image::open(Path::new(&format!("{}/yellow_bit.png", tmpfolder)))
-            .expect("Opening image failed");
+        let y_img = image::open(tmpfolder.join("yellow_bit.png")).expect("Opening image failed");
         let y_img = y_img.to_luma_alpha8();
         y_img
-            .save(Path::new(&format!("{}/yellow_bit.png", tmpfolder)))
+            .save(tmpfolder.join("yellow_bit.png"))
             .expect("could not save output png");
 
-        let mut img_bit = image::open(Path::new(&format!("{}/greens_bit.png", tmpfolder)))
-            .expect("Opening image failed");
-        let img_bit2 = image::open(Path::new(&format!("{}/yellow_bit.png", tmpfolder)))
-            .expect("Opening image failed");
+        let mut img_bit =
+            image::open(tmpfolder.join("greens_bit.png")).expect("Opening image failed");
+        let img_bit2 = image::open(tmpfolder.join("yellow_bit.png")).expect("Opening image failed");
         image::imageops::overlay(&mut img_bit, &img_bit2, 0, 0);
         img_bit
-            .save(Path::new(&format!("{}/vegetation_bit.png", tmpfolder)))
+            .save(tmpfolder.join("vegetation_bit.png"))
             .expect("could not save output png");
     }
 
@@ -521,9 +514,7 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
         .expect("Can not read file");
     }
 
-    let path = format!("{}/xyz2.xyz", tmpfolder);
-    let xyz_file_in = Path::new(&path);
-
+    let xyz_file_in = tmpfolder.join("xyz2.xyz");
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.split(' ');
         let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
@@ -541,7 +532,7 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
     .expect("Can not read file");
 
     imgwater
-        .save(Path::new(&format!("{}/blueblack.png", tmpfolder)))
+        .save(tmpfolder.join("blueblack.png"))
         .expect("could not save output png");
 
     let underg = Rgba([64, 121, 0, 255]);
@@ -668,15 +659,14 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
         x += bf32 * step;
     }
     imgug
-        .save(Path::new(&format!("{}/undergrowth.png", tmpfolder)))
+        .save(tmpfolder.join("undergrowth.png"))
         .expect("could not save output png");
     let img_ug_bit_b = median_filter(&img_ug_bit, (bf32 * step) as u32, (bf32 * step) as u32);
     img_ug_bit_b
-        .save(Path::new(&format!("{}/undergrowth_bit.png", tmpfolder)))
+        .save(tmpfolder.join("undergrowth_bit.png"))
         .expect("could not save output png");
 
-    let ugpgw = File::create(Path::new(&format!("{}/undergrowth.pgw", tmpfolder)))
-        .expect("Unable to create file");
+    let ugpgw = File::create(tmpfolder.join("undergrowth.pgw")).expect("Unable to create file");
     let mut ugpgw = BufWriter::new(ugpgw);
     write!(
         &mut ugpgw,
@@ -688,8 +678,7 @@ pub fn makevege(config: &Config, thread: &String) -> Result<(), Box<dyn Error>> 
     )
     .expect("Cannot write pgw file");
 
-    let vegepgw = File::create(Path::new(&format!("{}/vegetation.pgw", tmpfolder)))
-        .expect("Unable to create file");
+    let vegepgw = File::create(tmpfolder.join("vegetation.pgw")).expect("Unable to create file");
     let mut vegepgw = BufWriter::new(vegepgw);
     write!(
         &mut vegepgw,
