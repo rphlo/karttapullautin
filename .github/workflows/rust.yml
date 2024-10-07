@@ -6,6 +6,12 @@ on:
 
 name: "CI"
 
+env:
+  # always emit backtraces on crashes (to help debugging in tests)
+  RUST_BACKTRACE: 1
+  # cargo should always emit color
+  CARGO_TERM_COLOR: always
+
 jobs:
   build:
     name: Build
