@@ -51,6 +51,9 @@ jobs:
 
     - name: Compare results (pngcomp)
       id: compare
+        # The diff command gives exit status of 1 if files differ, but we do not want
+        # to fail the job since we want to see the artifacts in that case.
+      continue-on-error: true
       run: |
         # Compare the results from both branches, output results as step summary
         sudo apt install pngnq 
