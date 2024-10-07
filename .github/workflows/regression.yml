@@ -57,17 +57,18 @@ jobs:
       run: |
         # Compare the results from both branches, output results as step summary
         sudo apt install pngnq 
-        printf "\n\n##### Comparing without depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
+        printf "\n\n### Comparing without depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
         pngcomp pullautus_main.png pullautus_pr.png | tee -a pngcomp.txt $GITHUB_STEP_SUMMARY
-        printf "\n\n##### Comparing with depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
+        printf "\n\n### Comparing with depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
         pngcomp pullautus_depr_main.png pullautus_depr_pr.png | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
-        printf "\n\n##### Comparing directory contents using diff:\n" | tee -a $GITHUB_STEP_SUMMARY
-        diff -qs temp_main/ temp_pr/ | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
+        printf "\n\n### Comparing directory contents using diff:\n" | tee -a $GITHUB_STEP_SUMMARY
+        diff -q temp_main/ temp_pr/ | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
         # do another one that will show all the changes, but as a file instead
         diff temp_main/ temp_pr/ > diff.patch
 
     
     - name: Upload results
+      id: upload
       uses: actions/upload-artifact@v4
       with:
         name: regression-results
@@ -80,6 +81,9 @@ jobs:
           pngcomp_depr.txt
           diff.patch
         overwrite: true # we need subsequent runs to overwrite the result
+
+    - name: Output Artifact URl
+      run: echo 'Artifacts can be downloaded [here](${{ steps.upload.outputs.artifact-url }})' >> $GITHUB_STEP_SUMMARY
 
     - name: Check for differences
       run: |
