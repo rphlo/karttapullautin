@@ -26,9 +26,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
 
     - name: Download LAZ file
-      env:
-        KP_TEST_LAZ_URL: ${{ vars.KP_TEST_LAZ_URL }}
-      run: curl -L "$KP_TEST_LAZ_URL" -o test_file.laz
+      run: curl -L "https://cdn.routechoic.es/test.laz" -o test_file.laz
 
     - name: Run code on PR branch
       id: run_pr_branch
