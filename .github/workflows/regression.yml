@@ -111,3 +111,126 @@ jobs:
           exit 1
         fi
 
+  compare-results-batch:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - uses: dtolnay/rust-toolchain@stable
+
+    - name: Download LAZ file
+      run: curl -L "https://cdn.routechoic.es/test.laz" -o test_file.laz
+
+    - name: Run code on PR branch
+      id: run_pr_branch
+      run: |
+        echo "Running code on PR branch"
+        cargo build --release
+        # prepare
+        cp pullauta.default.ini pullauta.ini
+        mkdir in && mkdir out
+        cp test_file.laz in/test_file.laz
+        sed -i 's/batch=0/batch=1/g' pullauta.ini
+
+        # run and store results
+        env time -o time_pr.txt target/release/pullauta
+        echo "**pngmerge**: " >> time_pr.txt
+        env time -a -o time_pr.txt target/release/pullauta pngmerge 1
+        echo "**pngmergedepr**: " >> time_pr.txt
+        env time -a -o time_pr.txt target/release/pullauta pngmergedepr 1
+        mkdir output_pr
+        mv out/ output_pr/
+        mv temp*/ output_pr/
+        mv merged* output_pr/
+
+    - name: Download, extract and run latest release
+      run: |
+        # in a new folder to make sure we have a clean environment
+        mkdir latest_release && cd latest_release
+        curl -L https://github.com/rphlo/karttapullautin/releases/latest/download/karttapullautin-x86_64-linux.tar.gz | tar xvz
+
+        # prepare
+        mkdir in && mkdir out
+        cp ../test_file.laz in/test_file.laz
+        # since the default config does not come bundled, we will copy the existing one for now
+        # (not ideal if we want to test out-of-the-box behavior but it is better than nothing)
+        cp ../pullauta.ini pullauta.ini
+
+        # run and store results
+        env time -o ../time_main.txt ./pullauta
+        echo "**pngmerge**: " >> ../time_main.txt
+        env time -a -o ../time_main.txt ./pullauta pngmerge 1
+        echo "**pngmergedepr**: " >> ../time_main.txt
+        env time -a -o ../time_main.txt ./pullauta pngmergedepr 1
+        mkdir ../output_main
+        mv out/ ../output_main/
+        mv temp*/ ../output_main/
+        mv merged* ../output_main/
+
+    - name: Compare results (pngcomp)
+      id: compare
+        # The diff command gives exit status of 1 if files differ, but we do not want
+        # to fail the job since we want to see the artifacts in that case.
+      continue-on-error: true
+      run: |
+        # Compare the results from both branches, output results as step summary
+        sudo apt install pngnq
+        printf "\n\n### Comparing without depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
+        pngcomp output_main/merged.png output_pr/merged.png | tee -a pngcomp.txt $GITHUB_STEP_SUMMARY
+        printf "\n\n### Comparing with depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
+        pngcomp output_main/merged_depr.png output_pr/merged_depr.png | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
+
+        printf "\n\n### Comparing directory contents using diff:\n" | tee -a $GITHUB_STEP_SUMMARY
+        diff -qr output_main/ output_pr/ | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
+        # do another one that will show all the changes, but as a file instead
+        diff -r output_main/ output_pr/ > diff.patch
+
+        printf "\n\n### Execution time comparison:\n" | tee -a $GITHUB_STEP_SUMMARY
+        printf "**Latest Release**\n" | tee -a $GITHUB_STEP_SUMMARY
+        cat time_main.txt | tee -a $GITHUB_STEP_SUMMARY
+        printf "\n**PR**\n" | tee -a $GITHUB_STEP_SUMMARY
+        cat time_pr.txt | tee -a $GITHUB_STEP_SUMMARY
+
+    - name: Upload results
+      id: upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: regression-results-batch
+        path: |
+          output_main/merged.png
+          output_pr/merged.png
+          pngcomp.txt
+          output_main/merged_depr.png
+          output_pr/merged_depr.png
+          pngcomp_depr.txt
+          diff.patch
+          time_pr.txt
+          time_main.txt
+        overwrite: true # we need subsequent runs to overwrite the result
+
+    - name: Output Artifact URL
+      run: echo 'Artifacts can be downloaded [here](${{ steps.upload.outputs.artifact-url }})' >> $GITHUB_STEP_SUMMARY
+
+    - name: Check for differences
+      run: |
+        # Analyze metrics: if there is a change this step should fail!
+
+        # Here we could check any of the metrics output by pngcomp. for now we check the
+        # percentage of overlapping/correct pixels and fail the job if it is less than 100%
+        value=$(sed -rn 's/Percentage correct pixels: ([0-9]+\.[0-9]+)$/\1/p' pngcomp.txt)
+        value_depr=$(sed -rn 's/Percentage correct pixels: ([0-9]+\.[0-9]+)$/\1/p' pngcomp_depr.txt)
+
+        if (( $(echo "$value < 100.0" | bc -l) )); then
+          echo "Percentage of correct pixels (without depressions) is $value < 100%. Output has changed!" | tee -a $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+
+        if (( $(echo "$value_depr < 100.0" | bc -l) )); then
+          echo "Percentage of correct pixels (with depressions) is $value_depr < 100%. Output has changed!" | tee -a $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+
