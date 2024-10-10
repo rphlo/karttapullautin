@@ -32,7 +32,8 @@ jobs:
       id: run_pr_branch
       run: |
         echo "Running code on PR branch"
-        cargo run --release -- test_file.laz
+        cargo build --release
+        env time -o time_pr.txt target/release/pullauta test_file.laz
         mv pullautus.png pullautus_pr.png
         mv pullautus_depr.png pullautus_depr_pr.png
         mv temp/ temp_pr/
@@ -42,7 +43,7 @@ jobs:
         # in a new folder to make sure we have a clean environment
         mkdir latest_release && cd latest_release
         curl -L https://github.com/rphlo/karttapullautin/releases/latest/download/karttapullautin-x86_64-linux.tar.gz | tar xvz
-        ./pullauta ../test_file.laz
+        env time -o ../time_main.txt ./pullauta ../test_file.laz
         mv pullautus.png ../pullautus_main.png
         mv pullautus_depr.png ../pullautus_depr_main.png
         mv temp/ ../temp_main/
@@ -59,12 +60,18 @@ jobs:
         pngcomp pullautus_main.png pullautus_pr.png | tee -a pngcomp.txt $GITHUB_STEP_SUMMARY
         printf "\n\n### Comparing with depressions:\n" | tee -a $GITHUB_STEP_SUMMARY
         pngcomp pullautus_depr_main.png pullautus_depr_pr.png | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
+
         printf "\n\n### Comparing directory contents using diff:\n" | tee -a $GITHUB_STEP_SUMMARY
         diff -q temp_main/ temp_pr/ | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
         # do another one that will show all the changes, but as a file instead
         diff temp_main/ temp_pr/ > diff.patch
 
-    
+        printf "\n\n### Execution time comparison:\n" | tee -a $GITHUB_STEP_SUMMARY
+        printf "**Latest Release**\n" | tee -a $GITHUB_STEP_SUMMARY
+        cat time_main.txt | tee -a $GITHUB_STEP_SUMMARY
+        printf "\n**PR**\n" | tee -a $GITHUB_STEP_SUMMARY
+        cat time_pr.txt | tee -a $GITHUB_STEP_SUMMARY
+
     - name: Upload results
       id: upload
       uses: actions/upload-artifact@v4
@@ -78,6 +85,8 @@ jobs:
           pullautus_depr_pr.png
           pngcomp_depr.txt
           diff.patch
+          time_pr.txt
+          time_main.txt
         overwrite: true # we need subsequent runs to overwrite the result
 
     - name: Output Artifact URL
