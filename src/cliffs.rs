@@ -188,10 +188,12 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
             xmin, ymin, xmax, ymax
     ).expect("Cannot write dxf file");
 
+    // temporary vector to reuse memory allocations
+    let mut t = Vec::<(f64, f64, f64)>::new();
     for x in 0..w + 1 {
         for y in 0..h + 1 {
             if !list_alt[(x, y)].is_empty() {
-                let mut t = Vec::<(f64, f64, f64)>::new();
+                t.clear();
                 if x >= 1 {
                     if y >= 1 {
                         t.extend(&list_alt[(x - 1, y - 1)]);
@@ -217,7 +219,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                         t.extend(&list_alt[(x + 1, y + 1)]);
                     }
                 }
-                // use a Cow to avoid unnecessary allocation in the case where we don't need to modify the list
+                // use a Cow to avoid unnecessary allocation in the case when we don't need to modify the list
                 let mut d = Cow::Borrowed(&list_alt[(x, y)]);
 
                 if d.len() > 31 {
@@ -263,11 +265,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                     continue;
                 }
 
-                for rec in d.iter() {
-                    let x0 = rec.0;
-                    let y0 = rec.1;
-                    let h0 = rec.2;
-
+                for &(x0, y0, h0) in d.iter() {
                     let cliff_length = 1.47;
                     let mut steep = steepness[(
                         ((x0 - xstart) / size + 0.5).floor() as usize,
@@ -287,11 +285,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                         bonus = 0.0;
                     }
                     let limit2 = c2_limit + bonus;
-                    for rec2 in t.iter() {
-                        let xt = rec2.0;
-                        let yt = rec2.1;
-                        let ht = rec2.2;
-
+                    for &(xt, yt, ht) in t.iter() {
                         let temp = h0 - ht;
                         let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
                         if dist > 0.0 {
@@ -375,10 +369,13 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     })
     .expect("Could not read input file");
 
+    // temporary vector to reuse memory allocations
+    let mut t = Vec::<(f64, f64, f64)>::new();
     for x in 0..w + 1 {
         for y in 0..h + 1 {
-            if !list_alt[(x, y)].is_empty() {
-                let mut t = Vec::<(f64, f64, f64)>::new();
+            let d = &list_alt[(x, y)];
+            if !d.is_empty() {
+                t.clear();
                 if x >= 1 {
                     if y >= 1 {
                         t.extend(&list_alt[(x - 1, y - 1)]);
@@ -404,19 +401,11 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                         t.extend(&list_alt[(x + 1, y + 1)]);
                     }
                 }
-                let mut d = Vec::<(f64, f64, f64)>::new();
-                d.extend(&list_alt[(x, y)]);
 
-                for rec in d.iter() {
-                    let x0 = rec.0;
-                    let y0 = rec.1;
-                    let h0 = rec.2;
+                for &(x0, y0, h0) in d.iter() {
                     let cliff_length = 1.47;
                     let limit = c2_limit;
-                    for rec2 in t.iter() {
-                        let xt = rec2.0;
-                        let yt = rec2.1;
-                        let ht = rec2.2;
+                    for &(xt, yt, ht) in t.iter() {
                         let temp = h0 - ht;
                         let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
                         if dist > 0.0 && temp > limit && temp > (limit + (dist - limit) * 0.85) {
