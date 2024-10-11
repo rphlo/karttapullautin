@@ -2,6 +2,7 @@ use image::{Rgb, RgbImage};
 use log::info;
 use rand::distributions;
 use rand::prelude::*;
+use std::borrow::Cow;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -37,16 +38,11 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let mut ymin: f64 = f64::MAX;
     let mut ymax: f64 = f64::MIN;
 
-    let mut hmin: f64 = f64::MAX;
-    let mut hmax: f64 = f64::MIN;
-
     let xyz_file_in = tmpfolder.join("xyztemp.xyz");
-
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.split(' ');
         let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
         let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
         if xmin > x {
             xmin = x;
@@ -62,14 +58,6 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
 
         if ymax < y {
             ymax = y;
-        }
-
-        if hmin > h {
-            hmin = h;
-        }
-
-        if hmax < h {
-            hmax = h;
         }
     })
     .expect("Could not read input file");
@@ -229,10 +217,13 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                         t.extend(&list_alt[(x + 1, y + 1)]);
                     }
                 }
-                let mut d = Vec::<(f64, f64, f64)>::new();
-                d.extend(&list_alt[(x, y)]);
+                // use a Cow to avoid unnecessary allocation in the case where we don't need to modify the list
+                let mut d = Cow::Borrowed(&list_alt[(x, y)]);
 
                 if d.len() > 31 {
+                    // since we need to modify it, we need to convert it to mutable
+                    // this will actually mutate the outer `d`
+                    let d = d.to_mut();
                     let b = ((d.len() - 1) as f64 / 30.0).floor() as usize;
                     let mut i: usize = 0;
                     while i < d.len() {
@@ -268,7 +259,8 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                     }
                 }
                 if temp_max - temp_min < c1_limit * 0.999 {
-                    d.clear();
+                    // no cliffs to add, continue
+                    continue;
                 }
 
                 for rec in d.iter() {
