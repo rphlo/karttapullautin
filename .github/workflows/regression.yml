@@ -50,9 +50,6 @@ jobs:
 
     - name: Compare results (pngcomp)
       id: compare
-        # The diff command gives exit status of 1 if files differ, but we do not want
-        # to fail the job since we want to see the artifacts in that case.
-      continue-on-error: true
       run: |
         # Compare the results from both branches, output results as step summary
         sudo apt install pngnq 
@@ -62,15 +59,16 @@ jobs:
         pngcomp pullautus_depr_main.png pullautus_depr_pr.png | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
 
         printf "\n\n### Comparing directory contents using diff:\n" | tee -a $GITHUB_STEP_SUMMARY
-        diff -q temp_main/ temp_pr/ | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
+        diff -q temp_main/ temp_pr/ | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY || true
         # do another one that will show all the changes, but as a file instead
-        diff temp_main/ temp_pr/ > diff.patch
+        diff temp_main/ temp_pr/ > diff.patch || true
 
         printf "\n\n### Execution time comparison:\n" | tee -a $GITHUB_STEP_SUMMARY
         printf "**Latest Release**\n" | tee -a $GITHUB_STEP_SUMMARY
         cat time_main.txt | tee -a $GITHUB_STEP_SUMMARY
         printf "\n**PR**\n" | tee -a $GITHUB_STEP_SUMMARY
         cat time_pr.txt | tee -a $GITHUB_STEP_SUMMARY
+
 
     - name: Upload results
       id: upload
@@ -173,9 +171,6 @@ jobs:
 
     - name: Compare results (pngcomp)
       id: compare
-        # The diff command gives exit status of 1 if files differ, but we do not want
-        # to fail the job since we want to see the artifacts in that case.
-      continue-on-error: true
       run: |
         # Compare the results from both branches, output results as step summary
         sudo apt install pngnq
@@ -185,9 +180,9 @@ jobs:
         pngcomp output_main/merged_depr.png output_pr/merged_depr.png | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
 
         printf "\n\n### Comparing directory contents using diff:\n" | tee -a $GITHUB_STEP_SUMMARY
-        diff -qr output_main/ output_pr/ | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY
+        diff -qr output_main/ output_pr/ | tee -a pngcomp_depr.txt $GITHUB_STEP_SUMMARY || true
         # do another one that will show all the changes, but as a file instead
-        diff -r output_main/ output_pr/ > diff.patch
+        diff -r output_main/ output_pr/ > diff.patch || true
 
         printf "\n\n### Execution time comparison:\n" | tee -a $GITHUB_STEP_SUMMARY
         printf "**Latest Release**\n" | tee -a $GITHUB_STEP_SUMMARY
