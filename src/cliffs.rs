@@ -226,28 +226,23 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                     // since we need to modify it, we need to convert it to mutable
                     // this will actually mutate the outer `d`
                     let d = d.to_mut();
-                    let b = ((d.len() - 1) as f64 / 30.0).floor() as usize;
-                    let mut i: usize = 0;
-                    while i < d.len() {
-                        let mut e = i + b;
-                        if e > d.len() {
-                            e = d.len();
-                        }
-                        let _: Vec<_> = d.drain(i..e).collect();
-                        i += 1;
-                    }
+
+                    // if d has too many points, thin it by keeping every b point
+                    let b = ((d.len() - 1) as f64 / 30.0).floor() as usize + 1;
+                    let mut idx = 0;
+                    d.retain(|_| {
+                        idx += 1;
+                        idx % b == 0
+                    });
                 }
                 if t.len() > 301 {
-                    let b = ((t.len() - 1) as f64 / 300.0).floor() as usize;
-                    let mut i: usize = 0;
-                    while i < t.len() {
-                        let mut e = i + b;
-                        if e > t.len() {
-                            e = t.len();
-                        }
-                        let _: Vec<_> = t.drain(i..e).collect();
-                        i += 1;
-                    }
+                    // if t has too many points, thin it by keeping every b point
+                    let b = ((t.len() - 1) as f64 / 300.0).floor() as usize + 1;
+                    let mut idx = 0;
+                    t.retain(|_| {
+                        idx += 1;
+                        idx % b == 0
+                    })
                 }
                 let mut temp_max: f64 = f64::MIN;
                 let mut temp_min: f64 = f64::MAX;
