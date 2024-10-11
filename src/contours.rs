@@ -7,6 +7,7 @@ use std::path::Path;
 
 use crate::config::Config;
 use crate::util::read_lines_no_alloc;
+use crate::vec2d::Vec2D;
 
 pub fn xyz2contours(
     config: &Config,
@@ -79,7 +80,7 @@ pub fn xyz2contours(
     let h: usize = ((ymax - ymin).ceil() / 2.0 / scalefactor) as usize;
 
     // a two-dimensional vector of (sum, count) pairs for computing averages
-    let mut list_alt = vec![vec![(0f64, 0usize); h + 2]; w + 2];
+    let mut list_alt = Vec2D::new(w + 2, h + 2, (0f64, 0usize));
 
     read_lines_no_alloc(xyz_file_in, |line| {
         let mut parts = line.trim().split(' ');
@@ -94,29 +95,31 @@ pub fn xyz2contours(
             let y: f64 = p1.parse::<f64>().unwrap();
             let h: f64 = p2.parse::<f64>().unwrap();
 
-            let (sum, count) = &mut list_alt[((x - xmin).floor() / 2.0 / scalefactor) as usize]
-                [((y - ymin).floor() / 2.0 / scalefactor) as usize];
+            let idx_x = ((x - xmin).floor() / 2.0 / scalefactor) as usize;
+            let idx_y = ((y - ymin).floor() / 2.0 / scalefactor) as usize;
+
+            let (sum, count) = &mut list_alt[(idx_x, idx_y)];
             *sum += h;
             *count += 1;
         }
     })
     .expect("could not read file");
 
-    let mut avg_alt = vec![vec![f64::NAN; h + 2]; w + 2];
+    let mut avg_alt = Vec2D::new(w + 2, h + 2, f64::NAN);
 
     for x in 0..w + 1 {
         for y in 0..h + 1 {
-            let (sum, count) = &list_alt[x][y];
+            let (sum, count) = &list_alt[(x, y)];
 
             if *count > 0 {
-                avg_alt[x][y] = *sum / *count as f64;
+                avg_alt[(x, y)] = *sum / *count as f64;
             }
         }
     }
 
     for x in 0..w + 1 {
         for y in 0..h + 1 {
-            if avg_alt[x][y].is_nan() {
+            if avg_alt[(x, y)].is_nan() {
                 // interpolate altitude of pixel
                 // TODO: optimize to first clasify area then assign values
                 let mut i1 = x;
@@ -124,41 +127,43 @@ pub fn xyz2contours(
                 let mut j1 = y;
                 let mut j2 = y;
 
-                while i1 > 0 && avg_alt[i1][y].is_nan() {
+                while i1 > 0 && avg_alt[(i1, y)].is_nan() {
                     i1 -= 1;
                 }
 
-                while i2 < w && avg_alt[i2][y].is_nan() {
+                while i2 < w && avg_alt[(i2, y)].is_nan() {
                     i2 += 1;
                 }
 
-                while j1 > 0 && avg_alt[x][j1].is_nan() {
+                while j1 > 0 && avg_alt[(x, j1)].is_nan() {
                     j1 -= 1;
                 }
 
-                while j2 < h && avg_alt[x][j2].is_nan() {
+                while j2 < h && avg_alt[(x, j2)].is_nan() {
                     j2 += 1;
                 }
 
                 let mut val1 = f64::NAN;
                 let mut val2 = f64::NAN;
 
-                if !avg_alt[i1][y].is_nan() && !avg_alt[i2][y].is_nan() {
-                    val1 = ((i2 - x) as f64 * avg_alt[i1][y] + (x - i1) as f64 * avg_alt[i2][y])
+                if !avg_alt[(i1, y)].is_nan() && !avg_alt[(i2, y)].is_nan() {
+                    val1 = ((i2 - x) as f64 * avg_alt[(i1, y)]
+                        + (x - i1) as f64 * avg_alt[(i2, y)])
                         / ((i2 - i1) as f64);
                 }
 
-                if !avg_alt[x][j1].is_nan() && !avg_alt[x][j2].is_nan() {
-                    val2 = ((j2 - y) as f64 * avg_alt[x][j1] + (y - j1) as f64 * avg_alt[x][j2])
+                if !avg_alt[(x, j1)].is_nan() && !avg_alt[(x, j2)].is_nan() {
+                    val2 = ((j2 - y) as f64 * avg_alt[(x, j1)]
+                        + (y - j1) as f64 * avg_alt[(x, j2)])
                         / ((j2 - j1) as f64);
                 }
 
                 if !val1.is_nan() && !val2.is_nan() {
-                    avg_alt[x][y] = (val1 + val2) / 2.0;
+                    avg_alt[(x, y)] = (val1 + val2) / 2.0;
                 } else if !val1.is_nan() {
-                    avg_alt[x][y] = val1;
+                    avg_alt[(x, y)] = val1;
                 } else if !val2.is_nan() {
-                    avg_alt[x][y] = val2;
+                    avg_alt[(x, y)] = val2;
                 }
             }
         }
@@ -166,7 +171,7 @@ pub fn xyz2contours(
 
     for x in 0..w + 1 {
         for y in 0..h + 1 {
-            if avg_alt[x][y].is_nan() {
+            if avg_alt[(x, y)].is_nan() {
                 // second round of interpolation of altitude of pixel
                 let mut val: f64 = 0.0;
                 let mut c = 0;
@@ -177,15 +182,15 @@ pub fn xyz2contours(
                         if y as i32 + jj >= 0 && x as i32 + ii >= 0 {
                             let x_idx = (x as i32 + ii) as usize;
                             let y_idx = (y as i32 + jj) as usize;
-                            if x_idx <= w && y_idx <= h && !avg_alt[x_idx][y_idx].is_nan() {
+                            if x_idx <= w && y_idx <= h && !avg_alt[(x_idx, y_idx)].is_nan() {
                                 c += 1;
-                                val += avg_alt[x_idx][y_idx];
+                                val += avg_alt[(x_idx, y_idx)];
                             }
                         }
                     }
                 }
                 if c > 0 {
-                    avg_alt[x][y] = val / c as f64;
+                    avg_alt[(x, y)] = val / c as f64;
                 }
             }
         }
@@ -193,14 +198,14 @@ pub fn xyz2contours(
 
     for x in 0..w + 1 {
         for y in 1..h + 1 {
-            if avg_alt[x][y].is_nan() {
-                avg_alt[x][y] = avg_alt[x][y - 1];
+            if avg_alt[(x, y)].is_nan() {
+                avg_alt[(x, y)] = avg_alt[(x, y - 1)];
             }
         }
         for yy in 1..h + 1 {
             let y = h - yy;
-            if avg_alt[x][y].is_nan() {
-                avg_alt[x][y] = avg_alt[x][y + 1];
+            if avg_alt[(x, y)].is_nan() {
+                avg_alt[(x, y)] = avg_alt[(x, y + 1)];
             }
         }
     }
@@ -210,7 +215,7 @@ pub fn xyz2contours(
 
     for x in 0..w + 1 {
         for y in 0..h + 1 {
-            let mut ele = avg_alt[x][y];
+            let mut ele = avg_alt[(x, y)];
             let temp: f64 = (ele / cinterval + 0.5).floor() * cinterval;
             if (ele - temp).abs() < 0.02 {
                 if ele - temp < 0.0 {
@@ -218,7 +223,7 @@ pub fn xyz2contours(
                 } else {
                     ele = temp + 0.02;
                 }
-                avg_alt[x][y] = ele;
+                avg_alt[(x, y)] = ele;
             }
         }
     }
@@ -229,7 +234,7 @@ pub fn xyz2contours(
         let mut f = BufWriter::new(f);
         for x in 0..w + 1 {
             for y in 0..h + 1 {
-                let ele = avg_alt[x][y];
+                let ele = avg_alt[(x, y)];
                 let xx = x as f64 * 2.0 * scalefactor + xmin;
                 let yy = y as f64 * 2.0 * scalefactor + ymin;
                 write!(&mut f, "{} {} {}\r\n", xx, yy, ele).expect("Cannot write to output file");
@@ -255,10 +260,10 @@ pub fn xyz2contours(
 
             for i in 1..(w - 1) {
                 for j in 2..(h - 1) {
-                    let mut a = avg_alt[i][j];
-                    let mut b = avg_alt[i][j + 1];
-                    let mut c = avg_alt[i + 1][j];
-                    let mut d = avg_alt[i + 1][j + 1];
+                    let mut a = avg_alt[(i, j)];
+                    let mut b = avg_alt[(i, j + 1)];
+                    let mut c = avg_alt[(i + 1, j)];
+                    let mut d = avg_alt[(i + 1, j + 1)];
 
                     if a < level && b < level && c < level && d < level
                         || a > level && b > level && c > level && d > level
