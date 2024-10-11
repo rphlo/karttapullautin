@@ -1,7 +1,6 @@
-
-/// Vector for storing 2-dimensional data in a contigous memory block, removes one layer of indirection.
+/// Vector for storing 2-dimensional grid-like data in a contigous memory block, removes one layer of indirection.
 pub struct Vec2D<T> {
-    data: Vec<T>,
+    data: Box<[T]>, // the size is fixed, so we can use a Box slice instead of Vec
     w: usize,
     h: usize,
 }
@@ -12,7 +11,7 @@ impl<T> Vec2D<T> {
         T: Clone,
     {
         Vec2D {
-            data: vec![default; w * h],
+            data: vec![default; w * h].into(),
             w,
             h,
         }
@@ -55,7 +54,7 @@ mod tests {
         let vec2d: Vec2D<i32> = Vec2D::new(3, 2, 0);
         assert_eq!(vec2d.w, 3);
         assert_eq!(vec2d.h, 2);
-        assert_eq!(vec2d.data, vec![0; 6]);
+        assert_eq!(vec2d.data, vec![0; 6].into());
     }
 
     #[test]
@@ -63,6 +62,20 @@ mod tests {
         let vec2d: Vec2D<i32> = Vec2D::new(3, 2, 1);
         assert_eq!(vec2d[(0, 0)], 1);
         assert_eq!(vec2d[(2, 1)], 1);
+    }
+
+    #[test]
+    fn test_index_skewed_0() {
+        let vec2d: Vec2D<i32> = Vec2D::new(10, 2, 1);
+        assert_eq!(vec2d[(9, 0)], 1);
+        assert_eq!(vec2d[(9, 1)], 1);
+    }
+
+    #[test]
+    fn test_index_skewed_1() {
+        let vec2d: Vec2D<i32> = Vec2D::new(3, 10, 1);
+        assert_eq!(vec2d[(0, 9)], 1);
+        assert_eq!(vec2d[(2, 9)], 1);
     }
 
     #[test]
@@ -83,6 +96,20 @@ mod tests {
         let mut vec2d: Vec2D<i32> = Vec2D::new(3, 2, 1);
         vec2d[(1, 1)] = 5;
         assert_eq!(vec2d[(1, 1)], 5);
+    }
+
+    #[test]
+    fn test_index_mut_skewed_0() {
+        let mut vec2d: Vec2D<i32> = Vec2D::new(10, 2, 1);
+        vec2d[(9, 1)] = 5;
+        assert_eq!(vec2d[(9, 1)], 5);
+    }
+
+    #[test]
+    fn test_index_mut_skewed_1() {
+        let mut vec2d: Vec2D<i32> = Vec2D::new(3, 10, 1);
+        vec2d[(2, 9)] = 5;
+        assert_eq!(vec2d[(2, 9)], 5);
     }
 
     #[test]
