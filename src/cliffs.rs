@@ -284,25 +284,19 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                         let temp = h0 - ht;
                         let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
                         if dist > 0.0 {
+                            let imgx = ((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32;
+                            let imgy = ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32;
                             if steep < no_small_ciffs
                                 && temp > limit
                                 && temp > (limit + (dist - limit) * 0.85)
-                                && (((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32) < img.width()
-                                && (((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32) < img.height()
+                                && imgx < img.width()
+                                && imgy < img.height()
                             {
-                                let p = img.get_pixel(
-                                    ((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32,
-                                    ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32,
-                                );
+                                let p = img.get_pixel(imgx, imgy);
                                 if p[0] == 255 {
-                                    img.put_pixel(
-                                        ((x0 + xt) / 2.0 - xmin + 0.5).floor() as u32,
-                                        ((y0 + yt) / 2.0 - ymin + 0.5).floor() as u32,
-                                        Rgb([0, 0, 0]),
-                                    );
+                                    img.put_pixel(imgx, imgy, Rgb([0, 0, 0]));
                                     f2.write_all(
-                                        "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff2\r\n  0\r\n"
-                                            .as_bytes(),
+                                        b"POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff2\r\n  0\r\n",
                                     )
                                     .expect("Cannot write dxf file");
                                     write!(
@@ -317,10 +311,8 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                             }
 
                             if temp > limit2 && temp > (limit2 + (dist - limit2) * 0.85) {
-                                f3.write_all(
-                                    "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff3\r\n  0\r\n".as_bytes(),
-                                )
-                                .expect("Cannot write dxf file");
+                                f3.write_all(b"POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff3\r\n  0\r\n")
+                                    .expect("Cannot write dxf file");
                                 write!(
                                     &mut f3,
                                     "VERTEX\r\n  8\r\ncliff3\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff3\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
@@ -337,7 +329,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         }
     }
 
-    f2.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
+    f2.write_all(b"ENDSEC\r\n  0\r\nEOF\r\n")
         .expect("Cannot write dxf file");
     let c2_limit = 2.6 * 2.75;
 
@@ -404,10 +396,8 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                         let temp = h0 - ht;
                         let dist = ((x0 - xt).powi(2) + (y0 - yt).powi(2)).sqrt();
                         if dist > 0.0 && temp > limit && temp > (limit + (dist - limit) * 0.85) {
-                            f3.write_all(
-                                "POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff4\r\n  0\r\n".as_bytes(),
-                            )
-                            .expect("Cannot write dxf file");
+                            f3.write_all(b"POLYLINE\r\n 66\r\n1\r\n  8\r\ncliff4\r\n  0\r\n")
+                                .expect("Cannot write dxf file");
                             write!(
                                 &mut f3,
                                 "VERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nVERTEX\r\n  8\r\ncliff4\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nSEQEND\r\n  0\r\n",
@@ -423,7 +413,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         }
     }
 
-    f3.write_all("ENDSEC\r\n  0\r\nEOF\r\n".as_bytes())
+    f3.write_all(b"ENDSEC\r\n  0\r\nEOF\r\n")
         .expect("Cannot write dxf file");
     img.save(tmpfolder.join("c2.png"))
         .expect("could not save output png");
