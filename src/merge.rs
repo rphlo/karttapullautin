@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config::Config;
 use crate::util::{read_lines, read_lines_no_alloc};
+use crate::vec2d::Vec2D;
 
 fn merge_png(
     config: &Config,
@@ -570,7 +571,8 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     })
     .expect("error reading xyz file");
 
-    let mut steepness = vec![vec![f64::NAN; (ymax + 1) as usize]; (xmax + 1) as usize];
+    let mut steepness = Vec2D::new((xmax + 1) as usize, (ymax + 1) as usize, f64::NAN);
+
     for i in 1..xmax {
         for j in 1..ymax {
             let mut low: f64 = f64::MAX;
@@ -586,7 +588,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                     }
                 }
             }
-            steepness[i as usize][j as usize] = high - low;
+            steepness[(i as usize, j as usize)] = high - low;
         }
     }
     let input = tmpfolder.join("out.dxf");
@@ -880,7 +882,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                     for k in 0..(el_x_len - 1) {
                         let xx = ((el_x[l][k] - xstart) / size + 0.5).floor() as usize;
                         let yy = ((el_y[l][k] - ystart) / size + 0.5).floor() as usize;
-                        let ss = steepness[xx][yy];
+                        let ss = steepness[(xx, yy)];
                         if minele > h - 0.5 * ss {
                             minele = h - 0.5 * ss;
                         }
@@ -947,7 +949,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                     for k in 1..(el_x_len - 1) {
                         let xx = ((el_x[l][k] - xstart) / size + 0.5).floor() as usize;
                         let yy = ((el_y[l][k] - ystart) / size + 0.5).floor() as usize;
-                        let ss = steepness[xx][yy];
+                        let ss = steepness[(xx, yy)];
                         if ss.is_nan() || ss < 0.5 {
                             if ((xpre - el_x[l][k]).powi(2) + (ypre - el_y[l][k]).powi(2)).sqrt()
                                 >= 4.0
