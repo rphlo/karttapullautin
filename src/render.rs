@@ -1065,7 +1065,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
     while i < ((h * 600.0 / 254.0 / scalefactor + 500.0) as f32) {
         i += 14.0;
         let wd = (w * 600.0 / 254.0 / scalefactor + 2.0) as f32;
-        imgmarsh.draw_filled_polygon(&vec![vec![
+        imgmarsh.draw_filled_polygon(&[vec![
             (-1.0, i),
             (wd, i),
             (wd, i + 10.0),

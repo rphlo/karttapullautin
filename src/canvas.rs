@@ -97,7 +97,7 @@ impl Canvas {
     }
 
     #[inline]
-    pub fn draw_filled_polygon(&mut self, apts: &Vec<Vec<(f32, f32)>>) {
+    pub fn draw_filled_polygon(&mut self, apts: &[Vec<(f32, f32)>]) {
         let new_path = Path::new();
         let _ = mem::replace(&mut self.path, new_path);
         self.paint.set_stroke_width(1.0);
