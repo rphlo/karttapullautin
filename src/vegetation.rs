@@ -1,4 +1,4 @@
-use image::{GrayImage, Luma, Rgb, RgbImage, Rgba, RgbaImage};
+use image::{DynamicImage, GrayImage, Luma, Rgb, RgbImage, Rgba, RgbaImage};
 use imageproc::drawing::{draw_filled_circle_mut, draw_filled_rect_mut, draw_line_segment_mut};
 use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
@@ -6,8 +6,6 @@ use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::f32::consts::SQRT_2;
-use std::fs::File;
-use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use crate::config::{Config, Zone};
@@ -285,14 +283,15 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let mut imgwater =
         RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
 
-    let mut greens = Vec::new();
-    for i in 0..greenshades.len() {
-        greens.push(Rgb([
-            (greentone - greentone / (greenshades.len() - 1) as f64 * i as f64) as u8,
-            (254.0 - (74.0 / (greenshades.len() - 1) as f64) * i as f64) as u8,
-            (greentone - greentone / (greenshades.len() - 1) as f64 * i as f64) as u8,
-        ]))
-    }
+    let greens = (0..greenshades.len())
+        .map(|i| {
+            Rgb([
+                (greentone - greentone / (greenshades.len() - 1) as f64 * i as f64) as u8,
+                (254.0 - (74.0 / (greenshades.len() - 1) as f64) * i as f64) as u8,
+                (greentone - greentone / (greenshades.len() - 1) as f64 * i as f64) as u8,
+            ])
+        })
+        .collect::<Vec<_>>();
 
     let mut aveg = 0;
     let mut avecount = 0;
@@ -423,8 +422,8 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         .save(tmpfolder.join("greens.png"))
         .expect("could not save output png");
 
-    let mut img = image::open(tmpfolder.join("greens.png")).expect("Opening image failed");
-    let img2 = image::open(tmpfolder.join("yellow.png")).expect("Opening image failed");
+    let mut img = DynamicImage::ImageRgb8(imggr1);
+    let img2 = DynamicImage::ImageRgba8(imgye2);
     image::imageops::overlay(&mut img, &img2, 0, 0);
     img.save(tmpfolder.join("vegetation.png"))
         .expect("could not save output png");
@@ -445,11 +444,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                 *pixel = Rgb([0, 0, 0]);
             }
         }
-        g_img
-            .save(tmpfolder.join("greens_bit.png"))
-            .expect("could not save output png");
-        let g_img = image::open(tmpfolder.join("greens_bit.png")).expect("Opening image failed");
-        let g_img = g_img.to_luma8();
+        let g_img = DynamicImage::ImageRgb8(g_img).to_luma8();
         g_img
             .save(tmpfolder.join("greens_bit.png"))
             .expect("could not save output png");
@@ -464,18 +459,13 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                 *pixel = Rgba([0, 0, 0, 0]);
             }
         }
-        y_img
-            .save(tmpfolder.join("yellow_bit.png"))
-            .expect("could not save output png");
-        let y_img = image::open(tmpfolder.join("yellow_bit.png")).expect("Opening image failed");
-        let y_img = y_img.to_luma_alpha8();
+        let y_img = DynamicImage::ImageRgba8(y_img).to_luma_alpha8();
         y_img
             .save(tmpfolder.join("yellow_bit.png"))
             .expect("could not save output png");
 
-        let mut img_bit =
-            image::open(tmpfolder.join("greens_bit.png")).expect("Opening image failed");
-        let img_bit2 = image::open(tmpfolder.join("yellow_bit.png")).expect("Opening image failed");
+        let mut img_bit = DynamicImage::ImageLuma8(g_img);
+        let img_bit2 = DynamicImage::ImageLumaA8(y_img);
         image::imageops::overlay(&mut img_bit, &img_bit2, 0, 0);
         img_bit
             .save(tmpfolder.join("vegetation_bit.png"))
@@ -664,24 +654,21 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         .save(tmpfolder.join("undergrowth_bit.png"))
         .expect("could not save output png");
 
-    let ugpgw = File::create(tmpfolder.join("undergrowth.pgw")).expect("Unable to create file");
-    let mut ugpgw = BufWriter::new(ugpgw);
-    write!(
-        &mut ugpgw,
-        "{}\r\n0.0\r\n0.0\r\n{}\r\n{}\r\n{}\r\n",
-        1.0 / tmpfactor,
-        -1.0 / tmpfactor,
-        xmin,
-        ymax,
+    std::fs::write(
+        tmpfolder.join("undergrowth.pgw"),
+        format!(
+            "{}\r\n0.0\r\n0.0\r\n{}\r\n{}\r\n{}\r\n",
+            1.0 / tmpfactor,
+            -1.0 / tmpfactor,
+            xmin,
+            ymax,
+        ),
     )
     .expect("Cannot write pgw file");
 
-    let vegepgw = File::create(tmpfolder.join("vegetation.pgw")).expect("Unable to create file");
-    let mut vegepgw = BufWriter::new(vegepgw);
-    write!(
-        &mut vegepgw,
-        "1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n",
-        xmin, ymax
+    std::fs::write(
+        tmpfolder.join("vegetation.pgw"),
+        format!("1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n", xmin, ymax),
     )
     .expect("Cannot write pgw file");
 
