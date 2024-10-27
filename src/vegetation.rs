@@ -374,23 +374,16 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let med: u32 = config.med;
     let med2 = config.med2;
 
-    let mut imggr1b = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
-    let mut imgye2b = RgbaImage::from_pixel(img_width, img_height, Rgba([255, 255, 255, 0]));
     if med > 0 {
-        imggr1b = median_filter(&imggr1, med / 2, med / 2);
-        if proceed_yellows {
-            imgye2b = median_filter(&imgye2, med / 2, med / 2);
-        }
-    }
-    if med2 > 0 {
-        imggr1 = median_filter(&imggr1b, med2 / 2, med2 / 2);
+        imggr1 = median_filter(&imggr1, med / 2, med / 2);
         if proceed_yellows {
             imgye2 = median_filter(&imgye2, med / 2, med / 2);
         }
-    } else {
-        imggr1 = imggr1b;
+    }
+    if med2 > 0 {
+        imggr1 = median_filter(&imggr1, med2 / 2, med2 / 2);
         if proceed_yellows {
-            imgye2 = imgye2b;
+            imgye2 = median_filter(&imgye2, med / 2, med / 2);
         }
     }
 
