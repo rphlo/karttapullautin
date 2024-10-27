@@ -256,24 +256,11 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
 
     let scalefactor = config.scalefactor;
 
-    let mut imgug = RgbaImage::from_pixel(
-        (w * block * 600.0 / 254.0 / scalefactor) as u32,
-        (h * block * 600.0 / 254.0 / scalefactor) as u32,
-        Rgba([255, 255, 255, 0]),
-    );
-    let mut img_ug_bit = GrayImage::from_pixel(
-        (w * block * 600.0 / 254.0 / scalefactor) as u32,
-        (h * block * 600.0 / 254.0 / scalefactor) as u32,
-        Luma([0x00]),
-    );
-
     let img_width = (w * block) as u32;
     let img_height = (h * block) as u32;
 
     let mut imggr1 = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
-    let mut imggr1b = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
     let mut imgye2 = RgbaImage::from_pixel(img_width, img_height, Rgba([255, 255, 255, 0]));
-    let mut imgye2b = RgbaImage::from_pixel(img_width, img_height, Rgba([255, 255, 255, 0]));
 
     let greens = (0..greenshades.len())
         .map(|i| {
@@ -389,6 +376,8 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let med: u32 = config.med;
     let med2 = config.med2;
 
+    let mut imggr1b = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
+    let mut imgye2b = RgbaImage::from_pixel(img_width, img_height, Rgba([255, 255, 255, 0]));
     if med > 0 {
         imggr1b = median_filter(&imggr1, med / 2, med / 2);
         if proceed_yellows {
@@ -419,6 +408,10 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     image::imageops::overlay(&mut img, &img2, 0, 0);
     img.save(tmpfolder.join("vegetation.png"))
         .expect("could not save output png");
+
+    // drop imggr1, imggr1b, imgye2, imgye2b to free memory
+    drop(img);
+    drop(img2);
 
     if vege_bitmode {
         let g_img = image::open(tmpfolder.join("greens.png")).expect("Opening image failed");
@@ -527,6 +520,16 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let hh = hf32 * bf32;
     let mut x = 0.0_f32;
 
+    let mut imgug = RgbaImage::from_pixel(
+        (w * block * 600.0 / 254.0 / scalefactor) as u32,
+        (h * block * 600.0 / 254.0 / scalefactor) as u32,
+        Rgba([255, 255, 255, 0]),
+    );
+    let mut img_ug_bit = GrayImage::from_pixel(
+        (w * block * 600.0 / 254.0 / scalefactor) as u32,
+        (h * block * 600.0 / 254.0 / scalefactor) as u32,
+        Luma([0x00]),
+    );
     loop {
         if x >= ww {
             break;
