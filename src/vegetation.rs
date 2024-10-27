@@ -259,9 +259,6 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let img_width = (w * block) as u32;
     let img_height = (h * block) as u32;
 
-    let mut imggr1 = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
-    let mut imgye2 = RgbaImage::from_pixel(img_width, img_height, Rgba([255, 255, 255, 0]));
-
     let greens = (0..greenshades.len())
         .map(|i| {
             Rgb([
@@ -287,6 +284,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     }
     let aveg = aveg as f64 / avecount as f64;
     let ye2 = Rgba([255, 219, 166, 255]);
+    let mut imgye2 = RgbaImage::from_pixel(img_width, img_height, Rgba([255, 255, 255, 0]));
     for x in 4..(wy as usize - 3) {
         for y in 4..(hy as usize - 3) {
             let mut ghit2 = 0;
@@ -308,10 +306,9 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         }
     }
 
+    let mut imggr1 = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
     for x in 2..w as usize {
         for y in 2..h as usize {
-            let mut ghit2 = 0;
-            let mut highit2 = 0;
             let roof = *top.get(&(x as u64, y as u64)).unwrap_or(&0.0)
                 - *xyz
                     .get(&(
@@ -320,17 +317,19 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                     ))
                     .unwrap_or(&0.0);
 
-            let greenhit2 = *greenhit.get(&(x as u64, y as u64)).unwrap_or(&0.0);
             let mut firsthit2 = *firsthit.get(&(x as u64, y as u64)).unwrap_or(&0);
             for i in (x - 2)..x + 3_usize {
                 for j in (y - 2)..y + 3_usize {
-                    if firsthit2 > *firsthit.get(&(i as u64, j as u64)).unwrap_or(&0) {
-                        firsthit2 = *firsthit.get(&(i as u64, j as u64)).unwrap_or(&0);
+                    let value = *firsthit.get(&(i as u64, j as u64)).unwrap_or(&0);
+                    if value < firsthit2 {
+                        firsthit2 = value;
                     }
                 }
             }
-            highit2 += *highit.get(&(x as u64, y as u64)).unwrap_or(&0);
-            ghit2 += *ghit.get(&(x as u64, y as u64)).unwrap_or(&0);
+
+            let greenhit2 = *greenhit.get(&(x as u64, y as u64)).unwrap_or(&0.0);
+            let highit2 = *highit.get(&(x as u64, y as u64)).unwrap_or(&0);
+            let ghit2 = *ghit.get(&(x as u64, y as u64)).unwrap_or(&0);
 
             let mut greenlimit = 9999.0;
             for &(v0, v1, v2) in thresholds.iter() {
@@ -340,8 +339,6 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                 }
             }
 
-            let mut greenshade = 0;
-
             let thevalue = greenhit2 / (ghit2 as f64 + greenhit2 + 1.0)
                 * (1.0 - topweight
                     + topweight * highit2 as f64
@@ -349,6 +346,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                 * (1.0 - pointvolumefactor * firsthit2 as f64 / (aveg + 0.00001))
                     .powf(pointvolumeexponent);
             if thevalue > 0.0 {
+                let mut greenshade = 0;
                 for (i, &shade) in greenshades.iter().enumerate() {
                     if thevalue > greenlimit * shade {
                         greenshade = i + 1;
@@ -365,7 +363,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                             (block as i32 + addition) as u32,
                             (block as i32 + addition) as u32,
                         ),
-                        *greens.get(greenshade - 1).unwrap(),
+                        greens[greenshade - 1],
                     );
                 }
             }
