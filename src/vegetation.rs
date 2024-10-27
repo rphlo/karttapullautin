@@ -14,14 +14,13 @@ use crate::util::{read_lines, read_lines_no_alloc};
 pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
 
-    let path = tmpfolder.join("xyz2.xyz");
-    let xyz_file_in = Path::new(&path);
+    let xyz_file_in = tmpfolder.join("xyz2.xyz");
 
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(xyz_file_in) {
+    if let Ok(lines) = read_lines(&xyz_file_in) {
         for (i, line) in lines.enumerate() {
             let ip = line.unwrap_or(String::new());
             let mut parts = ip.split(' ');
@@ -87,20 +86,18 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     } = config;
     let greenshades = &config.greenshades;
 
-    let path = tmpfolder.join("xyztemp.xyz");
-    let xyz_file_in = Path::new(&path);
+    let xyz_file_in = tmpfolder.join("xyztemp.xyz");
 
     let xmin = xstart;
     let ymin = ystart;
     let mut xmax: f64 = f64::MIN;
     let mut ymax: f64 = f64::MIN;
 
-    let mut hits: HashMap<(u64, u64), u64> = HashMap::default();
     let mut yhit: HashMap<(u64, u64), u64> = HashMap::default();
     let mut noyhit: HashMap<(u64, u64), u64> = HashMap::default();
 
     let mut i = 0;
-    read_lines_no_alloc(xyz_file_in, |line| {
+    read_lines_no_alloc(&xyz_file_in, |line| {
         if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
             let mut parts = line.trim().split(' ');
             let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
@@ -124,7 +121,6 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                 }
                 let xx = ((x - xmin) / 3.0).floor() as u64;
                 let yy = ((y - ymin) / 3.0).floor() as u64;
-                *hits.entry((xx, yy)).or_insert(0) += 1;
 
                 if r3 == "2"
                     || h < yellowheight
@@ -147,6 +143,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         i += 1;
     })
     .expect("Can not read file");
+    let (yhit, noyhit) = (yhit, noyhit);
 
     let mut firsthit: HashMap<(u64, u64), u64> = HashMap::default();
     let mut ugg: HashMap<(u64, u64), f64> = HashMap::default();
@@ -157,7 +154,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let step: f32 = 6.0;
 
     let mut i = 0;
-    read_lines_no_alloc(xyz_file_in, |line| {
+    read_lines_no_alloc(&xyz_file_in, |line| {
         if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
             let mut parts = line.trim().split(' ');
 
@@ -221,6 +218,8 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                             last = firstandlastfactor;
                         }
                     }
+
+                    let top_val = *top.get(&(xx, yy)).unwrap_or(&0.0);
                     for &Zone {
                         low,
                         high,
@@ -228,12 +227,8 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                         factor,
                     } in config.zones.iter()
                     {
-                        if hh >= low
-                            && hh < high
-                            && *top.get(&(xx, yy)).unwrap_or(&0.0) - thelele < roof
-                        {
-                            let offset = factor * last;
-                            *greenhit.entry((xx, yy)).or_insert(0.0) += offset;
+                        if hh >= low && hh < high && top_val - thelele < roof {
+                            *greenhit.entry((xx, yy)).or_insert(0.0) += factor * last;
                             break;
                         }
                     }
@@ -248,6 +243,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         i += 1;
     })
     .expect("Can not read file");
+    let (firsthit, ugg, ug, ghit, greenhit, highit) = (firsthit, ugg, ug, ghit, greenhit, highit);
 
     let w = (xmax - xmin).floor() / block;
     let h = (ymax - ymin).floor() / block;
@@ -395,14 +391,12 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         .expect("could not save output png");
 
     let mut img = DynamicImage::ImageRgb8(imggr1);
-    let img2 = DynamicImage::ImageRgba8(imgye2);
-    image::imageops::overlay(&mut img, &img2, 0, 0);
+    image::imageops::overlay(&mut img, &DynamicImage::ImageRgba8(imgye2), 0, 0);
     img.save(tmpfolder.join("vegetation.png"))
         .expect("could not save output png");
 
-    // drop imggr1, imggr1b, imgye2, imgye2b to free memory
+    // drop img to free memory
     drop(img);
-    drop(img2);
 
     if vege_bitmode {
         let g_img = image::open(tmpfolder.join("greens.png")).expect("Opening image failed");
