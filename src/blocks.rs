@@ -1,4 +1,4 @@
-use image::{Rgb, RgbImage, Rgba, RgbaImage};
+use image::{DynamicImage, Rgb, RgbImage, Rgba, RgbaImage};
 use imageproc::drawing::draw_filled_rect_mut;
 use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
@@ -101,16 +101,14 @@ pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     })
     .expect("error reading xyz file");
 
-    let filter_size = 2;
-    img.save(tmpfolder.join("blocks.png"))
-        .expect("error saving png");
     img2.save(tmpfolder.join("blocks2.png"))
         .expect("error saving png");
-    let mut img = image::open(tmpfolder.join("blocks.png")).expect("Opening image failed");
-    let img2 = image::open(tmpfolder.join("blocks2.png")).expect("Opening image failed");
 
-    image::imageops::overlay(&mut img, &img2, 0, 0);
+    let mut img = DynamicImage::ImageRgb8(img);
 
+    image::imageops::overlay(&mut img, &DynamicImage::ImageRgba8(img2), 0, 0);
+
+    let filter_size = 2;
     img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
 
     img.save(tmpfolder.join("blocks.png"))
