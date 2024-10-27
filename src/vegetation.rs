@@ -266,22 +266,14 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         (h * block * 600.0 / 254.0 / scalefactor) as u32,
         Luma([0x00]),
     );
-    let mut imggr1 =
-        RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
-    let mut imggr1b =
-        RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
-    let mut imgye2 = RgbaImage::from_pixel(
-        (w * block) as u32,
-        (h * block) as u32,
-        Rgba([255, 255, 255, 0]),
-    );
-    let mut imgye2b = RgbaImage::from_pixel(
-        (w * block) as u32,
-        (h * block) as u32,
-        Rgba([255, 255, 255, 0]),
-    );
-    let mut imgwater =
-        RgbImage::from_pixel((w * block) as u32, (h * block) as u32, Rgb([255, 255, 255]));
+
+    let img_width = (w * block) as u32;
+    let img_height = (h * block) as u32;
+
+    let mut imggr1 = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
+    let mut imggr1b = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
+    let mut imgye2 = RgbaImage::from_pixel(img_width, img_height, Rgba([255, 255, 255, 0]));
+    let mut imgye2b = RgbaImage::from_pixel(img_width, img_height, Rgba([255, 255, 255, 0]));
 
     let greens = (0..greenshades.len())
         .map(|i| {
@@ -472,6 +464,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
             .expect("could not save output png");
     }
 
+    let mut imgwater = RgbImage::from_pixel(img_width, img_height, Rgb([255, 255, 255]));
     let black = Rgb([0, 0, 0]);
     let blue = Rgb([29, 190, 255]);
     let buildings = config.buildings;
@@ -522,6 +515,8 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     imgwater
         .save(tmpfolder.join("blueblack.png"))
         .expect("could not save output png");
+
+    drop(imgwater); // explicitly drop imgwater to free memory
 
     let underg = Rgba([64, 121, 0, 255]);
     let tmpfactor = (600.0 / 254.0 / scalefactor) as f32;
