@@ -1049,7 +1049,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
 
         fs::remove_file(&file).unwrap();
 
-        for ext in [".dbf", ".sbx", ".prj", ".shx", ".sbn", ".cpg"].iter() {
+        for ext in ["dbf", "sbx", "prj", "shx", "sbn", "cpg"].iter() {
             file.set_extension(ext);
             if file.exists() {
                 fs::remove_file(&file).unwrap();
