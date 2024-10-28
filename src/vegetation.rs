@@ -143,6 +143,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         i += 1;
     })
     .expect("Can not read file");
+    // rebind the variables to be non-mut for the rest of the function
     let (yhit, noyhit) = (yhit, noyhit);
 
     let mut firsthit: HashMap<(u64, u64), u64> = HashMap::default();
@@ -243,6 +244,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         i += 1;
     })
     .expect("Can not read file");
+    // rebind the variables to be non-mut for the rest of the function
     let (firsthit, ugg, ug, ghit, greenhit, highit) = (firsthit, ugg, ug, ghit, greenhit, highit);
 
     let w = (xmax - xmin).floor() / block;
