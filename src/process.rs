@@ -82,9 +82,13 @@ pub fn unzipmtk(
     }
 
     for zip_name in filenames.iter() {
-        let fname = Path::new(&zip_name);
-        let file = fs::File::open(fname).unwrap();
+        info!("Opening zip file {}", zip_name);
+        let file = fs::File::open(zip_name).unwrap();
         let mut archive = zip::ZipArchive::new(file).unwrap();
+        info!(
+            "Extracting {:?} MB from {zip_name}",
+            archive.decompressed_size().map(|s| s / 1024 / 1024)
+        );
         archive.extract(tmpfolder).unwrap();
         render::mtkshaperender(config, tmpfolder).unwrap();
     }

@@ -87,10 +87,13 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
         }
     }
 
+    info!("Processing shapefiles: {:?}", shp_files);
+
     for shp_file in shp_files.iter() {
         let file = shp_file.as_path().file_name().unwrap().to_str().unwrap();
         let mut file = tmpfolder.join(file);
 
+        info!("Processing shapefile: {:?}", file);
         // drawshape comes here
         let mut reader = shapefile::Reader::from_path(&file)?;
         for shape_record in reader.iter_shapes_and_records() {
@@ -1049,9 +1052,10 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
 
         fs::remove_file(&file).unwrap();
 
-        for ext in ["dbf", "sbx", "prj", "shx", "sbn", "cpg"].iter() {
+        for ext in ["dbf", "sbx", "prj", "shx", "sbn", "cpg", "qmd"].iter() {
             file.set_extension(ext);
             if file.exists() {
+            println!("Removing file: {:?}", file);
                 fs::remove_file(&file).unwrap();
             }
         }
