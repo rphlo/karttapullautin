@@ -4,28 +4,21 @@ use skia_safe::{
 };
 use std::fs::File;
 use std::io::Write;
-use std::mem;
 
 pub struct Canvas {
     surface: Surface,
-    path: Path,
     paint: Paint,
 }
 
 impl Canvas {
     pub fn new(width: i32, height: i32) -> Canvas {
         let mut surface = surfaces::raster_n32_premul((width, height)).expect("surface");
-        let path = Path::new();
         let mut paint = Paint::default();
         paint.set_color(Color::BLACK);
         paint.set_anti_alias(false);
         paint.set_stroke_width(1.0);
         surface.canvas().clear(0x00000000);
-        Canvas {
-            surface,
-            path,
-            paint,
-        }
+        Canvas { surface, paint }
     }
 
     #[inline]
@@ -66,50 +59,39 @@ impl Canvas {
     }
 
     #[inline]
-    pub fn save(&mut self) {
-        self.canvas().save();
-    }
-
-    #[inline]
     pub fn draw_polyline(&mut self, pts: &[(f32, f32)]) {
-        let new_path = Path::new();
-        let _ = mem::replace(&mut self.path, new_path);
+        let mut path = Path::new();
         self.paint.set_style(PaintStyle::Stroke);
-        self.path.move_to((pts[0].0, pts[0].1));
+        path.move_to((pts[0].0, pts[0].1));
         for pt in pts.iter() {
-            self.path.line_to((pt.0, pt.1));
+            path.line_to((pt.0, pt.1));
         }
-        self.surface.canvas().draw_path(&self.path, &self.paint);
-        self.save();
+        self.surface.canvas().draw_path(&path, &self.paint);
     }
 
     #[inline]
     pub fn draw_closed_polyline(&mut self, pts: &[(f32, f32)]) {
-        let new_path = Path::new();
-        let _ = mem::replace(&mut self.path, new_path);
+        let mut path = Path::new();
         self.paint.set_style(PaintStyle::Stroke);
-        self.path.move_to((pts[0].0, pts[0].1));
+        path.move_to((pts[0].0, pts[0].1));
         for pt in pts.iter() {
-            self.path.line_to((pt.0, pt.1));
+            path.line_to((pt.0, pt.1));
         }
-        self.surface.canvas().draw_path(&self.path, &self.paint);
-        self.save();
+        self.surface.canvas().draw_path(&path, &self.paint);
     }
 
     #[inline]
     pub fn draw_filled_polygon(&mut self, apts: &[Vec<(f32, f32)>]) {
-        let new_path = Path::new();
-        let _ = mem::replace(&mut self.path, new_path);
+        let mut path = Path::new();
         self.paint.set_stroke_width(1.0);
         self.paint.set_style(PaintStyle::StrokeAndFill);
         for pts in apts {
-            self.path.move_to((pts[0].0, pts[0].1));
+            path.move_to((pts[0].0, pts[0].1));
             for pt in pts.iter() {
-                self.path.line_to((pt.0, pt.1));
+                path.line_to((pt.0, pt.1));
             }
         }
-        self.surface.canvas().draw_path(&self.path, &self.paint);
-        self.save();
+        self.surface.canvas().draw_path(&path, &self.paint);
     }
 
     #[inline]
@@ -124,11 +106,6 @@ impl Canvas {
     #[inline]
     pub fn image(&mut self) -> skia_safe::image::Image {
         self.surface.image_snapshot()
-    }
-
-    #[inline]
-    fn canvas(&mut self) -> &skia_safe::Canvas {
-        self.surface.canvas()
     }
 
     #[inline]
