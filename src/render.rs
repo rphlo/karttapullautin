@@ -15,6 +15,12 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+#[derive(PartialEq)]
+enum Operator {
+    Equal,
+    NotEqual,
+}
+
 pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     let scalefactor = config.scalefactor;
 
@@ -313,22 +319,18 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                         continue;
                     }
                     let isom = row_data[1];
-                    let mut keyvals: Vec<(String, String, String)> = vec![];
+                    let mut keyvals: Vec<(Operator, String, String)> = vec![];
                     let params: Vec<&str> = row_data[2].split('&').collect();
                     for param in params {
-                        let mut operator = "=";
+                        let mut operator = Operator::Equal;
                         let d: Vec<&str>;
                         if param.contains("!=") {
                             d = param.splitn(2, "!=").collect();
-                            operator = "!=";
+                            operator = Operator::NotEqual;
                         } else {
                             d = param.splitn(2, '=').collect();
                         }
-                        keyvals.push((
-                            operator.to_string(),
-                            d[0].trim().to_string(),
-                            d[1].trim().to_string(),
-                        ))
+                        keyvals.push((operator, d[0].trim().to_string(), d[1].trim().to_string()))
                     }
                     if vari == unsetcolor {
                         if isom == "306" {
@@ -340,7 +342,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.to_string().trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -366,7 +368,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -392,7 +394,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -418,7 +420,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -444,7 +446,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -470,7 +472,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -499,7 +501,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -529,7 +531,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -555,7 +557,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -582,7 +584,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -609,7 +611,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -636,7 +638,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -662,7 +664,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -688,7 +690,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -715,7 +717,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -740,7 +742,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -765,7 +767,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -789,7 +791,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -813,7 +815,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -837,7 +839,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -861,7 +863,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -885,7 +887,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                                 {
                                     r = record_str.trim().to_string();
                                 }
-                                if keyval.0 == "=" {
+                                if keyval.0 == Operator::Equal {
                                     if r != keyval.2 {
                                         is_ok = false;
                                     }
@@ -907,6 +909,8 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 if !area && shape.shapetype() == ShapeType::Polyline {
                     let mut poly: Vec<(f32, f32)> = vec![];
                     let polyline = shapefile::Polyline::try_from(shape).unwrap();
+                    // polyline.in
+                    // let linestring :
                     for points in polyline.parts().iter() {
                         for point in points.iter() {
                             let x = point.x;
@@ -1026,6 +1030,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                         }
                     }
 
+                    info!("Image: {}", image);
                     if image == "black" {
                         imgblack.set_color(vari);
                         imgblack.draw_filled_polygon(&polys)
@@ -1055,7 +1060,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
         for ext in ["dbf", "sbx", "prj", "shx", "sbn", "cpg", "qmd"].iter() {
             file.set_extension(ext);
             if file.exists() {
-            println!("Removing file: {:?}", file);
+                println!("Removing file: {:?}", file);
                 fs::remove_file(&file).unwrap();
             }
         }
