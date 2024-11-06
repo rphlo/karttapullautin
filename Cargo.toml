@@ -25,9 +25,9 @@ imageproc = { version = "0.25.0", default-features = false, features = [
 las = { version = "0.9", features = ["laz"] }
 rand = "0.8.5"
 rust-ini = "0.21"
-rustc-hash = "2.0.0"
+rustc-hash = "2.0"
 shapefile = "0.6.0"
-skia-safe = "0.75"
-zip = "2.1.6"
+skia-safe = "0.78"
+zip = "2.2"
 log = "0.4"
 env_logger = "0.11"
