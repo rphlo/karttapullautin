@@ -54,6 +54,20 @@ For Finns: Karttapullautin render Maastotietokanta zip files (shape files) downl
 
 To print a map at right scale, you download for example IrfanView http://www.irfanview.com/ open png map, Image -> Information, set resolution 600 x 600 DPI and push "change" button and save.  Then crop map if needed (Select area with mouse and Edit -> crop selection). Print using "Print size: Original Size srom DPI". Like this your map should end up 1:10000 scale on paper.
 
+#### Creating shape file from OSM file
+
+You can download OSM files from Open Street Map website https://www.openstreetmap.org/export in a form of a .osm file extension. To convert this file in something that can be used by karttapullautin you'll need the GDAL ogr2ogr program (Download from https://gdal.org/en/latest/download.html)
+
+Run the following commands in your terminal
+```
+ogr2ogr --config OSM_USE_CUSTOM_INDEXING NO -skipfailures -f "ESRI Shapefile" output_shapes Downloads/map.osm -overwrite -t_srs EPSG:3387
+zip -r -j map.shp.zip output_shapes/*
+```
+
+Replace `EPSG:3387` by the coordinates ESPG codename of that the LAZ file uses.
+
+You will have a zip file `map.shp.zip` that you can use with karttapullautin.
+
 ### Fine tuning the output
 
 `pullauta` creates a `pullauta.ini` file if it doesn't already exists. Your settings are there. For the second run you can change settings as you wish. Experiment with small file to find best settings for your taste/terrain/lidar data.
