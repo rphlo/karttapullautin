@@ -60,7 +60,7 @@ You can download OSM files from Open Street Map website https://www.openstreetma
 
 Run the following commands in your terminal
 ```
-ogr2ogr --config OSM_USE_CUSTOM_INDEXING NO -skipfailures -f "ESRI Shapefile" output_shapes Downloads/map.osm -overwrite -t_srs EPSG:3387
+ogr2ogr --config OSM_USE_CUSTOM_INDEXING NO -skipfailures -f "ESRI Shapefile" output_shapes map.osm -overwrite -t_srs EPSG:3067
 zip -r -j map.shp.zip output_shapes/*
 ```
 
