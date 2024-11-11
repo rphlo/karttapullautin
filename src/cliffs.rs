@@ -9,8 +9,7 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
-use crate::util::read_lines;
-use crate::util::read_lines_no_alloc;
+use crate::io::XyzInternalReader;
 use crate::vec2d::Vec2D;
 
 pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
@@ -38,11 +37,10 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let mut ymin: f64 = f64::MAX;
     let mut ymax: f64 = f64::MIN;
 
-    let xyz_file_in = tmpfolder.join("xyztemp.xyz");
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let xyz_file_in = tmpfolder.join("xyztemp.xyz.bin");
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
 
         if xmin > x {
             xmin = x;
@@ -59,31 +57,29 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         if ymax < y {
             ymax = y;
         }
-    })
-    .expect("Could not read input file");
+    }
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz");
+    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
     let mut size: f64 = f64::NAN;
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
     let mut sxmax: usize = usize::MIN;
     let mut symax: usize = usize::MIN;
-    if let Ok(lines) = read_lines(&xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
 
-            if i == 0 {
-                xstart = x;
-                ystart = y;
-            } else if i == 1 {
-                size = y - ystart;
-            } else {
-                break;
-            }
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let mut i = 0;
+    while let Some(r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
+
+        if i == 0 {
+            xstart = x;
+            ystart = y;
+        } else if i == 1 {
+            size = y - ystart;
+        } else {
+            break;
         }
+        i += 1;
     }
 
     let mut xyz = Vec2D::new(
@@ -92,11 +88,9 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         f64::NAN,
     );
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
+        let (x, y, h) = (r.x, r.y, r.z);
 
         let xx = ((x - xstart) / size).floor() as usize;
         let yy = ((y - ystart) / size).floor() as usize;
@@ -109,8 +103,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         if symax < yy {
             symax = yy;
         }
-    })
-    .expect("Could not read input file");
+    }
 
     let mut steepness = Vec2D::new(sxmax + 1, symax + 1, f64::NAN);
 
@@ -149,20 +142,18 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         Vec::<(f64, f64, f64)>::new(),
     );
 
-    let xyz_file_in = tmpfolder.join("xyztemp.xyz");
+    let xyz_file_in = tmpfolder.join("xyztemp.xyz.bin");
 
     let mut rng = rand::thread_rng();
     let randdist = distributions::Bernoulli::new(cliff_thin).unwrap();
 
-    read_lines_no_alloc(&xyz_file_in, |line| {
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
         if cliff_thin == 1.0 || rng.sample(randdist) {
-            let mut parts = line.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let r3 = parts.next().unwrap();
+            let (x, y, h) = (r.x, r.y, r.z);
+            let r3 = r.meta.unwrap().classification;
 
-            if r3 == "2" {
+            if r3 == 2 {
                 list_alt[(
                     ((x - xmin).floor() / 3.0) as usize,
                     ((y - ymin).floor() / 3.0) as usize,
@@ -170,8 +161,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
                     .push((x, y, h));
             }
         }
-    })
-    .expect("Could not read input file");
+    }
 
     let w = ((xmax - xmin).floor() / 3.0) as usize;
     let h = ((ymax - ymin).floor() / 3.0) as usize;
@@ -339,13 +329,11 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         Vec::<(f64, f64, f64)>::new(),
     );
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz");
-    read_lines_no_alloc(&xyz_file_in, |line| {
+    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
         if cliff_thin == 1.0 || rng.sample(randdist) {
-            let mut parts = line.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+            let (x, y, h) = (r.x, r.y, r.z);
 
             list_alt[(
                 ((x - xmin).floor() / 3.0) as usize,
@@ -353,8 +341,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
             )]
                 .push((x, y, h));
         }
-    })
-    .expect("Could not read input file");
+    }
 
     // temporary vector to reuse memory allocations
     let mut t = Vec::<(f64, f64, f64)>::new();
