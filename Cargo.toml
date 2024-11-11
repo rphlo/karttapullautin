@@ -12,15 +12,15 @@ categories = ["command-line-utilities"]
 publish = false
 
 [dependencies]
-image = { version ="0.25", default-features = false, features = [
+image = { version = "0.25", default-features = false, features = [
 	"rayon",
 	"png",
 	"jpeg",
-]}
+] }
 
 imageproc = { version = "0.25.0", default-features = false, features = [
 	"rayon",
-]}
+] }
 
 las = { version = "0.9", features = ["laz"] }
 rand = "0.8.5"
@@ -28,6 +28,12 @@ rust-ini = "0.21"
 rustc-hash = "2.0"
 shapefile = "0.6.0"
 skia-safe = "0.78"
-zip = "2.2"
+zip = { version = "2.2", default-features = false, features = [
+	"bzip2",
+	"deflate",
+	"deflate64",
+	"lzma",
+	"zstd",
+] }
 log = "0.4"
 env_logger = "0.11"
