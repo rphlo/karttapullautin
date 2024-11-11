@@ -19,6 +19,7 @@ use crate::knolls;
 use crate::merge;
 use crate::render;
 use crate::util::read_lines;
+use crate::util::read_lines_no_alloc;
 use crate::util::Timing;
 use crate::vegetation;
 
@@ -184,9 +185,48 @@ pub fn process_tile(
             }
         }
     } else {
-        // TODO: handle conversion
-        fs::copy(Path::new(filename), tmpfolder.join("xyztemp.xyz"))
-            .expect("Could not copy file to tmpfolder");
+        // if we are here we know that the file has at least 6 columns, so we can assume that it is in the format
+        // x y z classification number_of_returns return_number
+
+        // first figure out how many points there are
+        let mut lines = 0;
+        read_lines_no_alloc(filename, |_| lines += 1).expect("Could not read input file");
+
+        info!(
+            "{}Converting {} points to internal binary format",
+            thread_name, lines
+        );
+
+        // then read and convert each point
+        let mut writer = XyzInternalWriter::create(
+            &tmpfolder.join("xyztemp.xyz.bin"),
+            crate::io::Format::XyzMeta,
+            lines,
+        )
+        .expect("Could not create writer");
+        read_lines_no_alloc(filename, |line| {
+            let mut parts = line.split(' ');
+            let x = parts.next().unwrap().parse::<f64>().unwrap();
+            let y = parts.next().unwrap().parse::<f64>().unwrap();
+            let z = parts.next().unwrap().parse::<f64>().unwrap();
+            let classification = parts.next().unwrap().parse::<u8>().unwrap();
+            let number_of_returns = parts.next().unwrap().parse::<u8>().unwrap();
+            let return_number = parts.next().unwrap().parse::<u8>().unwrap();
+
+            writer
+                .write_record(&crate::io::XyzRecord {
+                    x,
+                    y,
+                    z,
+                    meta: Some(XyzRecordMeta {
+                        classification,
+                        number_of_returns,
+                        return_number,
+                    }),
+                })
+                .expect("Could not write record");
+        })
+        .expect("Could not read file");
     }
     info!("{}Done", thread_name);
 
