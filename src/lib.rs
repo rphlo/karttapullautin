@@ -16,3 +16,5 @@ pub mod render;
 pub mod util;
 pub mod vec2d;
 pub mod vegetation;
+
+mod io;
