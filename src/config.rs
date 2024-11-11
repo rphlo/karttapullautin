@@ -37,7 +37,7 @@ pub struct Config {
 
     pub detectbuildings: bool,
 
-    pub water_class: String,
+    pub water_class: u8,
 
     // merge
     pub inidotknolls: f64,
@@ -200,7 +200,7 @@ impl Config {
 
         let detectbuildings: bool = gs.get("detectbuildings").unwrap_or("0") == "1";
 
-        let water_class = gs.get("waterclass").unwrap_or("9").to_string();
+        let water_class = parse_typed(gs, "waterclass", 9);
 
         let inidotknolls: f64 = parse_typed(gs, "knolls", 0.8);
         let smoothing: f64 = parse_typed(gs, "smoothing", 1.0);

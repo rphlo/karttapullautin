@@ -13,6 +13,7 @@ use crate::cliffs;
 use crate::config::Config;
 use crate::contours;
 use crate::crop;
+use crate::io::XyzInternalWriter;
 use crate::knolls;
 use crate::merge;
 use crate::render;
@@ -159,7 +160,16 @@ pub fn process_tile(
         let tmp_file = File::create(tmp_filename).expect("Unable to create file");
         let mut tmp_fp = BufWriter::new(tmp_file);
 
+        let tmp_fp_bin = BufWriter::new(
+            File::create(tmpfolder.join("xyztemp.xyz.bin")).expect("Unable to create file"),
+        );
+
         let mut reader = Reader::from_path(filename).expect("Unable to open reader");
+
+        let n_points = reader.header().number_of_points();
+
+        let mut writer = XyzInternalWriter::new(tmp_fp_bin, n_points);
+
         for ptu in reader.points() {
             let pt = ptu.unwrap();
             if thinfactor == 1.0 || rng.sample(randdist) {
@@ -175,6 +185,15 @@ pub fn process_tile(
                     pt.intensity
                 )
                 .expect("Could not write temp file");
+
+                writer.write_record(&crate::io::XyzRecord {
+                    x: pt.x * xfactor,
+                    y: pt.y * yfactor,
+                    z: pt.z * zfactor + zoff,
+                    classification: u8::from(pt.classification),
+                    number_of_returns: pt.number_of_returns,
+                    return_number: pt.return_number,
+                })?;
             }
         }
         tmp_fp.flush().unwrap();
