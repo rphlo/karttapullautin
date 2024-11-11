@@ -1146,9 +1146,6 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
         }
     }
 
-    let f2 = File::create(tmpfolder.join("xyz_knolls.xyz")).expect("Unable to create file");
-    let mut f2 = BufWriter::new(f2);
-
     let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
     let mut writer = XyzInternalWriter::create(
         &tmpfolder.join("xyz_knolls.xyz.bin"),
@@ -1172,8 +1169,6 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
                 h = tmp + 0.02;
             }
         }
-        writeln!(f2, "{x} {y} {h}").expect("Could not write to file");
-
         r.z = h;
         writer.write_record(&r).unwrap();
     }

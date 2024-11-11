@@ -157,36 +157,20 @@ pub fn process_tile(
         let mut rng = rand::thread_rng();
         let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
 
-        let tmp_filename = tmpfolder.join("xyztemp.xyz");
-        let tmp_file = File::create(tmp_filename).expect("Unable to create file");
-        let mut tmp_fp = BufWriter::new(tmp_file);
-
-        let tmp_fp_bin = BufWriter::new(
-            File::create(tmpfolder.join("xyztemp.xyz.bin")).expect("Unable to create file"),
-        );
-
         let mut reader = Reader::from_path(filename).expect("Unable to open reader");
 
         let n_points = reader.header().number_of_points();
 
-        let mut writer = XyzInternalWriter::new(tmp_fp_bin, crate::io::Format::XyzMeta, n_points);
+        let mut writer = XyzInternalWriter::create(
+            &tmpfolder.join("xyztemp.xyz.bin"),
+            crate::io::Format::XyzMeta,
+            n_points,
+        )
+        .unwrap();
 
         for ptu in reader.points() {
             let pt = ptu.unwrap();
             if thinfactor == 1.0 || rng.sample(randdist) {
-                write!(
-                    &mut tmp_fp,
-                    "{} {} {} {} {} {} {}\r\n",
-                    pt.x * xfactor,
-                    pt.y * yfactor,
-                    pt.z * zfactor + zoff,
-                    u8::from(pt.classification),
-                    pt.number_of_returns,
-                    pt.return_number,
-                    pt.intensity
-                )
-                .expect("Could not write temp file");
-
                 writer.write_record(&crate::io::XyzRecord {
                     x: pt.x * xfactor,
                     y: pt.y * yfactor,
@@ -199,8 +183,8 @@ pub fn process_tile(
                 })?;
             }
         }
-        tmp_fp.flush().unwrap();
     } else {
+        // TODO: handle conversion
         fs::copy(Path::new(filename), tmpfolder.join("xyztemp.xyz"))
             .expect("Could not copy file to tmpfolder");
     }
@@ -241,8 +225,6 @@ pub fn process_tile(
         .expect("contour generation failed");
     }
 
-    fs::copy(tmpfolder.join("xyz_03.xyz"), tmpfolder.join("xyz2.xyz"))
-        .expect("Could not copy file");
     fs::copy(
         tmpfolder.join("xyz_03.xyz.bin"),
         tmpfolder.join("xyz2.xyz.bin"),
