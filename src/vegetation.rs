@@ -10,7 +10,6 @@ use std::path::Path;
 
 use crate::config::{Config, Zone};
 use crate::io::XyzInternalReader;
-use crate::util::read_lines_no_alloc;
 
 pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
@@ -466,12 +465,10 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         }
     }
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz");
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let hh: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
+        let (x, y, hh) = (r.x, r.y, r.z);
 
         if hh < config.waterele {
             draw_filled_rect_mut(
@@ -480,8 +477,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                 blue,
             );
         }
-    })
-    .expect("Can not read file");
+    }
 
     imgwater
         .save(tmpfolder.join("blueblack.png"))

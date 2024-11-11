@@ -1,6 +1,7 @@
 use crate::canvas::Canvas;
 use crate::config::Config;
-use crate::util::{read_lines, read_lines_no_alloc};
+use crate::io::XyzInternalReader;
+use crate::util::read_lines;
 use image::ImageBuffer;
 use image::Rgba;
 use imageproc::drawing::{draw_filled_circle_mut, draw_line_segment_mut};
@@ -1542,23 +1543,21 @@ pub fn draw_curves(
     let mut steepness: HashMap<(usize, usize), f64> = HashMap::default();
 
     if formline > 0.0 {
-        let xyz_file_in = tmpfolder.join("xyz2.xyz");
-        if let Ok(lines) = read_lines(&xyz_file_in) {
-            for (i, line) in lines.enumerate() {
-                let ip = line.unwrap_or(String::new());
-                let mut parts = ip.split(' ');
-                let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-                let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
+        let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
+        let mut i = 0;
+        while let Some(r) = reader.next().unwrap() {
+            let (x, y) = (r.x, r.y);
 
-                if i == 0 {
-                    xstart = x;
-                    ystart = y;
-                } else if i == 1 {
-                    size = y - ystart;
-                } else {
-                    break;
-                }
+            if i == 0 {
+                xstart = x;
+                ystart = y;
+            } else if i == 1 {
+                size = y - ystart;
+            } else {
+                break;
             }
+            i += 1;
         }
 
         x0 = xstart;
@@ -1568,11 +1567,9 @@ pub fn draw_curves(
 
         let mut xyz: HashMap<(usize, usize), f64> = HashMap::default();
 
-        read_lines_no_alloc(xyz_file_in, |line| {
-            let mut parts = line.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+        let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
+        while let Some(r) = reader.next().unwrap() {
+            let (x, y, h) = (r.x, r.y, r.z);
 
             let xx = ((x - xstart) / size).floor() as usize;
             let yy = ((y - ystart) / size).floor() as usize;
@@ -1589,8 +1586,7 @@ pub fn draw_curves(
             if symax < yy {
                 symax = yy;
             }
-        })
-        .expect("Unable to read file");
+        }
 
         for i in 6..(sxmax - 7) {
             for j in 6..(symax - 7) {
