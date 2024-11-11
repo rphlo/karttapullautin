@@ -6,7 +6,7 @@ use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
-use crate::io::XyzInternalReader;
+use crate::io::{XyzInternalReader, XyzInternalWriter};
 use crate::util::read_lines_no_alloc;
 use crate::vec2d::Vec2D;
 
@@ -36,7 +36,10 @@ pub fn xyz2contours(
     let xyz_file_in = tmpfolder.join(format!("{xyzfilein}.bin"));
     let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
-        if (r.classification == 2 || r.classification == water_class) || !ground {
+        if r.meta
+            .is_some_and(|m| m.classification == 2 || m.classification == water_class)
+            || !ground
+        {
             let x: f64 = r.x;
             let y: f64 = r.y;
             let h: f64 = r.z;
@@ -66,6 +69,7 @@ pub fn xyz2contours(
             }
         }
     }
+    drop(reader);
 
     xmin = (xmin / 2.0 / scalefactor).floor() * 2.0 * scalefactor;
     ymin = (ymin / 2.0 / scalefactor).floor() * 2.0 * scalefactor;
@@ -78,7 +82,10 @@ pub fn xyz2contours(
 
     let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
-        if (r.classification == 2 || r.classification == water_class) || !ground {
+        if r.meta
+            .is_some_and(|m| m.classification == 2 || m.classification == water_class)
+            || !ground
+        {
             let x: f64 = r.x;
             let y: f64 = r.y;
             let h: f64 = r.z;
@@ -91,6 +98,8 @@ pub fn xyz2contours(
             *count += 1;
         }
     }
+
+    drop(reader);
 
     let mut avg_alt = Vec2D::new(w + 2, h + 2, f64::NAN);
 
@@ -219,12 +228,24 @@ pub fn xyz2contours(
         let xyz_file_out = tmpfolder.join(xyzfileout);
         let f = File::create(xyz_file_out).expect("Unable to create file");
         let mut f = BufWriter::new(f);
+
+        let mut writer = XyzInternalWriter::new(
+            BufWriter::new(File::create(tmpfolder.join(format!("{xyzfileout}.bin"))).unwrap()),
+            crate::io::Format::Xyz,
+            (w as u64 + 1) * (h as u64 + 1),
+        );
         for x in 0..w + 1 {
             for y in 0..h + 1 {
                 let ele = avg_alt[(x, y)];
                 let xx = x as f64 * 2.0 * scalefactor + xmin;
                 let yy = y as f64 * 2.0 * scalefactor + ymin;
                 write!(&mut f, "{} {} {}\r\n", xx, yy, ele).expect("Cannot write to output file");
+                writer.write_record(&crate::io::XyzRecord {
+                    x: xx,
+                    y: yy,
+                    z: ele,
+                    meta: None,
+                })?;
             }
         }
     }

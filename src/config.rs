@@ -80,8 +80,8 @@ pub struct Config {
     pub proceed_yellows: bool,
     pub med: u32,
     pub med2: u32,
-    pub water: u64,
-    pub buildings: u64,
+    pub water: u8,
+    pub buildings: u8,
     pub waterele: f64,
 
     // render

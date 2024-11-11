@@ -8,6 +8,7 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
+use crate::io::{XyzInternalReader, XyzInternalWriter};
 use crate::util::{read_lines, read_lines_no_alloc};
 
 pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
@@ -914,37 +915,34 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
 
     let interval = contour_interval / 2.0 * scalefactor;
 
-    let xyz_file_in = tmpfolder.join("xyz_03.xyz");
+    let xyz_file_in = tmpfolder.join("xyz_03.xyz.bin");
 
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
+    let mut i = 0;
+    while let Some(r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
 
-            if i == 0 {
-                xstart = x;
-                ystart = y;
-            } else if i == 1 {
-                size = y - ystart;
-            } else {
-                break;
-            }
+        if i == 0 {
+            xstart = x;
+            ystart = y;
+        } else if i == 1 {
+            size = y - ystart;
+        } else {
+            break;
         }
+        i += 1;
     }
+
     let mut xmax: u64 = 0;
     let mut ymax: u64 = 0;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    read_lines_no_alloc(&xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
+    while let Some(r) = reader.next()? {
+        let (x, y, h) = (r.x, r.y, r.z);
 
         let xx = ((x - xstart) / size).floor() as u64;
         let yy = ((y - ystart) / size).floor() as u64;
@@ -955,8 +953,7 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
         if ymax < yy {
             ymax = yy;
         }
-    })
-    .expect("could not read file");
+    }
     let mut xyz2: HashMap<(u64, u64), f64> = xyz.clone();
 
     for i in 2..(xmax as usize - 1) {
@@ -1165,11 +1162,15 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     let f2 = File::create(tmpfolder.join("xyz_knolls.xyz")).expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let parts = line.split(' ');
-        let mut r = parts.collect::<Vec<&str>>();
-        let x: f64 = r[0].parse::<f64>().unwrap();
-        let y: f64 = r[1].parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
+    let mut writer = XyzInternalWriter::create(
+        &tmpfolder.join("xyz_knolls.xyz.bin"),
+        reader.format(),
+        reader.n_records(),
+    )
+    .unwrap();
+    while let Some(mut r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
         let mut h = *xyz2
             .get(&(
                 ((x - xstart) / size).floor() as u64,
@@ -1184,13 +1185,11 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
                 h = tmp + 0.02;
             }
         }
-        let new_val = format!("{}", h);
-        r[2] = &new_val;
-        let out = r.join(" ");
-        f2.write_all(out.as_bytes()).expect("cannot write to file");
-        f2.write_all("\n".as_bytes()).expect("cannot write to file");
-    })
-    .expect("could not read file");
+        writeln!(f2, "{x} {y} {h}").expect("Could not write to file");
+
+        r.z = h;
+        writer.write_record(&r).unwrap();
+    }
 
     info!("Done");
     Ok(())

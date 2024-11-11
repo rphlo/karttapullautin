@@ -16,28 +16,26 @@ use crate::util::{read_lines, read_lines_no_alloc};
 pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz");
+    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
 
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x = parts.next().unwrap().parse::<f64>().unwrap();
-            let y = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let mut i = 0;
+    while let Some(r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
 
-            if i == 0 {
-                xstart = x;
-                ystart = y;
-            } else if i == 1 {
-                size = y - ystart;
-            } else {
-                break;
-            }
+        if i == 0 {
+            xstart = x;
+            ystart = y;
+        } else if i == 1 {
+            size = y - ystart;
+        } else {
+            break;
         }
+        i += 1;
     }
 
     let block = config.greendetectsize;
@@ -45,12 +43,9 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
     let mut top: HashMap<(u64, u64), f64> = HashMap::default();
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.trim().split(' ');
-
-        let x = parts.next().unwrap().parse::<f64>().unwrap();
-        let y = parts.next().unwrap().parse::<f64>().unwrap();
-        let h = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
+        let (x, y, h) = (r.x, r.y, r.z);
 
         let xx = ((x - xstart) / size).floor() as u64;
         let yy = ((y - ystart) / size).floor() as u64;
@@ -60,8 +55,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         if top.contains_key(&(xxx, yyy)) && h > *top.get(&(xxx, yyy)).unwrap() {
             top.insert((xxx, yyy), h);
         }
-    })
-    .expect("Can not read file");
+    }
 
     let thresholds = &config.thresholds;
 
@@ -88,7 +82,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     } = config;
     let greenshades = &config.greenshades;
 
-    let xyz_file_in = tmpfolder.join("xyztemp.xyz");
+    let xyz_file_in = tmpfolder.join("xyztemp.xyz.bin");
 
     let xmin = xstart;
     let ymin = ystart;
@@ -99,15 +93,16 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let mut noyhit: HashMap<(u64, u64), u64> = HashMap::default();
 
     let mut i = 0;
-    let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
     while let Some(r) = reader.next()? {
         if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
             let x: f64 = r.x;
             let y: f64 = r.y;
             let h: f64 = r.z;
-            let r3 = r.classification;
-            let r4 = r.number_of_returns;
-            let r5 = r.return_number;
+            let m = r.meta.unwrap();
+            let r3 = m.classification;
+            let r4 = m.number_of_returns;
+            let r5 = m.return_number;
 
             if xmax < x {
                 xmax = x;
@@ -156,15 +151,16 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let step: f32 = 6.0;
 
     let mut i = 0;
-     let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
     while let Some(r) = reader.next()? {
         if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
             let x: f64 = r.x;
             let y: f64 = r.y;
             let h: f64 = r.z - zoffset;
-            let r3 = r.classification;
-            let r4 = r.number_of_returns;
-            let r5 = r.return_number;
+            let m = r.meta.unwrap();
+            let r3 = m.classification;
+            let r4 = m.number_of_returns;
+            let r5 = m.return_number;
 
             if x > xmin && y > ymin {
                 if r5 == 1 {
@@ -448,12 +444,11 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let buildings = config.buildings;
     let water = config.water;
     if buildings > 0 || water > 0 {
-        read_lines_no_alloc(xyz_file_in, |line| {
-            let mut parts = line.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            parts.next();
-            let c: u64 = parts.next().unwrap().parse::<u64>().unwrap();
+        let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+        while let Some(r) = reader.next()? {
+            let (x, y) = (r.x, r.y);
+
+            let c: u8 = r.meta.unwrap().classification;
 
             if c == buildings {
                 draw_filled_rect_mut(
@@ -469,8 +464,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
                     blue,
                 );
             }
-        })
-        .expect("Can not read file");
+        }
     }
 
     let xyz_file_in = tmpfolder.join("xyz2.xyz");
