@@ -33,7 +33,7 @@ pub fn xyz2contours(
     let mut hmin: f64 = f64::MAX;
     let mut hmax: f64 = f64::MIN;
 
-    let xyz_file_in = tmpfolder.join(format!("{xyzfilein}.bin"));
+    let xyz_file_in = tmpfolder.join(xyzfilein);
     let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
         if r.meta
@@ -226,7 +226,7 @@ pub fn xyz2contours(
 
     if !xyzfileout.is_empty() && xyzfileout != "null" {
         let mut writer = XyzInternalWriter::create(
-            &tmpfolder.join(format!("{xyzfileout}.bin")),
+            &tmpfolder.join(xyzfileout),
             crate::io::Format::Xyz,
             (w as u64 + 1) * (h as u64 + 1),
         )
