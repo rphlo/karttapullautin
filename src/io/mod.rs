@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use log::trace;
+use log::{debug, trace};
 
 /// The magic number that identifies a valid XYZ binary file.
 const XYZ_MAGIC: &[u8] = b"XYZB";
@@ -127,6 +127,7 @@ pub struct XyzInternalWriter<W: Write> {
 
 impl XyzInternalWriter<BufWriter<File>> {
     pub fn create(path: &Path, format: Format, n_records: u64) -> std::io::Result<Self> {
+        debug!("writing {n_records} records to: {:?}", path);
         let file = File::create(path)?;
         Ok(Self::new(BufWriter::new(file), format, n_records))
     }
@@ -162,9 +163,9 @@ impl<W: Write> XyzInternalWriter<W> {
         Ok(())
     }
 
-    pub fn finish(self) -> W {
-        self.inner
-    }
+    // pub fn finish(self) -> W {
+    //     self.inner
+    // }
 }
 
 // // If the writer is dropped before all records are written, it will panic.
@@ -188,6 +189,7 @@ pub struct XyzInternalReader<R: Read> {
 
 impl XyzInternalReader<BufReader<File>> {
     pub fn open(path: &Path) -> std::io::Result<Self> {
+        debug!("reading records from: {:?}", path);
         let file = File::open(path)?;
         Self::new(BufReader::new(file))
     }
@@ -240,9 +242,16 @@ impl<R: Read> XyzInternalReader<R> {
     pub fn n_records(&self) -> u64 {
         self.n_records
     }
+}
 
-    pub fn finish(self) -> R {
-        self.inner
+impl<W: Write> Drop for XyzInternalWriter<W> {
+    fn drop(&mut self) {
+        if self.records_written != self.n_records {
+            panic!(
+                "not all records written: expected {}, got {}",
+                self.n_records, self.records_written
+            );
+        }
     }
 }
 
@@ -295,7 +304,8 @@ mod test {
         writer.write_record(&record).unwrap();
 
         // now read the records
-        let cursor = Cursor::new(writer.finish().into_inner());
+        let data = writer.inner.clone().into_inner();
+        let cursor = Cursor::new(data);
         let mut reader = super::XyzInternalReader::new(cursor).unwrap();
         assert_eq!(reader.next().unwrap().unwrap(), record);
         assert_eq!(reader.next().unwrap().unwrap(), record);
