@@ -7,7 +7,7 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use crate::config::Config;
-use crate::util::{read_lines, read_lines_no_alloc};
+use crate::io::XyzInternalReader;
 use crate::vec2d::Vec2D;
 
 fn merge_png(
@@ -525,37 +525,34 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     }
 
     let interval = halfinterval;
-    let xyz_file_in = tmpfolder.join("xyz_knolls.xyz");
+    let xyz_file_in = tmpfolder.join("xyz_knolls.xyz.bin");
     let mut size: f64 = f64::NAN;
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            if i == 0 {
-                xstart = x;
-                ystart = y;
-            } else if i == 1 {
-                size = y - ystart;
-            } else {
-                break;
-            }
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let mut i = 0;
+    while let Some(r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
+
+        if i == 0 {
+            xstart = x;
+            ystart = y;
+        } else if i == 1 {
+            size = y - ystart;
+        } else {
+            break;
         }
+        i += 1;
     }
 
     let mut xmax: u64 = u64::MIN;
     let mut ymax: u64 = u64::MIN;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
+        let (x, y, h) = (r.x, r.y, r.z);
 
         let xx = ((x - xstart) / size).floor() as u64;
         let yy = ((y - ystart) / size).floor() as u64;
@@ -568,8 +565,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         if ymax < yy {
             ymax = yy;
         }
-    })
-    .expect("error reading xyz file");
+    }
 
     let mut steepness = Vec2D::new((xmax + 1) as usize, (ymax + 1) as usize, f64::NAN);
 

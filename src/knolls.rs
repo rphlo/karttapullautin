@@ -9,60 +9,52 @@ use std::path::Path;
 
 use crate::config::Config;
 use crate::io::{XyzInternalReader, XyzInternalWriter};
-use crate::util::{read_lines, read_lines_no_alloc};
+use crate::util::read_lines_no_alloc;
 
 pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying dotknolls...");
 
     let scalefactor = config.scalefactor;
 
-    let xyz_file_in = tmpfolder.join("xyz_knolls.xyz");
+    let xyz_file_in = tmpfolder.join("xyz_knolls.xyz.bin");
 
     let mut xstart: f64 = 0.0;
     let mut ystart: f64 = 0.0;
     let mut size: f64 = 0.0;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let mut i = 0;
+    while let Some(r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
 
-            if i == 0 {
-                xstart = x;
-                ystart = y;
-            } else if i == 1 {
-                size = y - ystart;
-            } else {
-                break;
-            }
+        if i == 0 {
+            xstart = x;
+            ystart = y;
+        } else if i == 1 {
+            size = y - ystart;
+        } else {
+            break;
         }
+        i += 1;
     }
     let mut xmax = 0.0;
     let mut ymax = 0.0;
 
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
 
-        // make sure we have at least 2 items
-        if let (Some(r0), Some(r1)) = (parts.next(), parts.next()) {
-            let x: f64 = r0.parse::<f64>().unwrap();
-            let y: f64 = r1.parse::<f64>().unwrap();
+        let xx = ((x - xstart) / size).floor();
+        let yy = ((y - ystart) / size).floor();
 
-            let xx = ((x - xstart) / size).floor();
-            let yy = ((y - ystart) / size).floor();
-
-            if xmax < xx {
-                xmax = xx;
-            }
-
-            if ymax < yy {
-                ymax = yy;
-            }
+        if xmax < xx {
+            xmax = xx;
         }
-    })
-    .expect("Could not read input file");
+
+        if ymax < yy {
+            ymax = yy;
+        }
+    }
 
     let mut im = GrayImage::from_pixel(
         (xmax * size / scalefactor) as u32,
@@ -181,28 +173,26 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
 
     let interval = 0.3 * scalefactor;
 
-    let xyz_file_in = tmpfolder.join("xyz_03.xyz");
+    let xyz_file_in = tmpfolder.join("xyz_03.xyz.bin");
 
     let mut size: f64 = f64::NAN;
     let mut xstart: f64 = f64::NAN;
     let mut ystart: f64 = f64::NAN;
 
-    if let Ok(lines) = read_lines(&xyz_file_in) {
-        for (i, line) in lines.enumerate() {
-            let ip = line.unwrap_or(String::new());
-            let mut parts = ip.split(' ');
-            let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-            let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let mut i = 0;
+    while let Some(r) = reader.next()? {
+        let (x, y) = (r.x, r.y);
 
-            if i == 0 {
-                xstart = x;
-                ystart = y;
-            } else if i == 1 {
-                size = y - ystart;
-            } else {
-                break;
-            }
+        if i == 0 {
+            xstart = x;
+            ystart = y;
+        } else if i == 1 {
+            size = y - ystart;
+        } else {
+            break;
         }
+        i += 1;
     }
 
     let mut xmax: u64 = u64::MIN;
@@ -210,11 +200,9 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
     let mut xmin: u64 = u64::MAX;
     let mut ymin: u64 = u64::MAX;
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    read_lines_no_alloc(xyz_file_in, |line| {
-        let mut parts = line.split(' ');
-        let x: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let y: f64 = parts.next().unwrap().parse::<f64>().unwrap();
-        let h: f64 = parts.next().unwrap().parse::<f64>().unwrap();
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    while let Some(r) = reader.next()? {
+        let (x, y, h) = (r.x, r.y, r.z);
 
         let xx = ((x - xstart) / size).floor() as u64;
         let yy = ((y - ystart) / size).floor() as u64;
@@ -233,8 +221,7 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
         if ymin > yy {
             ymin = yy;
         }
-    })
-    .expect("Could not read file");
+    }
 
     let data = fs::read_to_string(tmpfolder.join("contours03.dxf"))
         .expect("Should have been able to read the file");
