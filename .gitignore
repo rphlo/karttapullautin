@@ -20,3 +20,10 @@ ziplist*.txt
 *.jgw
 *.png
 *.pgw
+
+data/
+dhat.out.*
+cachegrind.out.*
+callgrind.out.*
+perf.data*
+*.svg
