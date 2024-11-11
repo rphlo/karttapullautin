@@ -225,21 +225,17 @@ pub fn xyz2contours(
     }
 
     if !xyzfileout.is_empty() && xyzfileout != "null" {
-        let xyz_file_out = tmpfolder.join(xyzfileout);
-        let f = File::create(xyz_file_out).expect("Unable to create file");
-        let mut f = BufWriter::new(f);
-
-        let mut writer = XyzInternalWriter::new(
-            BufWriter::new(File::create(tmpfolder.join(format!("{xyzfileout}.bin"))).unwrap()),
+        let mut writer = XyzInternalWriter::create(
+            &tmpfolder.join(format!("{xyzfileout}.bin")),
             crate::io::Format::Xyz,
             (w as u64 + 1) * (h as u64 + 1),
-        );
+        )
+        .unwrap();
         for x in 0..w + 1 {
             for y in 0..h + 1 {
                 let ele = avg_alt[(x, y)];
                 let xx = x as f64 * 2.0 * scalefactor + xmin;
                 let yy = y as f64 * 2.0 * scalefactor + ymin;
-                write!(&mut f, "{} {} {}\r\n", xx, yy, ele).expect("Cannot write to output file");
                 writer.write_record(&crate::io::XyzRecord {
                     x: xx,
                     y: yy,

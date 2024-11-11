@@ -9,32 +9,21 @@ use std::f32::consts::SQRT_2;
 use std::path::Path;
 
 use crate::config::{Config, Zone};
-use crate::io::XyzInternalReader;
+use crate::io::{XyzInternalReader, XyzRecord};
 
 pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
 
     let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
 
-    let mut xstart: f64 = 0.0;
-    let mut ystart: f64 = 0.0;
-    let mut size: f64 = 0.0;
-
+    // read the start x and y values and the size of the blocks
     let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    let mut i = 0;
-    while let Some(r) = reader.next()? {
-        let (x, y) = (r.x, r.y);
-
-        if i == 0 {
-            xstart = x;
-            ystart = y;
-        } else if i == 1 {
-            size = y - ystart;
-        } else {
-            break;
-        }
-        i += 1;
-    }
+    let XyzRecord {
+        x: xstart,
+        y: ystart,
+        ..
+    } = reader.next()?.unwrap();
+    let size = reader.next()?.unwrap().y - ystart;
 
     let block = config.greendetectsize;
 
