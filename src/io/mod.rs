@@ -6,6 +6,9 @@ use std::{
 
 use log::trace;
 
+/// The magic number that identifies a valid XYZ binary file.
+const XYZ_MAGIC: &[u8] = b"XYZB";
+
 #[derive(Debug, Clone, Copy)]
 pub enum Format {
     Xyz,
@@ -149,6 +152,7 @@ impl<W: Write> XyzInternalWriter<W> {
 
         // write the header (format + length) on the first write
         if self.records_written == 0 {
+            self.inner.write_all(XYZ_MAGIC).unwrap();
             self.inner.write_all(&[self.format.into()]).unwrap();
             self.inner.write_all(&self.n_records.to_ne_bytes()).unwrap();
         }
@@ -191,7 +195,17 @@ impl XyzInternalReader<BufReader<File>> {
 
 impl<R: Read> XyzInternalReader<R> {
     pub fn new(mut inner: R) -> std::io::Result<Self> {
-        // read and parse the header
+        // read and check the magic number
+        let mut buff = [0; XYZ_MAGIC.len()];
+        inner.read_exact(&mut buff)?;
+        if buff != XYZ_MAGIC {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid magic number",
+            ));
+        }
+
+        // read and parse the format
         let mut buff = [0; 1];
         inner.read_exact(&mut buff)?;
         let format = buff[0].try_into().expect("should have known format");

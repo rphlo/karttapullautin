@@ -6,12 +6,11 @@ use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::f32::consts::SQRT_2;
-use std::io::BufReader;
 use std::path::Path;
 
 use crate::config::{Config, Zone};
 use crate::io::XyzInternalReader;
-use crate::util::{read_lines, read_lines_no_alloc};
+use crate::util::read_lines_no_alloc;
 
 pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
