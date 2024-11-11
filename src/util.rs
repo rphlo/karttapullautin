@@ -49,6 +49,10 @@ where
     }
 
     let elapsed = start.elapsed();
+    if line_count == 0 {
+        debug!("No lines read");
+        return Ok(());
+    }
     debug!(
         "Read {} lines in {:.2?} ({:.2?}/line), total {} bytes ({:.2} bytes/second, {:?}/byte, {:.2} bytes/line)",
         line_count,

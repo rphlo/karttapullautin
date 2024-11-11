@@ -14,6 +14,7 @@ use crate::config::Config;
 use crate::contours;
 use crate::crop;
 use crate::io::XyzInternalWriter;
+use crate::io::XyzRecordMeta;
 use crate::knolls;
 use crate::merge;
 use crate::render;
@@ -168,7 +169,7 @@ pub fn process_tile(
 
         let n_points = reader.header().number_of_points();
 
-        let mut writer = XyzInternalWriter::new(tmp_fp_bin, n_points);
+        let mut writer = XyzInternalWriter::new(tmp_fp_bin, crate::io::Format::XyzMeta, n_points);
 
         for ptu in reader.points() {
             let pt = ptu.unwrap();
@@ -190,9 +191,11 @@ pub fn process_tile(
                     x: pt.x * xfactor,
                     y: pt.y * yfactor,
                     z: pt.z * zfactor + zoff,
-                    classification: u8::from(pt.classification),
-                    number_of_returns: pt.number_of_returns,
-                    return_number: pt.return_number,
+                    meta: Some(XyzRecordMeta {
+                        classification: u8::from(pt.classification),
+                        number_of_returns: pt.number_of_returns,
+                        return_number: pt.return_number,
+                    }),
                 })?;
             }
         }
@@ -240,6 +243,11 @@ pub fn process_tile(
 
     fs::copy(tmpfolder.join("xyz_03.xyz"), tmpfolder.join("xyz2.xyz"))
         .expect("Could not copy file");
+    fs::copy(
+        tmpfolder.join("xyz_03.xyz.bin"),
+        tmpfolder.join("xyz2.xyz.bin"),
+    )
+    .expect("Could not copy file");
 
     let &Config {
         contour_interval,
