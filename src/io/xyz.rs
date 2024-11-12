@@ -2,9 +2,10 @@ use std::{
     fs::File,
     io::{BufReader, BufWriter, Read, Seek, Write},
     path::Path,
+    time::Instant,
 };
 
-use log::{debug, trace};
+use log::debug;
 
 /// The magic number that identifies a valid XYZ binary file.
 const XYZ_MAGIC: &[u8] = b"XYZB";
@@ -118,11 +119,13 @@ pub struct XyzInternalWriter<W: Write + Seek> {
     inner: Option<W>,
     records_written: u64,
     format: Format,
+    // for stats
+    start: Option<Instant>,
 }
 
 impl XyzInternalWriter<BufWriter<File>> {
     pub fn create(path: &Path, format: Format) -> std::io::Result<Self> {
-        debug!("writing records to: {:?}", path);
+        debug!("Writing records to {:?}", path);
         let file = File::create(path)?;
         Ok(Self::new(BufWriter::new(file), format))
     }
@@ -134,6 +137,7 @@ impl<W: Write + Seek> XyzInternalWriter<W> {
             inner: Some(inner),
             records_written: 0,
             format,
+            start: None,
         }
     }
 
@@ -147,6 +151,8 @@ impl<W: Write + Seek> XyzInternalWriter<W> {
 
         // write the header (format + length) on the first write
         if self.records_written == 0 {
+            self.start = Some(Instant::now());
+
             inner.write_all(XYZ_MAGIC)?;
             inner.write_all(&[self.format.into()])?;
             // Write the temporary number of records as all FF
@@ -169,6 +175,17 @@ impl<W: Write + Seek> XyzInternalWriter<W> {
         // seek to the beginning of the file and write the number of records
         inner.seek(std::io::SeekFrom::Start(XYZ_MAGIC.len() as u64 + 1))?;
         inner.write_all(&self.records_written.to_ne_bytes())?;
+
+        // log statistics about the written records
+        if let Some(start) = self.start {
+            let elapsed = start.elapsed();
+            debug!(
+                "Wrote {} records in {:.2?} ({:.2?}/record)",
+                self.records_written,
+                elapsed,
+                elapsed / self.records_written as u32,
+            );
+        }
         Ok(inner)
     }
 }
@@ -186,11 +203,13 @@ pub struct XyzInternalReader<R: Read> {
     format: Format,
     n_records: u64,
     records_read: u64,
+    // for stats
+    start: Option<Instant>,
 }
 
 impl XyzInternalReader<BufReader<File>> {
     pub fn open(path: &Path) -> std::io::Result<Self> {
-        debug!("reading records from: {:?}", path);
+        debug!("Reading records from: {:?}", path);
         let file = File::open(path)?;
         Self::new(BufReader::new(file))
     }
@@ -217,18 +236,34 @@ impl<R: Read> XyzInternalReader<R> {
         let mut buff = [0; 8];
         inner.read_exact(&mut buff)?;
         let n_records = u64::from_ne_bytes(buff);
-        trace!("reading {} records", n_records);
         Ok(Self {
             inner,
             format,
             n_records,
             records_read: 0,
+            start: None,
         })
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> std::io::Result<Option<XyzRecord>> {
         if self.records_read >= self.n_records {
+            // TODO: log statistics about the read records
+            if let Some(start) = self.start {
+                let elapsed = start.elapsed();
+                debug!(
+                    "Read {} records in {:.2?} ({:.2?}/record)",
+                    self.records_read,
+                    elapsed,
+                    elapsed / self.records_read as u32,
+                );
+            }
+
             return Ok(None);
+        }
+
+        if self.records_read == 0 {
+            self.start = Some(Instant::now());
         }
 
         let record = XyzRecord::read(&mut self.inner, self.format)?;

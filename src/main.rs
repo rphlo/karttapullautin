@@ -152,8 +152,7 @@ fn main() {
 
         let input = &args[0];
         let output = &args[1];
-
-        pullauta::io::internal2xyz(&input, &output).unwrap();
+        pullauta::io::internal2xyz(input, output).unwrap();
         return;
     }
 
