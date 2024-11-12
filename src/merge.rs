@@ -526,25 +526,11 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
 
     let interval = halfinterval;
     let xyz_file_in = tmpfolder.join("xyz_knolls.xyz.bin");
-    let mut size: f64 = f64::NAN;
-    let mut xstart: f64 = f64::NAN;
-    let mut ystart: f64 = f64::NAN;
 
     let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    let mut i = 0;
-    while let Some(r) = reader.next()? {
-        let (x, y) = (r.x, r.y);
-
-        if i == 0 {
-            xstart = x;
-            ystart = y;
-        } else if i == 1 {
-            size = y - ystart;
-        } else {
-            break;
-        }
-        i += 1;
-    }
+    let first = reader.next()?.expect("should have record");
+    let second = reader.next()?.expect("should have record");
+    let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
 
     let mut xmax: u64 = u64::MIN;
     let mut ymax: u64 = u64::MIN;

@@ -11,27 +11,13 @@ use crate::io::xyz::XyzInternalReader;
 pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying blocks...");
     let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
-    let mut size: f64 = f64::NAN;
-    let mut xstartxyz: f64 = f64::NAN;
-    let mut ystartxyz: f64 = f64::NAN;
     let mut xmax: u64 = u64::MIN;
     let mut ymax: u64 = u64::MIN;
 
-    let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
-    let mut i = 0;
-    while let Some(r) = reader.next().unwrap() {
-        let (x, y) = (r.x, r.y);
-
-        if i == 0 {
-            xstartxyz = x;
-            ystartxyz = y;
-        } else if i == 1 {
-            size = y - ystartxyz;
-        } else {
-            break;
-        }
-        i += 1;
-    }
+    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let first = reader.next()?.expect("should have record");
+    let second = reader.next()?.expect("should have record");
+    let (xstartxyz, ystartxyz, size) = (first.x, first.y, second.y - first.y);
 
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
     let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
