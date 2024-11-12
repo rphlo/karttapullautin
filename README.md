@@ -38,7 +38,7 @@ You can run the `pullauta` executable with the path to your file as argument:
 > ```bash
 > RUST_LOG=debug ./pullauta [..]
 > ```
-> Other log level available is _warn_, in which no info of current run will be displayed.
+> Other log level available is `warn`, in which no info of current run will be displayed, `error`, which will only show errors, and `trace` which will output a lot of log messages about small details during the processing.
 
 As output Karttapullautin writes two 600 dpi png map images. One without depressions and one with purple depressions. It also writes contours and cliffs as dxf files to temp folder to be post processed, for example using Open Orienteering Mapper or OCAD.
 
@@ -67,6 +67,13 @@ zip -r -j map.shp.zip output_shapes/*
 Replace `EPSG:3387` by the coordinates ESPG codename of that the LAZ file uses.
 
 You will have a zip file `map.shp.zip` that you can use with karttapullautin.
+
+#### Converting the internal XYZ format
+
+Previously, Karttapullautin used regular text-based `.xyz` files to store the temporary files which could be opened and visualized by many external tools. But with the introduction of an internal (non-stable) binary format for increased performance and reduced disk usage, there is now a new command that can do the conversion into the previous format for you. This will, for example, convert the `xyztemp.xyz.bin` file into a regular `xyztemp.xyz` file (with one line per point) which can be opened by external tools:
+```
+./pullauta internal2xyz temp/xyztemp.xyz.bin temp/xyztemp.xyz
+```
 
 ### Fine tuning the output
 

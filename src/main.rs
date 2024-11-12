@@ -144,6 +144,19 @@ fn main() {
         return;
     }
 
+    if command == "internal2xyz" {
+        if args.len() < 2 {
+            info!("USAGE: internal2xyz [input file] [output file]");
+            return;
+        }
+
+        let input = &args[0];
+        let output = &args[1];
+
+        pullauta::io::internal2xyz(&input, &output).unwrap();
+        return;
+    }
+
     if command == "blocks" {
         pullauta::blocks::blocks(&tmpfolder).unwrap();
         return;
