@@ -52,6 +52,7 @@ fn main() {
         || command_lowercase.ends_with(".las")
         || command_lowercase.ends_with(".laz")
         || command_lowercase.ends_with(".xyz")
+        || command_lowercase.ends_with(".xyz.bin")
     {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
         println!(
@@ -306,11 +307,19 @@ fn main() {
     if command_lowercase.ends_with(".las")
         || command_lowercase.ends_with(".laz")
         || command_lowercase.ends_with(".xyz")
+        || command_lowercase.ends_with(".xyz.bin")
     {
         let mut norender: bool = false;
         if args.len() > 1 {
             norender = args[1].clone() == "norender";
         }
-        pullauta::process::process_tile(&config, &thread, &tmpfolder, &command, norender).unwrap();
+        pullauta::process::process_tile(
+            &config,
+            &thread,
+            &tmpfolder,
+            Path::new(&command),
+            norender,
+        )
+        .unwrap();
     }
 }
