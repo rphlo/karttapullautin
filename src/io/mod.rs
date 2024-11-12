@@ -1,7 +1,8 @@
 use std::{
     fs::File,
-    io::{BufReader, BufWriter, Read, Write},
+    io::{BufReader, BufWriter, Read, Seek, Write},
     path::Path,
+    u64,
 };
 
 use log::{debug, trace};
@@ -118,44 +119,36 @@ impl XyzRecord {
     }
 }
 
-pub struct XyzInternalWriter<W: Write> {
+pub struct XyzInternalWriter<W: Write + Seek> {
     inner: W,
-    n_records: u64,
     records_written: u64,
     format: Format,
 }
 
 impl XyzInternalWriter<BufWriter<File>> {
-    pub fn create(path: &Path, format: Format, n_records: u64) -> std::io::Result<Self> {
-        debug!("writing {n_records} records to: {:?}", path);
+    pub fn create(path: &Path, format: Format) -> std::io::Result<Self> {
+        debug!("writing records to: {:?}", path);
         let file = File::create(path)?;
-        Ok(Self::new(BufWriter::new(file), format, n_records))
+        Ok(Self::new(BufWriter::new(file), format))
     }
 }
 
-impl<W: Write> XyzInternalWriter<W> {
-    pub fn new(inner: W, format: Format, n_records: u64) -> Self {
+impl<W: Write + Seek> XyzInternalWriter<W> {
+    pub fn new(inner: W, format: Format) -> Self {
         Self {
             inner,
             records_written: 0,
-            n_records,
             format,
         }
     }
 
     pub fn write_record(&mut self, record: &XyzRecord) -> std::io::Result<()> {
-        if self.records_written >= self.n_records {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "too many records written",
-            ));
-        }
-
         // write the header (format + length) on the first write
         if self.records_written == 0 {
             self.inner.write_all(XYZ_MAGIC).unwrap();
             self.inner.write_all(&[self.format.into()]).unwrap();
-            self.inner.write_all(&self.n_records.to_ne_bytes()).unwrap();
+            // Write the temporary number of records as all FF
+            self.inner.write_all(&u64::MAX.to_ne_bytes()).unwrap();
         }
 
         record.write(&mut self.inner, self.format)?;
@@ -163,20 +156,27 @@ impl<W: Write> XyzInternalWriter<W> {
         Ok(())
     }
 
-    // pub fn finish(self) -> W {
-    //     self.inner
-    // }
+    pub fn finish(mut self) -> W {
+        // seek to the beginning of the file and write the number of records
+        self.inner
+            .seek(std::io::SeekFrom::Start(XYZ_MAGIC.len() as u64 + 1))
+            .unwrap();
+        self.inner
+            .write_all(&self.records_written.to_ne_bytes())
+            .unwrap();
+        self.inner
+    }
 }
 
-// // If the writer is dropped before all records are written, it will panic.
-// impl<W: Write> Drop for XyzInternalWriter<W> {
+// impl<W: Write + Seek> Drop for XyzInternalWriter<W> {
 //     fn drop(&mut self) {
-//         if self.records_written != self.n_records {
-//             panic!(
-//                 "not all records written: expected {}, got {}",
-//                 self.n_records, self.records_written
-//             );
-//         }
+//         // seek to the beginning of the file and write the number of records
+//         self.inner
+//             .seek(std::io::SeekFrom::Start(XYZ_MAGIC.len() as u64 + 1))
+//             .unwrap();
+//         self.inner
+//             .write_all(&self.records_written.to_ne_bytes())
+//             .unwrap();
 //     }
 // }
 
@@ -238,21 +238,6 @@ impl<R: Read> XyzInternalReader<R> {
     pub fn format(&self) -> Format {
         self.format
     }
-
-    pub fn n_records(&self) -> u64 {
-        self.n_records
-    }
-}
-
-impl<W: Write> Drop for XyzInternalWriter<W> {
-    fn drop(&mut self) {
-        if self.records_written != self.n_records {
-            panic!(
-                "not all records written: expected {}, got {}",
-                self.n_records, self.records_written
-            );
-        }
-    }
 }
 
 #[cfg(test)]
@@ -286,7 +271,7 @@ mod test {
     #[test]
     fn test_writer_reader_many() {
         let cursor = Cursor::new(Vec::new());
-        let mut writer = XyzInternalWriter::new(cursor, Format::XyzMeta, 3);
+        let mut writer = XyzInternalWriter::new(cursor, Format::XyzMeta);
 
         let record = XyzRecord {
             x: 1.0,
@@ -304,7 +289,7 @@ mod test {
         writer.write_record(&record).unwrap();
 
         // now read the records
-        let data = writer.inner.clone().into_inner();
+        let data = writer.finish().into_inner();
         let cursor = Cursor::new(data);
         let mut reader = super::XyzInternalReader::new(cursor).unwrap();
         assert_eq!(reader.next().unwrap().unwrap(), record);

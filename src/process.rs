@@ -160,12 +160,9 @@ pub fn process_tile(
 
         let mut reader = Reader::from_path(filename).expect("Unable to open reader");
 
-        let n_points = reader.header().number_of_points();
-
         let mut writer = XyzInternalWriter::create(
             &tmpfolder.join("xyztemp.xyz.bin"),
             crate::io::Format::XyzMeta,
-            n_points,
         )
         .unwrap();
 
@@ -184,24 +181,17 @@ pub fn process_tile(
                 })?;
             }
         }
+        writer.finish();
     } else {
         // if we are here we know that the file has at least 6 columns, so we can assume that it is in the format
         // x y z classification number_of_returns return_number
 
-        // first figure out how many points there are
-        let mut lines = 0;
-        read_lines_no_alloc(filename, |_| lines += 1).expect("Could not read input file");
-
-        info!(
-            "{}Converting {} points to internal binary format",
-            thread_name, lines
-        );
+        info!("{}Converting points to internal binary format", thread_name,);
 
         // then read and convert each point
         let mut writer = XyzInternalWriter::create(
             &tmpfolder.join("xyztemp.xyz.bin"),
             crate::io::Format::XyzMeta,
-            lines,
         )
         .expect("Could not create writer");
         read_lines_no_alloc(filename, |line| {
@@ -227,6 +217,7 @@ pub fn process_tile(
                 .expect("Could not write record");
         })
         .expect("Could not read file");
+        writer.finish();
     }
     info!("{}Done", thread_name);
 

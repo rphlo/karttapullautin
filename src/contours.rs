@@ -225,12 +225,8 @@ pub fn xyz2contours(
     }
 
     if !xyzfileout.is_empty() && xyzfileout != "null" {
-        let mut writer = XyzInternalWriter::create(
-            &tmpfolder.join(xyzfileout),
-            crate::io::Format::Xyz,
-            (w as u64 + 1) * (h as u64 + 1),
-        )
-        .unwrap();
+        let mut writer =
+            XyzInternalWriter::create(&tmpfolder.join(xyzfileout), crate::io::Format::Xyz).unwrap();
         for x in 0..w + 1 {
             for y in 0..h + 1 {
                 let ele = avg_alt[(x, y)];
@@ -244,6 +240,7 @@ pub fn xyz2contours(
                 })?;
             }
         }
+        writer.finish();
     }
     if !dxffile.is_empty() && dxffile != "null" {
         let v = cinterval;
