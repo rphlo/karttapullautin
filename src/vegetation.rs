@@ -9,7 +9,7 @@ use std::f32::consts::SQRT_2;
 use std::path::Path;
 
 use crate::config::{Config, Zone};
-use crate::io::{XyzInternalReader, XyzRecord};
+use crate::io::xyz::{XyzInternalReader, XyzRecord};
 
 pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");

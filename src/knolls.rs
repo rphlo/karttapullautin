@@ -8,7 +8,7 @@ use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
-use crate::io::{XyzInternalReader, XyzInternalWriter};
+use crate::io::xyz::{XyzInternalReader, XyzInternalWriter};
 use crate::util::read_lines_no_alloc;
 
 pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {

@@ -7,7 +7,7 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use crate::config::Config;
-use crate::io::XyzInternalReader;
+use crate::io::xyz::XyzInternalReader;
 use crate::vec2d::Vec2D;
 
 fn merge_png(

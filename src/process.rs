@@ -13,8 +13,7 @@ use crate::cliffs;
 use crate::config::Config;
 use crate::contours;
 use crate::crop;
-use crate::io::XyzInternalWriter;
-use crate::io::XyzRecordMeta;
+use crate::io::xyz::{XyzInternalWriter, XyzRecordMeta};
 use crate::knolls;
 use crate::merge;
 use crate::render;
@@ -134,7 +133,7 @@ pub fn process_tile(
             thread_name,
         );
 
-        let mut writer = XyzInternalWriter::create(&target_file, crate::io::Format::XyzMeta)
+        let mut writer = XyzInternalWriter::create(&target_file, crate::io::xyz::Format::XyzMeta)
             .expect("Could not create writer");
         read_lines_no_alloc(input_file, |line| {
             let mut parts = line.split(' ');
@@ -147,7 +146,7 @@ pub fn process_tile(
             let return_number = parts.next().unwrap().parse::<u8>().unwrap();
 
             writer
-                .write_record(&crate::io::XyzRecord {
+                .write_record(&crate::io::xyz::XyzRecord {
                     x,
                     y,
                     z,
@@ -185,12 +184,12 @@ pub fn process_tile(
         let mut reader = Reader::from_path(input_file).expect("Unable to open reader");
 
         let mut writer =
-            XyzInternalWriter::create(&target_file, crate::io::Format::XyzMeta).unwrap();
+            XyzInternalWriter::create(&target_file, crate::io::xyz::Format::XyzMeta).unwrap();
 
         for ptu in reader.points() {
             let pt = ptu.unwrap();
             if thinfactor == 1.0 || rng.sample(randdist) {
-                writer.write_record(&crate::io::XyzRecord {
+                writer.write_record(&crate::io::xyz::XyzRecord {
                     x: pt.x * xfactor,
                     y: pt.y * yfactor,
                     z: pt.z * zfactor + zoff,
@@ -446,7 +445,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
         let maxy2 = maxy + 127.0;
 
         let tmp_filename = PathBuf::from(format!("temp{}.xyz.bin", thread));
-        let mut writer = XyzInternalWriter::create(&tmp_filename, crate::io::Format::XyzMeta)
+        let mut writer = XyzInternalWriter::create(&tmp_filename, crate::io::xyz::Format::XyzMeta)
             .expect("Could not create writer");
 
         for laz_p in &laz_files {
@@ -468,7 +467,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
                         && (thinfactor == 1.0 || rng.sample(randdist))
                     {
                         writer
-                            .write_record(&crate::io::XyzRecord {
+                            .write_record(&crate::io::xyz::XyzRecord {
                                 x: pt.x,
                                 y: pt.y,
                                 z: pt.z + zoff,
