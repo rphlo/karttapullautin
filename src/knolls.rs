@@ -1147,12 +1147,8 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     }
 
     let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
-    let mut writer = XyzInternalWriter::create(
-        &tmpfolder.join("xyz_knolls.xyz.bin"),
-        reader.format(),
-        reader.n_records(),
-    )
-    .unwrap();
+    let mut writer =
+        XyzInternalWriter::create(&tmpfolder.join("xyz_knolls.xyz.bin"), reader.format()).unwrap();
     while let Some(mut r) = reader.next()? {
         let (x, y) = (r.x, r.y);
         let mut h = *xyz2
@@ -1172,6 +1168,7 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
         r.z = h;
         writer.write_record(&r).unwrap();
     }
+    writer.finish();
 
     info!("Done");
     Ok(())
