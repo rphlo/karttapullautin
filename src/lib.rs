@@ -9,6 +9,7 @@ pub mod cliffs;
 pub mod config;
 pub mod contours;
 pub mod crop;
+pub mod io;
 pub mod knolls;
 pub mod merge;
 pub mod process;
@@ -16,5 +17,3 @@ pub mod render;
 pub mod util;
 pub mod vec2d;
 pub mod vegetation;
-
-mod io;
