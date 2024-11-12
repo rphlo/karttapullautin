@@ -1544,21 +1544,11 @@ pub fn draw_curves(
 
     if formline > 0.0 {
         let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
-        let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
-        let mut i = 0;
-        while let Some(r) = reader.next().unwrap() {
-            let (x, y) = (r.x, r.y);
 
-            if i == 0 {
-                xstart = x;
-                ystart = y;
-            } else if i == 1 {
-                size = y - ystart;
-            } else {
-                break;
-            }
-            i += 1;
-        }
+        let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
+        let first = reader.next()?.expect("should have record");
+        let second = reader.next()?.expect("should have record");
+        (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
 
         x0 = xstart;
 
