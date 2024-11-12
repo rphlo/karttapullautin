@@ -2,7 +2,6 @@ use std::{
     fs::File,
     io::{BufReader, BufWriter, Read, Seek, Write},
     path::Path,
-    u64,
 };
 
 use log::{debug, trace};
@@ -66,9 +65,11 @@ impl XyzRecord {
             (Format::Xyz, _) => { //do nothing
             }
             (Format::XyzMeta, Some(meta)) => {
-                writer.write_all(&[meta.classification])?;
-                writer.write_all(&[meta.number_of_returns])?;
-                writer.write_all(&[meta.return_number])?;
+                writer.write_all(&[
+                    meta.classification,
+                    meta.number_of_returns,
+                    meta.return_number,
+                ])?;
             }
             (Format::XyzMeta, None) => {
                 return Err(std::io::Error::new(
@@ -86,11 +87,9 @@ impl XyzRecord {
         reader.read_exact(&mut buff)?;
         let x = f64::from_ne_bytes(buff);
 
-        // let mut buff = [0; 8];
         reader.read_exact(&mut buff)?;
         let y = f64::from_ne_bytes(buff);
 
-        // let mut buff = [0; 8];
         reader.read_exact(&mut buff)?;
         let z = f64::from_ne_bytes(buff);
 
