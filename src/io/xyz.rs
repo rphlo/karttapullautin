@@ -96,15 +96,11 @@ impl XyzRecord {
         let meta = match format {
             Format::Xyz => None,
             Format::XyzMeta => {
-                let mut buff = [0; 1];
+                let mut buff = [0; 3];
                 reader.read_exact(&mut buff)?;
                 let classification = buff[0];
-
-                reader.read_exact(&mut buff)?;
-                let number_of_returns = buff[0];
-
-                reader.read_exact(&mut buff)?;
-                let return_number = buff[0];
+                let number_of_returns = buff[1];
+                let return_number = buff[2];
 
                 Some(XyzRecordMeta {
                     classification,
@@ -119,7 +115,7 @@ impl XyzRecord {
 }
 
 pub struct XyzInternalWriter<W: Write + Seek> {
-    inner: W,
+    inner: Option<W>,
     records_written: u64,
     format: Format,
 }
@@ -135,49 +131,55 @@ impl XyzInternalWriter<BufWriter<File>> {
 impl<W: Write + Seek> XyzInternalWriter<W> {
     pub fn new(inner: W, format: Format) -> Self {
         Self {
-            inner,
+            inner: Some(inner),
             records_written: 0,
             format,
         }
     }
 
     pub fn write_record(&mut self, record: &XyzRecord) -> std::io::Result<()> {
+        let inner = self.inner.as_mut().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "writer has already been finished",
+            )
+        })?;
+
         // write the header (format + length) on the first write
         if self.records_written == 0 {
-            self.inner.write_all(XYZ_MAGIC).unwrap();
-            self.inner.write_all(&[self.format.into()]).unwrap();
+            inner.write_all(XYZ_MAGIC)?;
+            inner.write_all(&[self.format.into()])?;
             // Write the temporary number of records as all FF
-            self.inner.write_all(&u64::MAX.to_ne_bytes()).unwrap();
+            inner.write_all(&u64::MAX.to_ne_bytes())?;
         }
 
-        record.write(&mut self.inner, self.format)?;
+        record.write(inner, self.format)?;
         self.records_written += 1;
         Ok(())
     }
 
-    pub fn finish(mut self) -> W {
+    pub fn finish(&mut self) -> std::io::Result<W> {
+        let mut inner = self.inner.take().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "writer has already been finished",
+            )
+        })?;
+
         // seek to the beginning of the file and write the number of records
-        self.inner
-            .seek(std::io::SeekFrom::Start(XYZ_MAGIC.len() as u64 + 1))
-            .unwrap();
-        self.inner
-            .write_all(&self.records_written.to_ne_bytes())
-            .unwrap();
-        self.inner
+        inner.seek(std::io::SeekFrom::Start(XYZ_MAGIC.len() as u64 + 1))?;
+        inner.write_all(&self.records_written.to_ne_bytes())?;
+        Ok(inner)
     }
 }
 
-// impl<W: Write + Seek> Drop for XyzInternalWriter<W> {
-//     fn drop(&mut self) {
-//         // seek to the beginning of the file and write the number of records
-//         self.inner
-//             .seek(std::io::SeekFrom::Start(XYZ_MAGIC.len() as u64 + 1))
-//             .unwrap();
-//         self.inner
-//             .write_all(&self.records_written.to_ne_bytes())
-//             .unwrap();
-//     }
-// }
+impl<W: Write + Seek> Drop for XyzInternalWriter<W> {
+    fn drop(&mut self) {
+        if self.inner.is_some() {
+            self.finish().expect("failed to finish writer in Drop");
+        }
+    }
+}
 
 pub struct XyzInternalReader<R: Read> {
     inner: R,
@@ -288,7 +290,7 @@ mod test {
         writer.write_record(&record).unwrap();
 
         // now read the records
-        let data = writer.finish().into_inner();
+        let data = writer.finish().unwrap().into_inner();
         let cursor = Cursor::new(data);
         let mut reader = super::XyzInternalReader::new(cursor).unwrap();
         assert_eq!(reader.next().unwrap().unwrap(), record);
