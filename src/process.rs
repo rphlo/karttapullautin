@@ -19,6 +19,7 @@ use crate::knolls;
 use crate::merge;
 use crate::render;
 use crate::util::read_lines;
+use crate::util::read_lines_no_alloc;
 use crate::util::Timing;
 use crate::vegetation;
 
@@ -95,7 +96,7 @@ pub fn process_tile(
     config: &Config,
     thread: &String,
     tmpfolder: &Path,
-    filename: &str,
+    input_file: &Path,
     skip_rendering: bool,
 ) -> Result<(), Box<dyn Error>> {
     let mut timing = Timing::start_now("process_tile");
@@ -116,34 +117,55 @@ pub fn process_tile(
     timing.start_section("preparing input file");
     info!("{}Preparing input file", thread_name);
 
-    let mut skiplaz2txt: bool = false;
-    if filename.to_lowercase().ends_with(".xyz") {
-        if let Ok(lines) = read_lines(Path::new(filename)) {
-            let mut i: u32 = 0;
-            for line in lines {
-                if i == 2 {
-                    let ip = line.unwrap_or(String::new());
-                    let parts = ip.split(' ');
-                    let r = parts.collect::<Vec<&str>>();
-                    if r.len() == 7 {
-                        skiplaz2txt = true;
-                        break;
-                    }
-                }
-                i += 1;
-                // we only care about the third line, so break after that to avoid having to read
-                // the entire file line by line (file is large)
-                if i > 2 {
-                    break;
-                }
-            }
-        }
-    }
-    if filename.to_lowercase().ends_with(".xyz.bin") {
-        skiplaz2txt = true;
-    }
+    let filename = input_file
+        .file_name()
+        .ok_or_else(|| format!("No extension for input file {}", input_file.display()))?
+        .to_string_lossy()
+        .to_lowercase();
 
-    if !skiplaz2txt {
+    let target_file = tmpfolder.join("xyztemp.xyz.bin");
+
+    if filename.ends_with(".xyz") {
+        // if we are here we don't know if the file has at least 6 columns, but we assume that it is in the format
+        // x y z classification number_of_returns return_number
+
+        info!(
+            "{}Converting points from .xyz to internal binary format",
+            thread_name,
+        );
+
+        let mut writer = XyzInternalWriter::create(&target_file, crate::io::Format::XyzMeta)
+            .expect("Could not create writer");
+        read_lines_no_alloc(input_file, |line| {
+            let mut parts = line.split(' ');
+            let x = parts.next().unwrap().parse::<f64>().unwrap();
+            let y = parts.next().unwrap().parse::<f64>().unwrap();
+            let z = parts.next().unwrap().parse::<f64>().unwrap();
+
+            let classification = parts.next().unwrap().parse::<u8>().unwrap();
+            let number_of_returns = parts.next().unwrap().parse::<u8>().unwrap();
+            let return_number = parts.next().unwrap().parse::<u8>().unwrap();
+
+            writer
+                .write_record(&crate::io::XyzRecord {
+                    x,
+                    y,
+                    z,
+                    meta: Some(XyzRecordMeta {
+                        classification,
+                        number_of_returns,
+                        return_number,
+                    }),
+                })
+                .expect("Could not write record");
+        })
+        .expect("Could not read file");
+        writer.finish();
+    } else if filename.ends_with(".laz") || filename.ends_with(".las") {
+        info!(
+            "{}Converting points from .laz/laz to internal binary format",
+            thread_name
+        );
         let &Config {
             thinfactor,
             xfactor,
@@ -160,13 +182,10 @@ pub fn process_tile(
         let mut rng = rand::thread_rng();
         let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
 
-        let mut reader = Reader::from_path(filename).expect("Unable to open reader");
+        let mut reader = Reader::from_path(input_file).expect("Unable to open reader");
 
-        let mut writer = XyzInternalWriter::create(
-            &tmpfolder.join("xyztemp.xyz.bin"),
-            crate::io::Format::XyzMeta,
-        )
-        .unwrap();
+        let mut writer =
+            XyzInternalWriter::create(&target_file, crate::io::Format::XyzMeta).unwrap();
 
         for ptu in reader.points() {
             let pt = ptu.unwrap();
@@ -184,45 +203,13 @@ pub fn process_tile(
             }
         }
         writer.finish();
+    } else if filename.ends_with(".xyz.bin") {
+        info!("{}Copying input file", thread_name);
+        fs::copy(input_file, target_file).expect("Could not copy file");
     } else {
-        // if we are here we know that the file has at least 6 columns, so we can assume that it is in the format
-        // x y z classification number_of_returns return_number
-
-        // info!("{}Converting points to internal binary format", thread_name,);
-        //
-        // // then read and convert each point
-        // let mut writer = XyzInternalWriter::create(
-        //     &tmpfolder.join("xyztemp.xyz.bin"),
-        //     crate::io::Format::XyzMeta,
-        // )
-        // .expect("Could not create writer");
-        // read_lines_no_alloc(filename, |line| {
-        //     let mut parts = line.split(' ');
-        //     let x = parts.next().unwrap().parse::<f64>().unwrap();
-        //     let y = parts.next().unwrap().parse::<f64>().unwrap();
-        //     let z = parts.next().unwrap().parse::<f64>().unwrap();
-        //     let classification = parts.next().unwrap().parse::<u8>().unwrap();
-        //     let number_of_returns = parts.next().unwrap().parse::<u8>().unwrap();
-        //     let return_number = parts.next().unwrap().parse::<u8>().unwrap();
-        //
-        //     writer
-        //         .write_record(&crate::io::XyzRecord {
-        //             x,
-        //             y,
-        //             z,
-        //             meta: Some(XyzRecordMeta {
-        //                 classification,
-        //                 number_of_returns,
-        //                 return_number,
-        //             }),
-        //         })
-        //         .expect("Could not write record");
-        // })
-        // .expect("Could not read file");
-        // writer.finish();
-
-        fs::copy(filename, tmpfolder.join("xyztemp.xyz.bin")).expect("Could not copy file");
+        return Err(format!("Unsupported input file: {}", input_file.display()).into());
     }
+
     info!("{}Done", thread_name);
 
     info!("{}Knoll detection part 1", thread_name);
@@ -458,10 +445,9 @@ pub fn batch_process(conf: &Config, thread: &String) {
         let maxx2 = maxx + 127.0;
         let maxy2 = maxy + 127.0;
 
-        let tmp_filename = format!("temp{}.xyz.bin", thread);
-        let mut writer =
-            XyzInternalWriter::create(Path::new(&tmp_filename), crate::io::Format::XyzMeta)
-                .expect("Could not create writer");
+        let tmp_filename = PathBuf::from(format!("temp{}.xyz.bin", thread));
+        let mut writer = XyzInternalWriter::create(&tmp_filename, crate::io::Format::XyzMeta)
+            .expect("Could not create writer");
 
         for laz_p in &laz_files {
             let laz = laz_p.as_path().file_name().unwrap().to_str().unwrap();
