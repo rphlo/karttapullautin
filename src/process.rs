@@ -19,7 +19,6 @@ use crate::knolls;
 use crate::merge;
 use crate::render;
 use crate::util::read_lines;
-use crate::util::read_lines_no_alloc;
 use crate::util::Timing;
 use crate::vegetation;
 
@@ -222,10 +221,7 @@ pub fn process_tile(
         // .expect("Could not read file");
         // writer.finish();
 
-        fs::copy(
-            tmpfolder.join(filename),
-            tmpfolder.join("xyztemp.xyz.bin"),
-        ).expect("Could not copy file");
+        fs::copy(filename, tmpfolder.join("xyztemp.xyz.bin")).expect("Could not copy file");
     }
     info!("{}Done", thread_name);
 
@@ -463,10 +459,8 @@ pub fn batch_process(conf: &Config, thread: &String) {
         let maxy2 = maxy + 127.0;
 
         let tmp_filename = format!("temp{}.xyz.bin", thread);
-        // let tmp_file = File::create(&tmp_filename).expect("Unable to create file");
-        // let mut tmp_fp = BufWriter::new(tmp_file);
         let mut writer =
-            XyzInternalWriter::create(&Path::new(&tmp_filename), crate::io::Format::XyzMeta)
+            XyzInternalWriter::create(Path::new(&tmp_filename), crate::io::Format::XyzMeta)
                 .expect("Could not create writer");
 
         for laz_p in &laz_files {
@@ -487,19 +481,6 @@ pub fn batch_process(conf: &Config, thread: &String) {
                         && pt.y < maxy2
                         && (thinfactor == 1.0 || rng.sample(randdist))
                     {
-                        // write!(
-                        //     &mut tmp_fp,
-                        //     "{} {} {} {} {} {} {}\r\n",
-                        //     pt.x,
-                        //     pt.y,
-                        //     pt.z + zoff,
-                        //     u8::from(pt.classification),
-                        //     pt.number_of_returns,
-                        //     pt.return_number,
-                        //     pt.intensity
-                        // )
-                        // .expect("Could not write temp file");
-
                         writer
                             .write_record(&crate::io::XyzRecord {
                                 x: pt.x,
@@ -517,27 +498,12 @@ pub fn batch_process(conf: &Config, thread: &String) {
             }
         }
         writer.finish();
-        // tmp_fp.flush().unwrap();
 
         let tmpfolder = PathBuf::from(format!("temp{}", thread));
         if zip_files.is_empty() {
-            process_tile(
-                conf,
-                thread,
-                &tmpfolder,
-                &format!("temp{}.xyz.bin", thread),
-                false,
-            )
-            .unwrap();
+            process_tile(conf, thread, &tmpfolder, &tmp_filename, false).unwrap();
         } else {
-            process_tile(
-                conf,
-                thread,
-                &tmpfolder,
-                &format!("temp{}.xyz.bin", thread),
-                true,
-            )
-            .unwrap();
+            process_tile(conf, thread, &tmpfolder, &tmp_filename, true).unwrap();
             if !vegeonly && !cliffsonly && !contoursonly {
                 process_zip(conf, thread, &tmpfolder, &zip_files).unwrap();
             }
