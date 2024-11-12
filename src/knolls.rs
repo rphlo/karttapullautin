@@ -1124,7 +1124,7 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
         r.z = h;
         writer.write_record(&r).unwrap();
     }
-    writer.finish();
+    writer.finish().expect("Unable to finish writing");
 
     info!("Done");
     Ok(())

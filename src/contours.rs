@@ -241,7 +241,7 @@ pub fn xyz2contours(
                 })?;
             }
         }
-        writer.finish();
+        writer.finish().expect("Unable to finish writing");
     }
     if !dxffile.is_empty() && dxffile != "null" {
         let v = cinterval;

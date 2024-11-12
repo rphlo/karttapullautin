@@ -159,7 +159,7 @@ pub fn process_tile(
                 .expect("Could not write record");
         })
         .expect("Could not read file");
-        writer.finish();
+        writer.finish().expect("Unable to finish writing");
     } else if filename.ends_with(".laz") || filename.ends_with(".las") {
         info!(
             "{}Converting points from .laz/laz to internal binary format",
@@ -201,7 +201,7 @@ pub fn process_tile(
                 })?;
             }
         }
-        writer.finish();
+        writer.finish().expect("Unable to finish writing");
     } else if filename.ends_with(".xyz.bin") {
         info!("{}Copying input file", thread_name);
         fs::copy(input_file, target_file).expect("Could not copy file");
@@ -482,7 +482,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
                 }
             }
         }
-        writer.finish();
+        writer.finish().expect("Unable to finish writing");
 
         let tmpfolder = PathBuf::from(format!("temp{}", thread));
         if zip_files.is_empty() {
