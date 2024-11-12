@@ -6,7 +6,7 @@ use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
-use crate::io::{XyzInternalReader, XyzInternalWriter};
+use crate::io::xyz::{XyzInternalReader, XyzInternalWriter};
 use crate::util::read_lines_no_alloc;
 use crate::vec2d::Vec2D;
 
@@ -226,13 +226,14 @@ pub fn xyz2contours(
 
     if !xyzfileout.is_empty() && xyzfileout != "null" {
         let mut writer =
-            XyzInternalWriter::create(&tmpfolder.join(xyzfileout), crate::io::Format::Xyz).unwrap();
+            XyzInternalWriter::create(&tmpfolder.join(xyzfileout), crate::io::xyz::Format::Xyz)
+                .unwrap();
         for x in 0..w + 1 {
             for y in 0..h + 1 {
                 let ele = avg_alt[(x, y)];
                 let xx = x as f64 * 2.0 * scalefactor + xmin;
                 let yy = y as f64 * 2.0 * scalefactor + ymin;
-                writer.write_record(&crate::io::XyzRecord {
+                writer.write_record(&crate::io::xyz::XyzRecord {
                     x: xx,
                     y: yy,
                     z: ele,

@@ -1,6 +1,6 @@
 use crate::canvas::Canvas;
 use crate::config::Config;
-use crate::io::XyzInternalReader;
+use crate::io::xyz::XyzInternalReader;
 use crate::util::read_lines;
 use image::ImageBuffer;
 use image::Rgba;

@@ -6,7 +6,7 @@ use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::{error::Error, path::Path};
 
-use crate::io::XyzInternalReader;
+use crate::io::xyz::XyzInternalReader;
 
 pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying blocks...");
