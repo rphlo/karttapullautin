@@ -140,6 +140,9 @@ pub fn process_tile(
             }
         }
     }
+    if filename.to_lowercase().ends_with(".xyz.bin") {
+        skiplaz2txt = true;
+    }
 
     if !skiplaz2txt {
         let &Config {
@@ -186,38 +189,43 @@ pub fn process_tile(
         // if we are here we know that the file has at least 6 columns, so we can assume that it is in the format
         // x y z classification number_of_returns return_number
 
-        info!("{}Converting points to internal binary format", thread_name,);
+        // info!("{}Converting points to internal binary format", thread_name,);
+        //
+        // // then read and convert each point
+        // let mut writer = XyzInternalWriter::create(
+        //     &tmpfolder.join("xyztemp.xyz.bin"),
+        //     crate::io::Format::XyzMeta,
+        // )
+        // .expect("Could not create writer");
+        // read_lines_no_alloc(filename, |line| {
+        //     let mut parts = line.split(' ');
+        //     let x = parts.next().unwrap().parse::<f64>().unwrap();
+        //     let y = parts.next().unwrap().parse::<f64>().unwrap();
+        //     let z = parts.next().unwrap().parse::<f64>().unwrap();
+        //     let classification = parts.next().unwrap().parse::<u8>().unwrap();
+        //     let number_of_returns = parts.next().unwrap().parse::<u8>().unwrap();
+        //     let return_number = parts.next().unwrap().parse::<u8>().unwrap();
+        //
+        //     writer
+        //         .write_record(&crate::io::XyzRecord {
+        //             x,
+        //             y,
+        //             z,
+        //             meta: Some(XyzRecordMeta {
+        //                 classification,
+        //                 number_of_returns,
+        //                 return_number,
+        //             }),
+        //         })
+        //         .expect("Could not write record");
+        // })
+        // .expect("Could not read file");
+        // writer.finish();
 
-        // then read and convert each point
-        let mut writer = XyzInternalWriter::create(
-            &tmpfolder.join("xyztemp.xyz.bin"),
-            crate::io::Format::XyzMeta,
-        )
-        .expect("Could not create writer");
-        read_lines_no_alloc(filename, |line| {
-            let mut parts = line.split(' ');
-            let x = parts.next().unwrap().parse::<f64>().unwrap();
-            let y = parts.next().unwrap().parse::<f64>().unwrap();
-            let z = parts.next().unwrap().parse::<f64>().unwrap();
-            let classification = parts.next().unwrap().parse::<u8>().unwrap();
-            let number_of_returns = parts.next().unwrap().parse::<u8>().unwrap();
-            let return_number = parts.next().unwrap().parse::<u8>().unwrap();
-
-            writer
-                .write_record(&crate::io::XyzRecord {
-                    x,
-                    y,
-                    z,
-                    meta: Some(XyzRecordMeta {
-                        classification,
-                        number_of_returns,
-                        return_number,
-                    }),
-                })
-                .expect("Could not write record");
-        })
-        .expect("Could not read file");
-        writer.finish();
+        fs::copy(
+            tmpfolder.join(filename),
+            tmpfolder.join("xyztemp.xyz.bin"),
+        ).expect("Could not copy file");
     }
     info!("{}Done", thread_name);
 
@@ -454,9 +462,12 @@ pub fn batch_process(conf: &Config, thread: &String) {
         let maxx2 = maxx + 127.0;
         let maxy2 = maxy + 127.0;
 
-        let tmp_filename = format!("temp{}.xyz", thread);
-        let tmp_file = File::create(&tmp_filename).expect("Unable to create file");
-        let mut tmp_fp = BufWriter::new(tmp_file);
+        let tmp_filename = format!("temp{}.xyz.bin", thread);
+        // let tmp_file = File::create(&tmp_filename).expect("Unable to create file");
+        // let mut tmp_fp = BufWriter::new(tmp_file);
+        let mut writer =
+            XyzInternalWriter::create(&Path::new(&tmp_filename), crate::io::Format::XyzMeta)
+                .expect("Could not create writer");
 
         for laz_p in &laz_files {
             let laz = laz_p.as_path().file_name().unwrap().to_str().unwrap();
@@ -476,23 +487,37 @@ pub fn batch_process(conf: &Config, thread: &String) {
                         && pt.y < maxy2
                         && (thinfactor == 1.0 || rng.sample(randdist))
                     {
-                        write!(
-                            &mut tmp_fp,
-                            "{} {} {} {} {} {} {}\r\n",
-                            pt.x,
-                            pt.y,
-                            pt.z + zoff,
-                            u8::from(pt.classification),
-                            pt.number_of_returns,
-                            pt.return_number,
-                            pt.intensity
-                        )
-                        .expect("Could not write temp file");
+                        // write!(
+                        //     &mut tmp_fp,
+                        //     "{} {} {} {} {} {} {}\r\n",
+                        //     pt.x,
+                        //     pt.y,
+                        //     pt.z + zoff,
+                        //     u8::from(pt.classification),
+                        //     pt.number_of_returns,
+                        //     pt.return_number,
+                        //     pt.intensity
+                        // )
+                        // .expect("Could not write temp file");
+
+                        writer
+                            .write_record(&crate::io::XyzRecord {
+                                x: pt.x,
+                                y: pt.y,
+                                z: pt.z + zoff,
+                                meta: Some(XyzRecordMeta {
+                                    classification: u8::from(pt.classification),
+                                    number_of_returns: pt.number_of_returns,
+                                    return_number: pt.return_number,
+                                }),
+                            })
+                            .expect("Could not write record");
                     }
                 }
             }
         }
-        tmp_fp.flush().unwrap();
+        writer.finish();
+        // tmp_fp.flush().unwrap();
 
         let tmpfolder = PathBuf::from(format!("temp{}", thread));
         if zip_files.is_empty() {
@@ -500,7 +525,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
                 conf,
                 thread,
                 &tmpfolder,
-                &format!("temp{}.xyz", thread),
+                &format!("temp{}.xyz.bin", thread),
                 false,
             )
             .unwrap();
@@ -509,7 +534,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
                 conf,
                 thread,
                 &tmpfolder,
-                &format!("temp{}.xyz", thread),
+                &format!("temp{}.xyz.bin", thread),
                 true,
             )
             .unwrap();
