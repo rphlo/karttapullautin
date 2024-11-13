@@ -583,8 +583,6 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 if !area && shape.shapetype() == ShapeType::Polyline {
                     let mut poly: Vec<(f32, f32)> = vec![];
                     let polyline = shapefile::Polyline::try_from(shape).unwrap();
-                    // polyline.in
-                    // let linestring :
                     for points in polyline.parts().iter() {
                         for point in points.iter() {
                             let x = point.x;
@@ -1786,6 +1784,7 @@ mod tests {
         let mapping = Mapping::from_str(line);
         assert!(mapping.is_err());
     }
+
     #[test]
     fn test_mapping_from_str_invalid_no_conditions() {
         let line = "description|306|";
@@ -1807,6 +1806,7 @@ mod tests {
         };
         assert_eq!(mapping, expected);
     }
+
     #[test]
     fn test_mapping_from_str_valid_two() {
         let line = "description|306|key1=value1&key2!=value2";
@@ -1828,6 +1828,7 @@ mod tests {
         };
         assert_eq!(mapping, expected);
     }
+
     #[test]
     fn test_mapping_from_str_valid_more() {
         let line = "description|306|key1=value1&key2!=value2&key3=value3";
@@ -1894,7 +1895,6 @@ mod tests {
     #[test]
     fn test_mapping_from_str_osm() {
         let lines = include_str!("../osm.txt");
-
         for line in lines.lines() {
             Mapping::from_str(line).unwrap();
         }
@@ -1902,9 +1902,8 @@ mod tests {
 
     /// Make sure the bundled fastighetskartan.txt file can be parsed
     #[test]
-    fn test_mapping_from_strfastighetskartan() {
+    fn test_mapping_from_str_fastighetskartan() {
         let lines = include_str!("../fastighetskartan.txt");
-
         for line in lines.lines() {
             Mapping::from_str(line).unwrap();
         }
