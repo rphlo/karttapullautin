@@ -1889,4 +1889,24 @@ mod tests {
         let result = Mapping::from_str(line);
         assert!(result.is_err());
     }
+
+    /// Make sure the bundled osm.txt file can be parsed
+    #[test]
+    fn test_mapping_from_str_osm() {
+        let lines = include_str!("../osm.txt");
+
+        for line in lines.lines() {
+            Mapping::from_str(line).unwrap();
+        }
+    }
+
+    /// Make sure the bundled fastighetskartan.txt file can be parsed
+    #[test]
+    fn test_mapping_from_strfastighetskartan() {
+        let lines = include_str!("../fastighetskartan.txt");
+
+        for line in lines.lines() {
+            Mapping::from_str(line).unwrap();
+        }
+    }
 }
