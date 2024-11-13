@@ -21,21 +21,64 @@ enum Operator {
     NotEqual,
 }
 
+/// A condition that is used to filter the records in the vectorconf file
+struct Condition {
+    operator: Operator,
+    key: String,
+    value: String,
+}
+
+/// Each mapping represents one line in the vectorconf file
+struct Mapping {
+    /// The ISOM code that this mapping maps the shape to
+    isom: String,
+    /// The conditions that must be met for this mapping to be applied
+    conditions: Vec<Condition>,
+}
+
 pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     let scalefactor = config.scalefactor;
 
     let vectorconf = &config.vectorconf;
     let mtkskip = &config.mtkskiplayers;
 
-    let mut vectorconf_lines: Vec<String> = vec![];
+    let mut vectorconf_mappings: Vec<Mapping> = vec![];
     if !vectorconf.is_empty() {
-        let vectorconf_data = fs::read_to_string(vectorconf).expect("Can not read input file");
-        vectorconf_lines = vectorconf_data
-            .split('\n')
-            .collect::<Vec<&str>>()
-            .iter()
-            .map(|x| x.to_string())
-            .collect();
+        let vectorconf_lines = fs::read_to_string(vectorconf).expect("Can not read input file");
+
+        // parse all the lines in the vectorconf file into a list of mappings
+        for conf_row in vectorconf_lines.lines() {
+            let row_data: Vec<&str> = conf_row.trim().split('|').collect();
+            if row_data.len() < 3 {
+                warn!(
+                    "vectorconf line does not contain three sections separated by '|': {}",
+                    conf_row
+                );
+                continue;
+            }
+            let isom = row_data[1];
+            let conditions_str = row_data[2];
+            let conditions: Vec<Condition> = conditions_str
+                .split('&')
+                .map(|param| {
+                    let (operator, d): (Operator, Vec<&str>) = if param.contains("!=") {
+                        (Operator::NotEqual, param.splitn(2, "!=").collect())
+                    } else {
+                        (Operator::Equal, param.splitn(2, "=").collect())
+                    };
+                    Condition {
+                        operator,
+                        key: d[0].trim().to_string(),
+                        value: d[1].trim().to_string(),
+                    }
+                })
+                .collect();
+
+            vectorconf_mappings.push(Mapping {
+                isom: isom.to_string(),
+                conditions,
+            });
+        }
     }
     if !tmpfolder.join("vegetation.pgw").exists() {
         info!("Could not find vegetation file");
@@ -60,7 +103,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
     let outw = w * 600.0 / 254.0 / scalefactor;
     let outh = h * 600.0 / 254.0 / scalefactor;
 
-    // let mut img2 = Canvas::new(outw as i32, outh as i32);
+    // TODO: only allocate the canvas that are actually used... in a lazy way
     let mut imgbrown = Canvas::new(outw as i32, outh as i32);
     let mut imgbrowntop = Canvas::new(outw as i32, outh as i32);
     let mut imgblack = Canvas::new(outw as i32, outh as i32);
@@ -73,7 +116,6 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
     let mut imgblue2 = Canvas::new(outw as i32, outh as i32);
 
     let white = (255, 255, 255);
-    let unsetcolor = (5, 255, 255);
     let black = (0, 0, 0);
     let brown = (255, 150, 80);
 
@@ -111,7 +153,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
             let mut edgeimage = "black";
             let mut image = "";
             let mut thickness = 1.0;
-            let mut vari = unsetcolor;
+            let mut color: Option<(u8, u8, u8)> = None;
             let mut dashedline = false;
             let mut border = 0.0;
 
@@ -133,7 +175,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 // water streams
                 if ["36311", "36312"].contains(&luokka.as_str()) {
                     thickness = 4.0;
-                    vari = marsh;
+                    color = Some(marsh);
                     image = "blue";
                 }
 
@@ -142,7 +184,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                     thickness = 12.0;
                     dashedline = true;
                     image = "black";
-                    vari = black;
+                    color = Some(black);
                     if versuh > 0.0 {
                         image = "blacktop";
                     }
@@ -152,7 +194,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 if (luokka == "12141" || luokka == "12314") && versuh != 11.0 {
                     thickness = 12.0;
                     image = "black";
-                    vari = black;
+                    color = Some(black);
                     if versuh > 0.0 {
                         image = "blacktop";
                     }
@@ -165,7 +207,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                     imgbrown.set_line_width(20.0);
                     imgbrowntop.set_line_width(20.0);
                     thickness = 20.0;
-                    vari = brown;
+                    color = Some(brown);
                     image = "brown";
                     roadedge = 26.0;
                     imgblack.set_line_width(26.0);
@@ -182,7 +224,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                     && versuh != 11.0
                 {
                     image = "black";
-                    vari = white;
+                    color = Some(white);
                     thickness = 3.0;
                     roadedge = 18.0;
                     if versuh > 0.0 {
@@ -195,7 +237,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                     dashedline = true;
                     thickness = 6.0;
                     image = "black";
-                    vari = black;
+                    color = Some(black);
                     if versuh > 0.0 {
                         image = "blacktop";
                     }
@@ -205,7 +247,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                     dashedline = true;
                     thickness = 5.0;
                     image = "black";
-                    vari = black;
+                    color = Some(black);
                     if versuh > 0.0 {
                         image = "blacktop";
                     }
@@ -215,7 +257,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 if ["22300", "22312", "44500", "223311"].contains(&luokka.as_str()) {
                     imgblacktop.set_line_width(5.0);
                     thickness = 5.0;
-                    vari = black;
+                    color = Some(black);
                     image = "blacktop";
                 }
 
@@ -223,7 +265,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 if ["44211", "44213"].contains(&luokka.as_str()) {
                     imgblacktop.set_line_width(7.0);
                     thickness = 7.0;
-                    vari = black;
+                    color = Some(black);
                     image = "blacktop";
                 }
 
@@ -232,7 +274,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 // fields
                 if luokka == "32611" {
                     area = true;
-                    vari = yellow;
+                    color = Some(yellow);
                     border = 3.0;
                     image = "yellow";
                 }
@@ -244,7 +286,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 .contains(&luokka.as_str())
                 {
                     area = true;
-                    vari = blue;
+                    color = Some(blue);
                     border = 5.0;
                     image = "blue";
                 }
@@ -252,7 +294,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 // impassable marsh
                 if ["35421", "38300"].contains(&luokka.as_str()) {
                     area = true;
-                    vari = marsh;
+                    color = Some(marsh);
                     border = 3.0;
                     image = "marsh";
                 }
@@ -260,7 +302,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 // regular marsh
                 if ["35400", "35411"].contains(&luokka.as_str()) {
                     area = true;
-                    vari = marsh;
+                    color = Some(marsh);
                     border = 0.0;
                     image = "marsh";
                 }
@@ -268,7 +310,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 // marshy
                 if ["35300", "35412", "35422"].contains(&luokka.as_str()) {
                     area = true;
-                    vari = marsh;
+                    color = Some(marsh);
                     border = 0.0;
                     image = "marsh";
                 }
@@ -282,7 +324,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 .contains(&luokka.as_str())
                 {
                     area = true;
-                    vari = purple;
+                    color = Some(purple);
                     border = 0.0;
                     image = "black";
                 }
@@ -295,7 +337,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 .contains(&luokka.as_str())
                 {
                     area = true;
-                    vari = olive;
+                    color = Some(olive);
                     border = 0.0;
                     image = "yellow";
                 }
@@ -303,238 +345,224 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                 // airport runway, car parkings
                 if ["32411", "32412", "32415", "32417", "32421"].contains(&luokka.as_str()) {
                     area = true;
-                    vari = brown;
+                    color = Some(brown);
                     border = 0.0;
                     image = "yellow";
                 }
 
                 if mtkskip.contains(&luokka) {
-                    vari = unsetcolor;
+                    color = None;
                 }
             } else {
-                // configuration based drawing, iterate over all the rules
-                for conf_row in vectorconf_lines.iter() {
-                    let row_data: Vec<&str> = conf_row.trim().split('|').collect();
-                    if row_data.len() < 3 {
-                        warn!(
-                            "vectorconf line does not contain three sections separated by '|': {}",
-                            conf_row
-                        );
+                // configuration based drawing, iterate over all the rules and find the one that matches
+                for mapping in vectorconf_mappings.iter() {
+                    // if the color is already set we have a match, skip the rest of the mappings
+                    if color.is_some() {
+                        break;
+                    }
+
+                    // check if the record matches the conditions
+                    let mut is_ok = true;
+                    for keyval in &mapping.conditions {
+                        let mut r = String::from("");
+                        if let Some(FieldValue::Character(Some(record_str))) =
+                            record.get(&keyval.key)
+                        {
+                            r = record_str.trim().to_string();
+                        }
+                        if keyval.operator == Operator::Equal {
+                            if r != keyval.value {
+                                is_ok = false;
+                            }
+                        } else if r == keyval.value {
+                            is_ok = false;
+                        }
+                    }
+
+                    // no match? continue to the next mapping
+                    if !is_ok {
                         continue;
                     }
-                    let isom = row_data[1];
-                    let mut keyvals: Vec<(Operator, String, String)> = vec![];
-                    let params: Vec<&str> = row_data[2].split('&').collect();
-                    for param in params {
-                        let (operator, d): (Operator, Vec<&str>) = if param.contains("!=") {
-                            (Operator::NotEqual, param.splitn(2, "!=").collect())
-                        } else {
-                            (Operator::Equal, param.splitn(2, "=").collect())
-                        };
-                        keyvals.push((operator, d[0].trim().to_string(), d[1].trim().to_string()))
+
+                    let isom = &mapping.isom;
+
+                    if isom == "306" {
+                        imgblue.set_line_width(5.0);
+                        thickness = 4.0;
+                        color = Some(marsh);
+                        image = "blue";
                     }
-                    if vari == unsetcolor {
-                        // check if the record matches the filter
 
-                        let is_ok = {
-                            let mut is_ok = true;
-                            for keyval in keyvals.iter() {
-                                let mut r = String::from("");
-                                if let Some(FieldValue::Character(Some(record_str))) =
-                                    record.get(&keyval.1)
-                                {
-                                    r = record_str.trim().to_string();
-                                }
-                                if keyval.0 == Operator::Equal {
-                                    if r != keyval.2 {
-                                        is_ok = false;
-                                    }
-                                } else if r == keyval.2 {
-                                    is_ok = false;
-                                }
-                            }
-                            is_ok
-                        };
+                    // small path
+                    if isom == "505" {
+                        dashedline = true;
+                        thickness = 12.0;
+                        color = Some(black);
+                        image = "black";
+                    }
 
-                        if is_ok {
-                            if isom == "306" {
-                                imgblue.set_line_width(5.0);
-                                thickness = 4.0;
-                                vari = marsh;
-                                image = "blue";
-                            }
+                    // small path top
+                    if isom == "505T" {
+                        dashedline = true;
+                        thickness = 12.0;
+                        color = Some(black);
+                        image = "blacktop";
+                    }
 
-                            // small path
-                            if isom == "505" {
-                                dashedline = true;
-                                thickness = 12.0;
-                                vari = black;
-                                image = "black";
-                            }
+                    // large path
+                    if isom == "504" {
+                        imgblack.set_line_width(12.0);
+                        thickness = 12.0;
+                        color = Some(black);
+                        image = "black";
+                    }
 
-                            // small path top
-                            if isom == "505T" {
-                                dashedline = true;
-                                thickness = 12.0;
-                                vari = black;
-                                image = "blacktop";
-                            }
+                    // large path top
+                    if isom == "504T" {
+                        imgblack.set_line_width(12.0);
+                        thickness = 12.0;
+                        color = Some(black);
+                        image = "blacktop";
+                    }
 
-                            // large path
-                            if isom == "504" {
-                                imgblack.set_line_width(12.0);
-                                thickness = 12.0;
-                                vari = black;
-                                image = "black";
-                            }
+                    // road
+                    if isom == "503" {
+                        imgbrown.set_line_width(20.0);
+                        imgbrowntop.set_line_width(20.0);
+                        color = Some(brown);
+                        image = "brown";
+                        roadedge = 26.0;
+                        thickness = 20.0;
+                        imgblack.set_line_width(26.0);
+                    }
 
-                            // large path top
-                            if isom == "504T" {
-                                imgblack.set_line_width(12.0);
-                                thickness = 12.0;
-                                vari = black;
-                                image = "blacktop";
-                            }
+                    // road, bridges
+                    if isom == "503T" {
+                        edgeimage = "blacktop";
+                        imgbrown.set_line_width(14.0);
+                        imgbrowntop.set_line_width(14.0);
+                        color = Some(brown);
+                        image = "brown";
+                        roadedge = 26.0;
+                        thickness = 14.0;
+                        imgblack.set_line_width(26.0);
+                    }
 
-                            // road
-                            if isom == "503" {
-                                imgbrown.set_line_width(20.0);
-                                imgbrowntop.set_line_width(20.0);
-                                vari = brown;
-                                image = "brown";
-                                roadedge = 26.0;
-                                thickness = 20.0;
-                                imgblack.set_line_width(26.0);
-                            }
+                    // railroads
+                    if isom == "515" {
+                        color = Some(white);
+                        image = "black";
+                        roadedge = 18.0;
+                        thickness = 3.0;
+                    }
 
-                            // road, bridges
-                            if isom == "503T" {
-                                edgeimage = "blacktop";
-                                imgbrown.set_line_width(14.0);
-                                imgbrowntop.set_line_width(14.0);
-                                vari = brown;
-                                image = "brown";
-                                roadedge = 26.0;
-                                thickness = 14.0;
-                                imgblack.set_line_width(26.0);
-                            }
+                    // railroads top
+                    if isom == "515T" {
+                        color = Some(white);
+                        image = "blacktop";
+                        edgeimage = "blacktop";
+                        roadedge = 18.0;
+                        thickness = 3.0;
+                    }
 
-                            // railroads
-                            if isom == "515" {
-                                vari = white;
-                                image = "black";
-                                roadedge = 18.0;
-                                thickness = 3.0;
-                            }
+                    // small path
+                    if isom == "507" {
+                        dashedline = true;
+                        color = Some(black);
+                        image = "black";
+                        thickness = 6.0;
+                        imgblack.set_line_width(6.0);
+                    }
 
-                            // railroads top
-                            if isom == "515T" {
-                                vari = white;
-                                image = "blacktop";
-                                edgeimage = "blacktop";
-                                roadedge = 18.0;
-                                thickness = 3.0;
-                            }
+                    // small path top
+                    if isom == "507T" {
+                        dashedline = true;
+                        color = Some(black);
+                        image = "blacktop";
+                        thickness = 6.0;
+                        imgblack.set_line_width(6.0);
+                    }
 
-                            // small path
-                            if isom == "507" {
-                                dashedline = true;
-                                vari = black;
-                                image = "black";
-                                thickness = 6.0;
-                                imgblack.set_line_width(6.0);
-                            }
+                    // powerline
+                    if isom == "516" {
+                        color = Some(black);
+                        image = "blacktop";
+                        thickness = 5.0;
+                        imgblacktop.set_line_width(5.0);
+                    }
 
-                            // small path top
-                            if isom == "507T" {
-                                dashedline = true;
-                                vari = black;
-                                image = "blacktop";
-                                thickness = 6.0;
-                                imgblack.set_line_width(6.0);
-                            }
+                    // fence
+                    if isom == "524" {
+                        color = Some(black);
+                        image = "black";
+                        thickness = 7.0;
+                        imgblacktop.set_line_width(7.0);
+                    }
 
-                            // powerline
-                            if isom == "516" {
-                                vari = black;
-                                image = "blacktop";
-                                thickness = 5.0;
-                                imgblacktop.set_line_width(5.0);
-                            }
+                    // blackline
+                    if isom == "414" {
+                        color = Some(black);
+                        image = "black";
+                        thickness = 4.0;
+                    }
 
-                            // fence
-                            if isom == "524" {
-                                vari = black;
-                                image = "black";
-                                thickness = 7.0;
-                                imgblacktop.set_line_width(7.0);
-                            }
+                    // areas
 
-                            // blackline
-                            if isom == "414" {
-                                vari = black;
-                                image = "black";
-                                thickness = 4.0;
-                            }
-
-                            // areas
-
-                            // fields
-                            if isom == "401" {
-                                area = true;
-                                vari = yellow;
-                                border = 3.0;
-                                image = "yellow";
-                            }
-                            // lakes
-                            if isom == "301" {
-                                area = true;
-                                vari = blue;
-                                border = 5.0;
-                                image = "blue";
-                            }
-                            // marshes
-                            if isom == "310" {
-                                area = true;
-                                vari = marsh;
-                                image = "marsh";
-                            }
-                            // buildings
-                            if isom == "526" {
-                                area = true;
-                                vari = purple;
-                                image = "black";
-                            }
-                            // settlements
-                            if isom == "527" {
-                                area = true;
-                                vari = olive;
-                                image = "yellow";
-                            }
-                            // car parkings border
-                            if isom == "529.1" || isom == "301.1" {
-                                thickness = 2.0;
-                                vari = black;
-                                image = "black";
-                            }
-                            // car park area
-                            if isom == "529" {
-                                area = true;
-                                vari = brown;
-                                image = "yellow";
-                            }
-                            // car park top
-                            if isom == "529T" {
-                                area = true;
-                                vari = brown;
-                                image = "brown";
-                            }
-                        }
+                    // fields
+                    if isom == "401" {
+                        area = true;
+                        color = Some(yellow);
+                        border = 3.0;
+                        image = "yellow";
+                    }
+                    // lakes
+                    if isom == "301" {
+                        area = true;
+                        color = Some(blue);
+                        border = 5.0;
+                        image = "blue";
+                    }
+                    // marshes
+                    if isom == "310" {
+                        area = true;
+                        color = Some(marsh);
+                        image = "marsh";
+                    }
+                    // buildings
+                    if isom == "526" {
+                        area = true;
+                        color = Some(purple);
+                        image = "black";
+                    }
+                    // settlements
+                    if isom == "527" {
+                        area = true;
+                        color = Some(olive);
+                        image = "yellow";
+                    }
+                    // car parkings border
+                    if isom == "529.1" || isom == "301.1" {
+                        thickness = 2.0;
+                        color = Some(black);
+                        image = "black";
+                    }
+                    // car park area
+                    if isom == "529" {
+                        area = true;
+                        color = Some(brown);
+                        image = "yellow";
+                    }
+                    // car park top
+                    if isom == "529T" {
+                        area = true;
+                        color = Some(brown);
+                        image = "brown";
                     }
                 }
             }
 
-            if vari != unsetcolor {
+            // if there was a match, do the drawing!
+            if let Some(color) = color {
                 if !area && shape.shapetype() == ShapeType::Polyline {
                     let mut poly: Vec<(f32, f32)> = vec![];
                     let polyline = shapefile::Polyline::try_from(shape).unwrap();
@@ -570,7 +598,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                     if !dashedline {
                         if image == "blacktop" {
                             imgblacktop.set_line_width(thickness);
-                            imgblacktop.set_color(vari);
+                            imgblacktop.set_color(color);
                             if thickness >= 9.0 {
                                 imgblacktop.set_stroke_cap_round();
                             }
@@ -579,7 +607,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                         }
                         if image == "black" {
                             imgblack.set_line_width(thickness);
-                            imgblack.set_color(vari);
+                            imgblack.set_color(color);
                             if thickness >= 9.0 {
                                 imgblack.set_stroke_cap_round();
                             } else {
@@ -594,7 +622,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                             if thickness >= 9.0 {
                                 imgtempblacktop.set_stroke_cap_round();
                             }
-                            imgtempblacktop.set_color(vari);
+                            imgtempblacktop.set_color(color);
                             imgtempblacktop.set_line_width(thickness);
                             imgtempblacktop.draw_polyline(&poly);
                             imgtempblacktop.unset_dash();
@@ -606,7 +634,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                             if thickness >= 9.0 {
                                 imgtempblack.set_stroke_cap_round();
                             }
-                            imgtempblack.set_color(vari);
+                            imgtempblack.set_color(color);
                             imgtempblack.set_line_width(thickness);
                             imgtempblack.draw_polyline(&poly);
                             imgtempblack.unset_dash();
@@ -615,7 +643,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                     }
 
                     if image == "blue" {
-                        imgblue.set_color(vari);
+                        imgblue.set_color(color);
                         imgblue.set_line_width(thickness);
                         imgblue.draw_polyline(&poly)
                     }
@@ -659,33 +687,32 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
                         }
                     }
 
-                    info!("Image: {}", image);
                     if image == "black" {
-                        imgblack.set_color(vari);
+                        imgblack.set_color(color);
                         imgblack.draw_filled_polygon(&polys)
                     }
                     if image == "blue" {
-                        imgblue.set_color(vari);
+                        imgblue.set_color(color);
                         imgblue.draw_filled_polygon(&polys)
                     }
                     if image == "yellow" {
-                        imgyellow.set_color(vari);
+                        imgyellow.set_color(color);
                         imgyellow.draw_filled_polygon(&polys)
                     }
                     if image == "marsh" {
-                        imgmarsh.set_color(vari);
+                        imgmarsh.set_color(color);
                         imgmarsh.draw_filled_polygon(&polys)
                     }
                     if image == "brown" {
-                        imgbrown.set_color(vari);
+                        imgbrown.set_color(color);
                         imgbrown.draw_filled_polygon(&polys)
                     }
                 }
             }
         }
 
+        // remove the shapefile and all associated files
         fs::remove_file(&file).unwrap();
-
         for ext in ["dbf", "sbx", "prj", "shx", "sbn", "cpg", "qmd"].iter() {
             file.set_extension(ext);
             if file.exists() {
