@@ -5,7 +5,7 @@ use crate::util::read_lines;
 use image::ImageBuffer;
 use image::Rgba;
 use imageproc::drawing::{draw_filled_circle_mut, draw_line_segment_mut};
-use log::{info, warn};
+use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use shapefile::dbase::{FieldValue, Record};
 use shapefile::{Shape, ShapeType};
@@ -14,14 +14,16 @@ use std::f64::consts::PI;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum Operator {
     Equal,
     NotEqual,
 }
 
 /// A condition that is used to filter the records in the vectorconf file
+#[derive(Debug, PartialEq)]
 struct Condition {
     operator: Operator,
     key: String,
@@ -29,11 +31,54 @@ struct Condition {
 }
 
 /// Each mapping represents one line in the vectorconf file
+#[derive(Debug, PartialEq)]
 struct Mapping {
     /// The ISOM code that this mapping maps the shape to
     isom: String,
     /// The conditions that must be met for this mapping to be applied
     conditions: Vec<Condition>,
+}
+
+impl FromStr for Mapping {
+    type Err = String;
+
+    fn from_str(line: &str) -> Result<Self, Self::Err> {
+        let row_data: Vec<&str> = line.trim().split('|').collect();
+        if row_data.len() != 3 {
+            return Err(format!(
+                "vectorconf line does not contain 3 sections separated by '|', it has {}: {}",
+                row_data.len(),
+                line
+            ));
+        }
+        let isom = row_data[1].to_string();
+        if isom.is_empty() {
+            return Err(format!("ISOM code most not be empty: {line}"));
+        }
+
+        let conditions: Vec<Condition> = row_data[2]
+            .split('&')
+            .map(|param| {
+                let (operator, d): (Operator, Vec<&str>) = if param.contains("!=") {
+                    (Operator::NotEqual, param.splitn(2, "!=").collect())
+                } else if param.contains("=") {
+                    (Operator::Equal, param.splitn(2, "=").collect())
+                } else {
+                    return Err(format!(
+                        "Condition does not contain a valid operator: {}",
+                        param
+                    ));
+                };
+                Ok(Condition {
+                    operator,
+                    key: d[0].trim().to_string(),
+                    value: d[1].trim().to_string(),
+                })
+            })
+            .collect::<Result<Vec<_>, Self::Err>>()?;
+
+        Ok(Self { isom, conditions })
+    }
 }
 
 pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
@@ -47,38 +92,10 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
         let vectorconf_lines = fs::read_to_string(vectorconf).expect("Can not read input file");
 
         // parse all the lines in the vectorconf file into a list of mappings
-        for conf_row in vectorconf_lines.lines() {
-            let row_data: Vec<&str> = conf_row.trim().split('|').collect();
-            if row_data.len() < 3 {
-                warn!(
-                    "vectorconf line does not contain three sections separated by '|': {}",
-                    conf_row
-                );
-                continue;
-            }
-            let isom = row_data[1];
-            let conditions_str = row_data[2];
-            let conditions: Vec<Condition> = conditions_str
-                .split('&')
-                .map(|param| {
-                    let (operator, d): (Operator, Vec<&str>) = if param.contains("!=") {
-                        (Operator::NotEqual, param.splitn(2, "!=").collect())
-                    } else {
-                        (Operator::Equal, param.splitn(2, "=").collect())
-                    };
-                    Condition {
-                        operator,
-                        key: d[0].trim().to_string(),
-                        value: d[1].trim().to_string(),
-                    }
-                })
-                .collect();
-
-            vectorconf_mappings.push(Mapping {
-                isom: isom.to_string(),
-                conditions,
-            });
-        }
+        vectorconf_mappings = vectorconf_lines
+            .lines()
+            .map(Mapping::from_str)
+            .collect::<Result<Vec<_>, _>>()?;
     }
     if !tmpfolder.join("vegetation.pgw").exists() {
         info!("Could not find vegetation file");
@@ -1758,4 +1775,118 @@ pub fn draw_curves(
             .expect("Could not write file");
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_mapping_from_str_invalid_no_isom() {
+        let line = "description||key1=value1";
+        let mapping = Mapping::from_str(line);
+        assert!(mapping.is_err());
+    }
+    #[test]
+    fn test_mapping_from_str_invalid_no_conditions() {
+        let line = "description|306|";
+        let mapping = Mapping::from_str(line);
+        assert!(mapping.is_err());
+    }
+
+    #[test]
+    fn test_mapping_from_str_valid_single() {
+        let line = "description|306|key1=value1";
+        let mapping = Mapping::from_str(line).unwrap();
+        let expected = Mapping {
+            isom: "306".to_string(),
+            conditions: vec![Condition {
+                operator: Operator::Equal,
+                key: "key1".to_string(),
+                value: "value1".to_string(),
+            }],
+        };
+        assert_eq!(mapping, expected);
+    }
+    #[test]
+    fn test_mapping_from_str_valid_two() {
+        let line = "description|306|key1=value1&key2!=value2";
+        let mapping = Mapping::from_str(line).unwrap();
+        let expected = Mapping {
+            isom: "306".to_string(),
+            conditions: vec![
+                Condition {
+                    operator: Operator::Equal,
+                    key: "key1".to_string(),
+                    value: "value1".to_string(),
+                },
+                Condition {
+                    operator: Operator::NotEqual,
+                    key: "key2".to_string(),
+                    value: "value2".to_string(),
+                },
+            ],
+        };
+        assert_eq!(mapping, expected);
+    }
+    #[test]
+    fn test_mapping_from_str_valid_more() {
+        let line = "description|306|key1=value1&key2!=value2&key3=value3";
+        let mapping = Mapping::from_str(line).unwrap();
+        let expected = Mapping {
+            isom: "306".to_string(),
+            conditions: vec![
+                Condition {
+                    operator: Operator::Equal,
+                    key: "key1".to_string(),
+                    value: "value1".to_string(),
+                },
+                Condition {
+                    operator: Operator::NotEqual,
+                    key: "key2".to_string(),
+                    value: "value2".to_string(),
+                },
+                Condition {
+                    operator: Operator::Equal,
+                    key: "key3".to_string(),
+                    value: "value3".to_string(),
+                },
+            ],
+        };
+        assert_eq!(mapping, expected);
+    }
+
+    #[test]
+    fn test_mapping_from_str_invalid() {
+        let line = "306|key1=value1&key2!=value2";
+        let result = Mapping::from_str(line);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mapping_from_str_invalid_operator() {
+        let line = "description|306|key1=value1&key2>value2";
+        let result = Mapping::from_str(line);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mapping_from_str_missing_sections() {
+        let line = "306|key1=value1";
+        let result = Mapping::from_str(line);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mapping_from_str_empty_line() {
+        let line = "";
+        let result = Mapping::from_str(line);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mapping_from_str_extra_sections() {
+        let line = "description|306|key1=value1&key2!=value2|extra";
+        let result = Mapping::from_str(line);
+        assert!(result.is_err());
+    }
 }
