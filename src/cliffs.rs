@@ -37,7 +37,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let mut ymin: f64 = f64::MAX;
     let mut ymax: f64 = f64::MIN;
 
-    let xyz_file_in = tmpfolder.join("xyztemp.xyz.bin");
+    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
     let mut reader = XyzInternalReader::open(&xyz_file_in)?;
     while let Some(r) = reader.next()? {
         let (x, y) = (r.x, r.y);
@@ -59,7 +59,6 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         }
     }
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
     let mut sxmax: usize = usize::MIN;
     let mut symax: usize = usize::MIN;
 
