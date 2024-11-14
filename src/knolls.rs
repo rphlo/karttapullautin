@@ -4,10 +4,12 @@ use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::{self, File};
-use std::io::{BufWriter, Write};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
+use crate::io::bytes::FromToBytes;
+use crate::io::heightmap::HeightMap;
 use crate::io::xyz::{XyzInternalReader, XyzInternalWriter};
 use crate::util::read_lines_no_alloc;
 
@@ -16,31 +18,44 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
 
     let scalefactor = config.scalefactor;
 
-    let xyz_file_in = tmpfolder.join("xyz_knolls.xyz.bin");
+    // let xyz_file_in = tmpfolder.join("xyz_knolls.xyz.bin");
 
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    let first = reader.next()?.expect("should have record");
-    let second = reader.next()?.expect("should have record");
-    let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
+    // let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    // let first = reader.next()?.expect("should have record");
+    // let second = reader.next()?.expect("should have record");
+    // let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
 
-    let mut xmax = 0.0;
-    let mut ymax = 0.0;
+    // let mut xmax = 0.0;
+    // let mut ymax = 0.0;
+    //
+    // let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    // while let Some(r) = reader.next()? {
+    //     let (x, y) = (r.x, r.y);
+    //
+    //     let xx = ((x - xstart) / size).floor();
+    //     let yy = ((y - ystart) / size).floor();
+    //
+    //     if xmax < xx {
+    //         xmax = xx;
+    //     }
+    //
+    //     if ymax < yy {
+    //         ymax = yy;
+    //     }
+    // }
 
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    while let Some(r) = reader.next()? {
-        let (x, y) = (r.x, r.y);
+    let heightmap_in = tmpfolder.join("xyz_knolls.xyz.bin.hmap");
+    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let hmap = HeightMap::from_bytes(&mut reader)?;
 
-        let xx = ((x - xstart) / size).floor();
-        let yy = ((y - ystart) / size).floor();
+    // in world coordinates
+    let xstart = hmap.xoffset;
+    let ystart = hmap.yoffset;
 
-        if xmax < xx {
-            xmax = xx;
-        }
-
-        if ymax < yy {
-            ymax = yy;
-        }
-    }
+    // in grid coordinates
+    let xmax = hmap.grid.width() as f64;
+    let ymax = hmap.grid.height() as f64;
+    let size = hmap.scale;
 
     let mut im = GrayImage::from_pixel(
         (xmax * size / scalefactor) as u32,
@@ -159,39 +174,59 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
 
     let interval = 0.3 * scalefactor;
 
-    let xyz_file_in = tmpfolder.join("xyz_03.xyz.bin");
+    // let xyz_file_in = tmpfolder.join("xyz_03.xyz.bin");
+    //
+    // let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    // let first = reader.next()?.expect("should have record");
+    // let second = reader.next()?.expect("should have record");
+    // let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
 
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    let first = reader.next()?.expect("should have record");
-    let second = reader.next()?.expect("should have record");
-    let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
+    // let mut xmax: u64 = u64::MIN;
+    // let mut ymax: u64 = u64::MIN;
+    // let mut xmin: u64 = u64::MAX;
+    // let mut ymin: u64 = u64::MAX;
+    // let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
+    // let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    // while let Some(r) = reader.next()? {
+    //     let (x, y, h) = (r.x, r.y, r.z);
+    //
+    //     let xx = ((x - xstart) / size).floor() as u64;
+    //     let yy = ((y - ystart) / size).floor() as u64;
+    //
+    //     xyz.insert((xx, yy), h);
+    //
+    //     if xmax < xx {
+    //         xmax = xx;
+    //     }
+    //     if ymax < yy {
+    //         ymax = yy;
+    //     }
+    //     if xmin > xx {
+    //         xmin = xx;
+    //     }
+    //     if ymin > yy {
+    //         ymin = yy;
+    //     }
+    // }
 
-    let mut xmax: u64 = u64::MIN;
-    let mut ymax: u64 = u64::MIN;
-    let mut xmin: u64 = u64::MAX;
-    let mut ymin: u64 = u64::MAX;
+    let heightmap_in = tmpfolder.join("xyz_03.xyz.bin.hmap");
+    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let hmap = HeightMap::from_bytes(&mut reader)?;
+
+    // in world coordinates
+    let xstart = hmap.xoffset;
+    let ystart = hmap.yoffset;
+    let size = hmap.scale;
+
+    // in grid coordinates
+    let (xmin, ymin) = (0, 0);
+    let xmax = hmap.grid.width() as u64;
+    let ymax = hmap.grid.height() as u64;
+
+    // Temporary hashmap to store the xyz values
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    while let Some(r) = reader.next()? {
-        let (x, y, h) = (r.x, r.y, r.z);
-
-        let xx = ((x - xstart) / size).floor() as u64;
-        let yy = ((y - ystart) / size).floor() as u64;
-
-        xyz.insert((xx, yy), h);
-
-        if xmax < xx {
-            xmax = xx;
-        }
-        if ymax < yy {
-            ymax = yy;
-        }
-        if xmin > xx {
-            xmin = xx;
-        }
-        if ymin > yy {
-            ymin = yy;
-        }
+    for (x, y, h) in hmap.grid.iter_idx() {
+        xyz.insert((x as u64, y as u64), h);
     }
 
     let data = fs::read_to_string(tmpfolder.join("contours03.dxf"))
@@ -897,17 +932,40 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
             ymax = yy;
         }
     }
-    let mut xyz2: HashMap<(u64, u64), f64> = xyz.clone();
 
-    for i in 2..(xmax as usize - 1) {
-        for j in 2..(ymax as usize - 1) {
+    println!("xmax: {}, ymax: {}, len: {}", xmax, ymax, xyz.len());
+    // load the binary file
+    let heightmap_in = tmpfolder.join("xyz_03.xyz.bin.hmap");
+    let mut reader = BufReader::new(File::open(heightmap_in)?);
+
+    let hmap = HeightMap::from_bytes(&mut reader)?;
+
+    let xmax = hmap.grid.width();
+    let ymax = hmap.grid.height();
+
+    let mut xyz_new: HashMap<(u64, u64), f64> = HashMap::default();
+    for (i, j, h) in hmap.grid.iter_idx() {
+        xyz_new.insert((i as u64, j as u64), h);
+    }
+    println!(
+        "xmax: {}, ymax: {}, len: {}, equal: {}",
+        xmax,
+        ymax,
+        xyz.len(),
+        xyz == xyz_new
+    );
+
+    let mut xyz2 = hmap.clone();
+
+    for i in 2..(xmax - 2) {
+        for j in 2..(ymax - 2) {
             let mut low = f64::MAX;
             let mut high = f64::MIN;
             let mut val = 0.0;
             let mut count = 0;
-            for ii in (i - 2)..(i + 3) {
-                for jj in (j - 2)..(j + 3) {
-                    let tmp = *xyz.get(&(ii as u64, jj as u64)).unwrap_or(&0.0);
+            for ii in (i - 2)..=(i + 2) {
+                for jj in (j - 2)..=(j + 2) {
+                    let tmp = hmap.grid[(ii, jj)];
                     if tmp < low {
                         low = tmp;
                     }
@@ -921,8 +979,8 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
             let steepness = high - low;
             if steepness < 1.25 {
                 let tmp = (1.25 - steepness) * (val - low - high) / (count as f64 - 2.0) / 1.25
-                    + steepness * (*xyz2.get(&(i as u64, j as u64)).unwrap_or(&0.0)) / 1.25;
-                xyz2.insert((i as u64, j as u64), tmp);
+                    + steepness * xyz2.grid[(i, j)] / 1.25;
+                xyz2.grid[(i, j)] = tmp;
             }
         }
     }
@@ -1073,8 +1131,8 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
                     y0 = y1;
                 }
                 if hit % 2 == 1 {
-                    let tmp = *xyz2.get(&(ii as u64, jj as u64)).unwrap_or(&0.0) + move1;
-                    xyz2.insert((ii as u64, jj as u64), tmp);
+                    let tmp = xyz2.grid[(ii, jj)] + move1;
+                    xyz2.grid[(ii, jj)] = tmp;
                     let coords = format!("{}_{}", ii, jj);
                     touched.insert(coords, true);
                 }
@@ -1087,15 +1145,13 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
             for jjj in 0..((range * 2.0 + 1.0) as usize) {
                 let ii: f64 = xx - range + iii as f64;
                 let jj: f64 = yy - range + jjj as f64;
-                if ii > 0.0 && ii < xmax as f64 + 1.0 && jj > 0.0 && jj < ymax as f64 + 1.0 {
+                if ii > 0.0 && ii < xmax as f64 && jj > 0.0 && jj < ymax as f64 {
                     let coords = format!("{}_{}", ii, jj);
                     if !*touched.get(&coords).unwrap_or(&false) {
-                        let tmp = *xyz2
-                            .get(&(ii.floor() as u64, jj.floor() as u64))
-                            .unwrap_or(&0.0)
+                        let tmp = xyz2.grid[(ii.floor() as usize, jj.floor() as usize)]
                             + (range - (xx - ii).abs()) / range * (range - (yy - jj).abs()) / range
                                 * move2;
-                        xyz2.insert((ii.floor() as u64, jj.floor() as u64), tmp);
+                        xyz2.grid[(ii.floor() as usize, jj.floor() as usize)] = tmp;
                     }
                 }
             }
@@ -1107,12 +1163,11 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
         XyzInternalWriter::create(&tmpfolder.join("xyz_knolls.xyz.bin"), reader.format()).unwrap();
     while let Some(mut r) = reader.next()? {
         let (x, y) = (r.x, r.y);
-        let mut h = *xyz2
-            .get(&(
-                ((x - xstart) / size).floor() as u64,
-                ((y - ystart) / size).floor() as u64,
-            ))
-            .unwrap_or(&0.0);
+        let coords = (
+            ((x - xstart) / size).floor() as usize,
+            ((y - ystart) / size).floor() as usize,
+        );
+        let mut h = xyz2.grid[coords];
         let tmp = (h / interval + 0.5).floor() * interval;
         if (tmp - h).abs() < 0.02 {
             if h - tmp < 0.0 {
@@ -1122,9 +1177,17 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
             }
         }
         r.z = h;
+
+        xyz2.grid[coords] = h;
+
         writer.write_record(&r).unwrap();
     }
     writer.finish().expect("Unable to finish writing");
+
+    // also modify the HeightMap file
+    let heightmap_out = tmpfolder.join("xyz_knolls.xyz.bin.hmap");
+    let mut writer = BufWriter::new(File::create(heightmap_out)?);
+    xyz2.to_bytes(&mut writer)?;
 
     info!("Done");
     Ok(())

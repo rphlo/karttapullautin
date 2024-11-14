@@ -257,6 +257,12 @@ pub fn process_tile(
     )
     .expect("Could not copy file");
 
+    fs::copy(
+        tmpfolder.join("xyz_03.xyz.bin.hmap"),
+        tmpfolder.join("xyz2.xyz.bin.hmap"),
+    )
+    .expect("Could not copy file");
+
     let &Config {
         contour_interval,
         basemapcontours,

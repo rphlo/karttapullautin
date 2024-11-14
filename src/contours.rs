@@ -266,7 +266,7 @@ pub fn xyz2contours(
             xoffset: xmin,
             yoffset: ymin,
             scale: 2.0 * scalefactor,
-            data: avg_alt.clone(),
+            grid: avg_alt.clone(),
         };
 
         let hmap_file = tmpfolder.join(format!("{xyzfileout}.hmap"));
