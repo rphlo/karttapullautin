@@ -231,10 +231,10 @@ pub fn process_tile(
             config,
             tmpfolder,
             scalefactor * 0.3,
-            "xyztemp.xyz.bin",
-            "xyz_03.xyz.bin",
-            "null",
-            true,
+            "xyztemp.xyz.bin", //point cloud in
+            "xyz_03.xyz.bin",  // heightmap out
+            "null",            // no dxf curves
+            true,              // only 2 or water_class points
         )
         .expect("contour generation failed");
     } else {
@@ -242,14 +242,15 @@ pub fn process_tile(
             config,
             tmpfolder,
             scalefactor * 0.3,
-            "xyztemp.xyz.bin",
-            "xyz_03.xyz.bin",
-            "contours03.dxf",
-            true,
+            "xyztemp.xyz.bin", // point cloud in
+            "xyz_03.xyz.bin",  // heightmap out
+            "contours03.dxf",  // dxf curves generated from the heightmap
+            true,              // only 2 or water_class points
         )
         .expect("contour generation failed");
     }
 
+    // copy the generated heightmap
     fs::copy(
         tmpfolder.join("xyz_03.xyz.bin"),
         tmpfolder.join("xyz2.xyz.bin"),
@@ -270,10 +271,10 @@ pub fn process_tile(
                 config,
                 tmpfolder,
                 basemapcontours,
-                "xyz2.xyz.bin",
-                "",
-                "basemap.dxf",
-                false,
+                "xyz2.xyz.bin", // heightmap in
+                "",             // no heightmap out
+                "basemap.dxf",  // generate dxf contours
+                false,          // include all points
             )
             .expect("contour generation failed");
         }
@@ -284,7 +285,7 @@ pub fn process_tile(
         }
         info!("{}Contour generation part 1", thread_name);
         timing.start_section("contour generation part 1");
-        knolls::xyzknolls(config, tmpfolder).unwrap();
+        knolls::xyzknolls(config, tmpfolder).unwrap(); // modifies the heightmap (but does not change dimensions
 
         info!("{}Contour generation part 2", thread_name);
         timing.start_section("contour generation part 2");
@@ -294,10 +295,10 @@ pub fn process_tile(
                 config,
                 tmpfolder,
                 halfinterval,
-                "xyz_knolls.xyz.bin",
-                "null",
-                "out.dxf",
-                false,
+                "xyz_knolls.xyz.bin", // heightmap in
+                "null",               // no heightmap out
+                "out.dxf",            // generates dxf curves
+                false,                // includes all points
             )
             .unwrap();
         } else {
@@ -305,10 +306,10 @@ pub fn process_tile(
                 config,
                 tmpfolder,
                 halfinterval,
-                "xyztemp.xyz.bin",
-                "null",
-                "out.dxf",
-                true,
+                "xyztemp.xyz.bin", // point cloud in
+                "null",            // do not save the heightmap
+                "out.dxf",         // generate dxf curves
+                true,              // include only ground classified points or water
             )
             .unwrap();
         }

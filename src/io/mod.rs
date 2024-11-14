@@ -4,6 +4,8 @@ use std::{
     path::Path,
 };
 
+pub mod bytes;
+pub mod heightmap;
 pub mod xyz;
 
 /// Helper function to convert an internal xyz file to a regular xyz file.

@@ -1,4 +1,7 @@
+use crate::io::bytes::FromToBytes;
+
 /// Vector for storing 2-dimensional grid-like data in a contigous memory block, removes one layer of indirection.
+#[derive(Debug, Clone)]
 pub struct Vec2D<T> {
     data: Box<[T]>, // the size is fixed, so we can use a Box slice instead of Vec
     w: usize,
@@ -16,11 +19,29 @@ impl<T> Vec2D<T> {
             h,
         }
     }
+
+    pub fn width(&self) -> usize {
+        self.w
+    }
+    pub fn height(&self) -> usize {
+        self.h
+    }
+
+    fn mem_used(&self) -> usize {
+        std::mem::size_of_val(&self.data)
+    }
+}
+
+impl Vec2D<f64> {
+    pub fn is_any_nan(&self) -> bool {
+        self.data.iter().any(|x| x.is_nan())
+    }
 }
 
 impl<T> std::ops::Index<(usize, usize)> for Vec2D<T> {
     type Output = T;
 
+    /// Index is (x,y)
     fn index(&self, index: (usize, usize)) -> &T {
         if index.0 >= self.w || index.1 >= self.h {
             panic!(
@@ -34,6 +55,7 @@ impl<T> std::ops::Index<(usize, usize)> for Vec2D<T> {
 }
 
 impl<T> std::ops::IndexMut<(usize, usize)> for Vec2D<T> {
+    /// Index is (x,y)
     fn index_mut(&mut self, index: (usize, usize)) -> &mut T {
         if index.0 >= self.w || index.1 >= self.h {
             panic!(
@@ -45,6 +67,37 @@ impl<T> std::ops::IndexMut<(usize, usize)> for Vec2D<T> {
         unsafe { self.data.get_unchecked_mut(index.0 * self.h + index.1) }
     }
 }
+
+/// Implement the FromToBytes trait for Vec2D<T> where T implements FromToBytes.
+impl<T: FromToBytes> FromToBytes for Vec2D<T> {
+    fn from_bytes<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
+        let w = usize::from_bytes(reader)?;
+        let h = usize::from_bytes(reader)?;
+
+        let mut data = Vec::with_capacity(w * h);
+        for _ in 0..w * h {
+            data.push(T::from_bytes(reader)?);
+        }
+
+        Ok(Vec2D {
+            data: data.into(),
+            w,
+            h,
+        })
+    }
+
+    fn to_bytes<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        self.w.to_bytes(writer)?;
+        self.h.to_bytes(writer)?;
+
+        for item in self.data.iter() {
+            item.to_bytes(writer)?;
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
