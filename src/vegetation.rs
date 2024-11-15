@@ -6,42 +6,35 @@ use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::f32::consts::SQRT_2;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::Path;
 
 use crate::config::{Config, Zone};
+use crate::io::bytes::FromToBytes;
+use crate::io::heightmap::HeightMap;
 use crate::io::xyz::XyzInternalReader;
 
 pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
+    let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
+    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let hmap = HeightMap::from_bytes(&mut reader)?;
 
-    // read the start x and y values and the size of the blocks
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    let first = reader.next()?.expect("should have record");
-    let second = reader.next()?.expect("should have record");
-    let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
+    // in world coordinates
+    let xstart = hmap.xoffset;
+    let ystart = hmap.yoffset;
+    let size = hmap.scale;
 
-    let block = config.greendetectsize;
-
+    // Temporarily convert to HashMap for not having to go through all the logic below.
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    let mut top: HashMap<(u64, u64), f64> = HashMap::default();
-
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    while let Some(r) = reader.next()? {
-        let (x, y, h) = (r.x, r.y, r.z);
-
-        let xx = ((x - xstart) / size).floor() as u64;
-        let yy = ((y - ystart) / size).floor() as u64;
-        xyz.insert((xx, yy), h);
-        let xxx = ((x - xstart) / block).floor() as u64;
-        let yyy = ((y - ystart) / block).floor() as u64;
-        if top.contains_key(&(xxx, yyy)) && h > *top.get(&(xxx, yyy)).unwrap() {
-            top.insert((xxx, yyy), h);
-        }
+    for (x, y, h) in hmap.grid.iter_idx() {
+        xyz.insert((x as u64, y as u64), h);
     }
 
     let thresholds = &config.thresholds;
+    let block = config.greendetectsize;
 
     let &Config {
         vege_bitmode,
@@ -73,6 +66,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let mut xmax: f64 = f64::MIN;
     let mut ymax: f64 = f64::MIN;
 
+    let mut top: HashMap<(u64, u64), f64> = HashMap::default();
     let mut yhit: HashMap<(u64, u64), u64> = HashMap::default();
     let mut noyhit: HashMap<(u64, u64), u64> = HashMap::default();
 
@@ -451,11 +445,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         }
     }
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    while let Some(r) = reader.next()? {
-        let (x, y, hh) = (r.x, r.y, r.z);
-
+    for (x, y, hh) in hmap.iter_values() {
         if hh < config.waterele {
             draw_filled_rect_mut(
                 &mut imgwater,
