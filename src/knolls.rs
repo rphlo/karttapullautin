@@ -18,32 +18,6 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
 
     let scalefactor = config.scalefactor;
 
-    // let xyz_file_in = tmpfolder.join("xyz_knolls.xyz.bin");
-
-    // let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    // let first = reader.next()?.expect("should have record");
-    // let second = reader.next()?.expect("should have record");
-    // let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
-
-    // let mut xmax = 0.0;
-    // let mut ymax = 0.0;
-    //
-    // let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    // while let Some(r) = reader.next()? {
-    //     let (x, y) = (r.x, r.y);
-    //
-    //     let xx = ((x - xstart) / size).floor();
-    //     let yy = ((y - ystart) / size).floor();
-    //
-    //     if xmax < xx {
-    //         xmax = xx;
-    //     }
-    //
-    //     if ymax < yy {
-    //         ymax = yy;
-    //     }
-    // }
-
     let heightmap_in = tmpfolder.join("xyz_knolls.xyz.bin.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
