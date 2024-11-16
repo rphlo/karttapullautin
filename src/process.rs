@@ -13,6 +13,7 @@ use crate::cliffs;
 use crate::config::Config;
 use crate::contours;
 use crate::crop;
+use crate::io::heightmap::HeightMap;
 use crate::io::xyz::{XyzInternalWriter, XyzRecordMeta};
 use crate::knolls;
 use crate::merge;
@@ -226,37 +227,30 @@ pub fn process_tile(
         ..
     } = config;
 
+    let xyz_03 = contours::xyz2heightmap(
+        config,
+        tmpfolder,
+        scalefactor * 0.3,
+        "xyztemp.xyz.bin", //point cloud in
+    )
+    .expect("contour generation failed");
+    xyz_03
+        .to_file(tmpfolder.join("xyz_03.xyz.bin.hmap"))
+        .unwrap();
+
     if vegeonly || cliffsonly {
-        contours::xyz2contours(
-            config,
-            tmpfolder,
-            scalefactor * 0.3,
-            "xyztemp.xyz.bin", //point cloud in
-            "xyz_03.xyz.bin",  // heightmap out
-            "null",            // no dxf curves
-            true,              // only 2 or water_class points
-        )
-        .expect("contour generation failed");
     } else {
-        contours::xyz2contours(
-            config,
+        contours::heightmap2contours(
             tmpfolder,
             scalefactor * 0.3,
-            "xyztemp.xyz.bin", // point cloud in
-            "xyz_03.xyz.bin",  // heightmap out
-            "contours03.dxf",  // dxf curves generated from the heightmap
-            true,              // only 2 or water_class points
+            &xyz_03,
+            "contours03.dxf", // dxf curves generated from the heightmap
         )
         .expect("contour generation failed");
     }
+    drop(xyz_03);
 
     // copy the generated heightmap
-    fs::copy(
-        tmpfolder.join("xyz_03.xyz.bin"),
-        tmpfolder.join("xyz2.xyz.bin"),
-    )
-    .expect("Could not copy file");
-
     fs::copy(
         tmpfolder.join("xyz_03.xyz.bin.hmap"),
         tmpfolder.join("xyz2.xyz.bin.hmap"),
@@ -273,14 +267,13 @@ pub fn process_tile(
     if !vegeonly && !cliffsonly {
         if basemapcontours != 0.0 {
             info!("{}Basemap contours", thread_name);
-            contours::xyz2contours(
-                config,
+            let xyz2 = HeightMap::from_file(tmpfolder.join("xyz2.xyz.bin.hmap"))
+                .expect("could not read xyz2 heightmap");
+            contours::heightmap2contours(
                 tmpfolder,
                 basemapcontours,
-                "xyz2.xyz.bin", // heightmap in
-                "",             // no heightmap out
-                "basemap.dxf",  // generate dxf contours
-                false,          // include all points
+                &xyz2,
+                "basemap.dxf", // generate dxf contours
             )
             .expect("contour generation failed");
         }
@@ -297,25 +290,23 @@ pub fn process_tile(
         timing.start_section("contour generation part 2");
         if !skipknolldetection {
             // contours 2.5
-            contours::xyz2contours(
-                config,
+            let xyz_knolls = HeightMap::from_file(tmpfolder.join("xyz_knolls.xyz.bin.hmap"))
+                .expect("could not read xyz_knolls heightmap");
+            contours::heightmap2contours(
                 tmpfolder,
                 halfinterval,
-                "xyz_knolls.xyz.bin", // heightmap in
-                "null",               // no heightmap out
-                "out.dxf",            // generates dxf curves
-                false,                // includes all points
+                &xyz_knolls,
+                "out.dxf", // generates dxf curves
             )
             .unwrap();
         } else {
-            contours::xyz2contours(
-                config,
+            let hmap = contours::xyz2heightmap(config, tmpfolder, halfinterval, "xyztemp.xyz.bin")
+                .expect("could not generate heightmap");
+            contours::heightmap2contours(
                 tmpfolder,
                 halfinterval,
-                "xyztemp.xyz.bin", // point cloud in
-                "null",            // do not save the heightmap
-                "out.dxf",         // generate dxf curves
-                true,              // include only ground classified points or water
+                &hmap,
+                "out.dxf", // generate dxf curves
             )
             .unwrap();
         }
