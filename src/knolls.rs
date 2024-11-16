@@ -17,7 +17,7 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
 
     let scalefactor = config.scalefactor;
 
-    let heightmap_in = tmpfolder.join("xyz_knolls.xyz.bin.hmap");
+    let heightmap_in = tmpfolder.join("xyz_knolls.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
@@ -182,7 +182,7 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
     //     }
     // }
 
-    let heightmap_in = tmpfolder.join("xyz_03.xyz.bin.hmap");
+    let heightmap_in = tmpfolder.join("xyz_03.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
@@ -882,7 +882,7 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     let interval = contour_interval / 2.0 * scalefactor;
 
     // load the binary file
-    let heightmap_in = tmpfolder.join("xyz_03.xyz.bin.hmap");
+    let heightmap_in = tmpfolder.join("xyz_03.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
 
     let hmap = HeightMap::from_bytes(&mut reader)?;
@@ -1108,7 +1108,7 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     }
 
     // write the updated heightmap
-    let heightmap_out = tmpfolder.join("xyz_knolls.xyz.bin.hmap");
+    let heightmap_out = tmpfolder.join("xyz_knolls.hmap");
     let mut writer = BufWriter::new(File::create(heightmap_out)?);
     xyz2.to_bytes(&mut writer)?;
 
