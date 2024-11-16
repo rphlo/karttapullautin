@@ -1,7 +1,7 @@
 use crate::io::bytes::FromToBytes;
 
 /// Vector for storing 2-dimensional grid-like data in a contigous memory block, removes one layer of indirection.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Vec2D<T> {
     data: Box<[T]>, // the size is fixed, so we can use a Box slice instead of Vec
     w: usize,
