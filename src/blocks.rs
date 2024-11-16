@@ -46,10 +46,9 @@ pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
     while let Some(r) = reader.next().unwrap() {
         let (x, y, h) = (r.x, r.y, r.z);
-        let m = r.meta.unwrap();
-        let r3 = m.classification;
-        let r4 = m.number_of_returns;
-        let r5 = m.return_number;
+        let r3 = r.classification;
+        let r4 = r.number_of_returns;
+        let r5 = r.return_number;
 
         let xx = ((x - xstartxyz) / size).floor() as u64;
         let yy = ((y - ystartxyz) / size).floor() as u64;

@@ -37,9 +37,7 @@ pub fn xyz2heightmap(
     let xyz_file_in = tmpfolder.join(xyzfilein);
     let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
-        if r.meta
-            .is_some_and(|m| m.classification == 2 || m.classification == water_class)
-        {
+        if r.classification == 2 || r.classification == water_class {
             let x: f64 = r.x;
             let y: f64 = r.y;
             let h: f64 = r.z;
@@ -82,9 +80,7 @@ pub fn xyz2heightmap(
 
     let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
-        if r.meta
-            .is_some_and(|m| m.classification == 2 || m.classification == water_class)
-        {
+        if r.classification == 2 || r.classification == water_class {
             let x: f64 = r.x;
             let y: f64 = r.y;
             let h: f64 = r.z;

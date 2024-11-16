@@ -1,3 +1,4 @@
+use crate::io::bytes::FromToBytes;
 use std::{
     fs::File,
     io::{BufReader, BufWriter, Read, Seek, Write},
@@ -10,133 +11,73 @@ use log::debug;
 /// The magic number that identifies a valid XYZ binary file.
 const XYZ_MAGIC: &[u8] = b"XYZB";
 
-#[derive(Debug, Clone, Copy)]
-pub enum Format {
-    Xyz,
-    XyzMeta,
-}
-
-impl From<Format> for u8 {
-    fn from(value: Format) -> u8 {
-        match value {
-            Format::Xyz => 1,
-            Format::XyzMeta => 2,
-        }
-    }
-}
-
-impl TryFrom<u8> for Format {
-    type Error = String;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            1 => Ok(Format::Xyz),
-            2 => Ok(Format::XyzMeta),
-            _ => Err(format!("unknown Format value: {}", value)),
-        }
-    }
-}
-
 /// A single record of an observed laser data point needed by the algorithms.
 #[derive(Debug, Clone, PartialEq)]
 pub struct XyzRecord {
     pub x: f64,
     pub y: f64,
     pub z: f64,
-    pub meta: Option<XyzRecordMeta>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct XyzRecordMeta {
     pub classification: u8,
     pub number_of_returns: u8,
     pub return_number: u8,
 }
 
-impl XyzRecord {
-    fn write<W: Write>(&self, writer: &mut W, format: Format) -> std::io::Result<()> {
-        // write the x, y, z coordinates
-        writer.write_all(&self.x.to_ne_bytes())?;
-        writer.write_all(&self.y.to_ne_bytes())?;
-        writer.write_all(&self.z.to_ne_bytes())?;
+impl FromToBytes for XyzRecord {
+    fn from_bytes<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
+        let x = f64::from_bytes(reader)?;
+        let y = f64::from_bytes(reader)?;
+        let z = f64::from_bytes(reader)?;
 
-        // write the classification, number of returns, return number, and intensity
-
-        match (format, &self.meta) {
-            (Format::Xyz, _) => { //do nothing
-            }
-            (Format::XyzMeta, Some(meta)) => {
-                writer.write_all(&[
-                    meta.classification,
-                    meta.number_of_returns,
-                    meta.return_number,
-                ])?;
-            }
-            (Format::XyzMeta, None) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "meta data required for XyzMeta format",
-                ));
-            }
-        }
-
-        Ok(())
+        let mut buff = [0; 3];
+        reader.read_exact(&mut buff)?;
+        let classification = buff[0];
+        let number_of_returns = buff[1];
+        let return_number = buff[2];
+        Ok(Self {
+            x,
+            y,
+            z,
+            classification,
+            number_of_returns,
+            return_number,
+        })
     }
 
-    fn read<R: Read>(reader: &mut R, format: Format) -> std::io::Result<Self> {
-        let mut buff = [0; 8];
-        reader.read_exact(&mut buff)?;
-        let x = f64::from_ne_bytes(buff);
+    fn to_bytes<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        // write the x, y, z coordinates
+        self.x.to_bytes(writer)?;
+        self.y.to_bytes(writer)?;
+        self.z.to_bytes(writer)?;
 
-        reader.read_exact(&mut buff)?;
-        let y = f64::from_ne_bytes(buff);
-
-        reader.read_exact(&mut buff)?;
-        let z = f64::from_ne_bytes(buff);
-
-        let meta = match format {
-            Format::Xyz => None,
-            Format::XyzMeta => {
-                let mut buff = [0; 3];
-                reader.read_exact(&mut buff)?;
-                let classification = buff[0];
-                let number_of_returns = buff[1];
-                let return_number = buff[2];
-
-                Some(XyzRecordMeta {
-                    classification,
-                    number_of_returns,
-                    return_number,
-                })
-            }
-        };
-
-        Ok(Self { x, y, z, meta })
+        // write the classification, number of returns, return number, and intensity
+        writer.write_all(&[
+            self.classification,
+            self.number_of_returns,
+            self.return_number,
+        ])
     }
 }
 
 pub struct XyzInternalWriter<W: Write + Seek> {
     inner: Option<W>,
     records_written: u64,
-    format: Format,
     // for stats
     start: Option<Instant>,
 }
 
 impl XyzInternalWriter<BufWriter<File>> {
-    pub fn create(path: &Path, format: Format) -> std::io::Result<Self> {
+    pub fn create(path: &Path) -> std::io::Result<Self> {
         debug!("Writing records to {:?}", path);
         let file = File::create(path)?;
-        Ok(Self::new(BufWriter::new(file), format))
+        Ok(Self::new(BufWriter::new(file)))
     }
 }
 
 impl<W: Write + Seek> XyzInternalWriter<W> {
-    pub fn new(inner: W, format: Format) -> Self {
+    pub fn new(inner: W) -> Self {
         Self {
             inner: Some(inner),
             records_written: 0,
-            format,
             start: None,
         }
     }
@@ -154,12 +95,11 @@ impl<W: Write + Seek> XyzInternalWriter<W> {
             self.start = Some(Instant::now());
 
             inner.write_all(XYZ_MAGIC)?;
-            inner.write_all(&[self.format.into()])?;
             // Write the temporary number of records as all FF
-            inner.write_all(&u64::MAX.to_ne_bytes())?;
+            u64::MAX.to_bytes(inner)?;
         }
 
-        record.write(inner, self.format)?;
+        record.to_bytes(inner)?;
         self.records_written += 1;
         Ok(())
     }
@@ -173,8 +113,8 @@ impl<W: Write + Seek> XyzInternalWriter<W> {
         })?;
 
         // seek to the beginning of the file and write the number of records
-        inner.seek(std::io::SeekFrom::Start(XYZ_MAGIC.len() as u64 + 1))?;
-        inner.write_all(&self.records_written.to_ne_bytes())?;
+        inner.seek(std::io::SeekFrom::Start(XYZ_MAGIC.len() as u64))?;
+        self.records_written.to_bytes(&mut inner)?;
 
         // log statistics about the written records
         if let Some(start) = self.start {
@@ -200,7 +140,6 @@ impl<W: Write + Seek> Drop for XyzInternalWriter<W> {
 
 pub struct XyzInternalReader<R: Read> {
     inner: R,
-    format: Format,
     n_records: u64,
     records_read: u64,
     // for stats
@@ -227,18 +166,10 @@ impl<R: Read> XyzInternalReader<R> {
             ));
         }
 
-        // read and parse the format
-        let mut buff = [0; 1];
-        inner.read_exact(&mut buff)?;
-        let format = buff[0].try_into().expect("should have known format");
-
         // read the number of records, defined by the first u64
-        let mut buff = [0; 8];
-        inner.read_exact(&mut buff)?;
-        let n_records = u64::from_ne_bytes(buff);
+        let n_records = u64::from_bytes(&mut inner)?;
         Ok(Self {
             inner,
-            format,
             n_records,
             records_read: 0,
             start: None,
@@ -266,13 +197,9 @@ impl<R: Read> XyzInternalReader<R> {
             self.start = Some(Instant::now());
         }
 
-        let record = XyzRecord::read(&mut self.inner, self.format)?;
+        let record = XyzRecord::from_bytes(&mut self.inner)?;
         self.records_read += 1;
         Ok(Some(record))
-    }
-
-    pub fn format(&self) -> Format {
-        self.format
     }
 }
 
@@ -290,16 +217,14 @@ mod test {
             x: 1.0,
             y: 2.0,
             z: 3.0,
-            meta: Some(XyzRecordMeta {
-                classification: 4,
-                number_of_returns: 5,
-                return_number: 6,
-            }),
+            classification: 4,
+            number_of_returns: 5,
+            return_number: 6,
         };
 
         let mut buff = Vec::new();
-        record.write(&mut buff, Format::XyzMeta).unwrap();
-        let read_record = XyzRecord::read(&mut buff.as_slice(), Format::XyzMeta).unwrap();
+        record.to_bytes(&mut buff).unwrap();
+        let read_record = XyzRecord::from_bytes(&mut buff.as_slice()).unwrap();
 
         assert_eq!(record, read_record);
     }
@@ -307,17 +232,15 @@ mod test {
     #[test]
     fn test_writer_reader_many() {
         let cursor = Cursor::new(Vec::new());
-        let mut writer = XyzInternalWriter::new(cursor, Format::XyzMeta);
+        let mut writer = XyzInternalWriter::new(cursor);
 
         let record = XyzRecord {
             x: 1.0,
             y: 2.0,
             z: 3.0,
-            meta: Some(XyzRecordMeta {
-                classification: 4,
-                number_of_returns: 5,
-                return_number: 6,
-            }),
+            classification: 4,
+            number_of_returns: 5,
+            return_number: 6,
         };
 
         writer.write_record(&record).unwrap();
