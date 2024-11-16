@@ -1,6 +1,7 @@
 use crate::canvas::Canvas;
 use crate::config::Config;
-use crate::io::xyz::XyzInternalReader;
+use crate::io::bytes::FromToBytes;
+use crate::io::heightmap::HeightMap;
 use crate::util::read_lines;
 use image::ImageBuffer;
 use image::Rgba;
@@ -12,6 +13,7 @@ use shapefile::{Shape, ShapeType};
 use std::error::Error;
 use std::f64::consts::PI;
 use std::fs::{self, File};
+use std::io::BufReader;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -1223,40 +1225,25 @@ pub fn draw_curves(
     let mut steepness: HashMap<(usize, usize), f64> = HashMap::default();
 
     if formline > 0.0 {
-        let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
+        let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
+        let mut reader = BufReader::new(File::open(heightmap_in)?);
+        let hmap = HeightMap::from_bytes(&mut reader)?;
 
-        let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
-        let first = reader.next()?.expect("should have record");
-        let second = reader.next()?.expect("should have record");
-        (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
+        xstart = hmap.xoffset;
+        ystart = hmap.yoffset;
+        size = hmap.scale;
 
         x0 = xstart;
 
-        let mut sxmax: usize = usize::MIN;
-        let mut symax: usize = usize::MIN;
-
+        // Temporarily convert to HashMap for not having to go through all the logic below.
         let mut xyz: HashMap<(usize, usize), f64> = HashMap::default();
-
-        let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
-        while let Some(r) = reader.next().unwrap() {
-            let (x, y, h) = (r.x, r.y, r.z);
-
-            let xx = ((x - xstart) / size).floor() as usize;
-            let yy = ((y - ystart) / size).floor() as usize;
-
-            if y > y0 {
-                y0 = y;
-            }
-
-            xyz.insert((xx, yy), h);
-
-            if sxmax < xx {
-                sxmax = xx;
-            }
-            if symax < yy {
-                symax = yy;
-            }
+        for (x, y, h) in hmap.grid.iter_idx() {
+            xyz.insert((x, y), h);
         }
+        y0 = hmap.maxy();
+
+        let sxmax = hmap.grid.width() - 1;
+        let symax = hmap.grid.height() - 1;
 
         for i in 6..(sxmax - 7) {
             for j in 6..(symax - 7) {

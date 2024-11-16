@@ -48,8 +48,6 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let ystart = hmap.yoffset;
     let size = hmap.scale;
 
-    let xyz = hmap.grid.clone();
-
     let sxmax = hmap.grid.width();
     let symax = hmap.grid.height();
 
@@ -61,7 +59,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
             let mut high: f64 = f64::MIN;
             for ii in i - 3..i + 4 {
                 for jj in j - 3..j + 4 {
-                    let value = xyz[(ii, jj)];
+                    let value = hmap.grid[(ii, jj)];
 
                     if value < low {
                         low = value;
@@ -277,7 +275,6 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         Vec::<(f64, f64, f64)>::new(),
     );
 
-    // TODO:
     let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;

@@ -23,11 +23,14 @@ impl HeightMap {
     pub fn miny(&self) -> f64 {
         self.yoffset
     }
+    /// Get the maximum x-coordinate of the heightmap
     pub fn maxx(&self) -> f64 {
-        self.xoffset + self.scale * self.grid.width() as f64
+        self.xoffset + self.scale * (self.grid.width() - 1) as f64
     }
+
+    /// Get the maximum y-coordinate of the heightmap
     pub fn maxy(&self) -> f64 {
-        self.yoffset + self.scale * self.grid.height() as f64
+        self.yoffset + self.scale * (self.grid.height() - 1) as f64
     }
 
     pub fn iter_values(&self) -> impl Iterator<Item = (f64, f64, f64)> + '_ {
