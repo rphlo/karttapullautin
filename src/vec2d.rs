@@ -30,6 +30,14 @@ impl<T> Vec2D<T> {
     // fn mem_used(&self) -> usize {
     //     std::mem::size_of_val(&self.data)
     // }
+    pub fn iter_idx_mut(&mut self) -> impl Iterator<Item = (usize, usize, &mut T)> + '_ {
+        let h = self.h;
+        self.data.iter_mut().enumerate().map(move |(i, v)| {
+            let x = i / h;
+            let y = i % h;
+            (x, y, v)
+        })
+    }
 }
 
 impl<T: Copy> Vec2D<T> {
