@@ -44,6 +44,22 @@ impl HeightMap {
     }
 }
 
+impl HeightMap {
+    /// Helper for easily reading a HeightMap from a file
+    pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> std::io::Result<Self> {
+        let file = std::fs::File::open(path)?;
+        let mut reader = std::io::BufReader::new(file);
+        HeightMap::from_bytes(&mut reader)
+    }
+
+    /// Helper for easily writing a HeightMap to a file
+    pub fn to_file<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<()> {
+        let file = std::fs::File::create(path)?;
+        let mut writer = std::io::BufWriter::new(file);
+        self.to_bytes(&mut writer)
+    }
+}
+
 impl FromToBytes for HeightMap {
     fn from_bytes<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
         let xoffset = f64::from_bytes(reader)?;

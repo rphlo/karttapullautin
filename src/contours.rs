@@ -6,26 +6,20 @@ use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
-use crate::io::bytes::FromToBytes;
 use crate::io::heightmap::HeightMap;
-use crate::io::xyz::{XyzInternalReader, XyzInternalWriter};
+use crate::io::xyz::XyzInternalReader;
 use crate::util::read_lines_no_alloc;
 use crate::vec2d::Vec2D;
 
-// TODO: split this into tow functions
-//  1) Generate a heightmap from point cloud, return it but do not write it to disk
-//  2) Generate dxf curves from a heightmap.
-//
-//  Remove ground argument
-pub fn xyz2contours(
+/// Create a heightmap from a point cloud file.
+///
+/// Loads all the points and uses those that are classified as ground or water to create a heightmap using averages.
+pub fn xyz2heightmap(
     config: &Config,
     tmpfolder: &Path,
-    cinterval: f64,   // shared parameter...
-    xyzfilein: &str,  // this should be point cloud in
-    xyzfileout: &str, // remove, just return the heightmap data structure (based on Vec2d)
-    dxffile: &str,    // out parameter only for curve generation
-    ground: bool,     // disappears completely
-) -> Result<(), Box<dyn Error>> {
+    cinterval: f64,  // shared parameter...
+    xyzfilein: &str, // this should be point cloud in
+) -> Result<HeightMap, Box<dyn Error>> {
     info!("Generating curves...");
 
     let scalefactor = config.scalefactor;
@@ -45,7 +39,6 @@ pub fn xyz2contours(
     while let Some(r) = reader.next()? {
         if r.meta
             .is_some_and(|m| m.classification == 2 || m.classification == water_class)
-            || !ground
         {
             let x: f64 = r.x;
             let y: f64 = r.y;
@@ -91,7 +84,6 @@ pub fn xyz2contours(
     while let Some(r) = reader.next()? {
         if r.meta
             .is_some_and(|m| m.classification == 2 || m.classification == water_class)
-            || !ground
         {
             let x: f64 = r.x;
             let y: f64 = r.y;
@@ -243,37 +235,44 @@ pub fn xyz2contours(
         }
     }
 
-    if !xyzfileout.is_empty() && xyzfileout != "null" {
-        let mut writer =
-            XyzInternalWriter::create(&tmpfolder.join(xyzfileout), crate::io::xyz::Format::Xyz)
-                .unwrap();
-        for x in 0..w + 1 {
-            for y in 0..h + 1 {
-                let ele = avg_alt[(x, y)];
-                let xx = x as f64 * 2.0 * scalefactor + xmin;
-                let yy = y as f64 * 2.0 * scalefactor + ymin;
-                writer.write_record(&crate::io::xyz::XyzRecord {
-                    x: xx,
-                    y: yy,
-                    z: ele,
-                    meta: None,
-                })?;
-            }
+    let hmap = HeightMap {
+        xoffset: xmin,
+        yoffset: ymin,
+        scale: 2.0 * scalefactor,
+        grid: avg_alt.clone(),
+    };
+
+    Ok(hmap)
+}
+
+/// Creates contour lines from a heightmap.
+pub fn heightmap2contours(
+    tmpfolder: &Path,
+    cinterval: f64,
+    heightmap: &HeightMap,
+    dxffile: &str,
+) -> Result<(), Box<dyn Error>> {
+    let avg_alt = &heightmap.grid;
+    let w = heightmap.grid.width() - 1;
+    let h = heightmap.grid.height() - 1;
+    let xmin = heightmap.xoffset;
+    let ymin = heightmap.yoffset;
+    let xmax = heightmap.maxx();
+    let ymax = heightmap.maxy();
+    let size = heightmap.scale;
+
+    // comput hmin and hmax
+    let mut hmin: f64 = f64::MAX;
+    let mut hmax: f64 = f64::MIN;
+    for (_, _, h) in avg_alt.iter_idx() {
+        if h < hmin {
+            hmin = h;
         }
-        writer.finish().expect("Unable to finish writing");
-
-        let hmap = HeightMap {
-            xoffset: xmin,
-            yoffset: ymin,
-            scale: 2.0 * scalefactor,
-            grid: avg_alt.clone(),
-        };
-
-        let hmap_file = tmpfolder.join(format!("{xyzfileout}.hmap"));
-        let mut writer = BufWriter::new(File::create(&hmap_file).expect("Unable to create file"));
-        hmap.to_bytes(&mut writer)
-            .expect("Unable to write heightmap to file");
+        if h > hmax {
+            hmax = h;
+        }
     }
+
     if !dxffile.is_empty() && dxffile != "null" {
         let v = cinterval;
 
@@ -524,10 +523,8 @@ pub fn xyz2contours(
                         continue;
                     }
                     let mut xy_raw = d.split(',');
-                    let x: f64 =
-                        xy_raw.next().unwrap().parse::<f64>().unwrap() * 2.0 * scalefactor + xmin;
-                    let y: f64 =
-                        xy_raw.next().unwrap().parse::<f64>().unwrap() * 2.0 * scalefactor + ymin;
+                    let x: f64 = xy_raw.next().unwrap().parse::<f64>().unwrap() * size + xmin;
+                    let y: f64 = xy_raw.next().unwrap().parse::<f64>().unwrap() * size + ymin;
                     write!(
                         &mut f,
                         "VERTEX\r\n  8\r\ncont\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\n",

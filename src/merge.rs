@@ -3,11 +3,12 @@ use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::fs::{self, File};
-use std::io::{BufWriter, Write};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use crate::config::Config;
-use crate::io::xyz::XyzInternalReader;
+use crate::io::bytes::FromToBytes;
+use crate::io::heightmap::HeightMap;
 use crate::vec2d::Vec2D;
 
 fn merge_png(
@@ -525,32 +526,22 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     }
 
     let interval = halfinterval;
-    let xyz_file_in = tmpfolder.join("xyz_knolls.xyz.bin");
 
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    let first = reader.next()?.expect("should have record");
-    let second = reader.next()?.expect("should have record");
-    let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
+    let heightmap_in = tmpfolder.join("xyz_knolls.xyz.bin.hmap");
+    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let hmap = HeightMap::from_bytes(&mut reader)?;
 
-    let mut xmax: u64 = u64::MIN;
-    let mut ymax: u64 = u64::MIN;
+    // in world coordinates
+    let xstart = hmap.xoffset;
+    let ystart = hmap.yoffset;
+    let size = hmap.scale;
+    let xmax = (hmap.grid.width() - 1) as u64;
+    let ymax = (hmap.grid.height() - 1) as u64;
+
+    // Temporarily convert to HashMap for not having to go through all the logic below.
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    while let Some(r) = reader.next()? {
-        let (x, y, h) = (r.x, r.y, r.z);
-
-        let xx = ((x - xstart) / size).floor() as u64;
-        let yy = ((y - ystart) / size).floor() as u64;
-
-        xyz.insert((xx, yy), h);
-
-        if xmax < xx {
-            xmax = xx;
-        }
-        if ymax < yy {
-            ymax = yy;
-        }
+    for (x, y, h) in hmap.grid.iter_idx() {
+        xyz.insert((x as u64, y as u64), h);
     }
 
     let mut steepness = Vec2D::new((xmax + 1) as usize, (ymax + 1) as usize, f64::NAN);
