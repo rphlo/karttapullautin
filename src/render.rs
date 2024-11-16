@@ -1225,7 +1225,7 @@ pub fn draw_curves(
     let mut steepness: HashMap<(usize, usize), f64> = HashMap::default();
 
     if formline > 0.0 {
-        let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
+        let heightmap_in = tmpfolder.join("xyz2.hmap");
         let mut reader = BufReader::new(File::open(heightmap_in)?);
         let hmap = HeightMap::from_bytes(&mut reader)?;
 

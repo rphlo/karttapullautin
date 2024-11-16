@@ -34,7 +34,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         no_small_ciffs -= flat_place;
     }
 
-    let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
+    let heightmap_in = tmpfolder.join("xyz2.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
@@ -275,7 +275,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         Vec::<(f64, f64, f64)>::new(),
     );
 
-    let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
+    let heightmap_in = tmpfolder.join("xyz2.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
     for (x, y, h) in hmap.iter() {

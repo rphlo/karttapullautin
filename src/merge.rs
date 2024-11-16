@@ -527,7 +527,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
 
     let interval = halfinterval;
 
-    let heightmap_in = tmpfolder.join("xyz_knolls.xyz.bin.hmap");
+    let heightmap_in = tmpfolder.join("xyz_knolls.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
