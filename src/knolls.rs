@@ -198,7 +198,7 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
 
     // Temporary hashmap to store the xyz values
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    for (x, y, h) in hmap.grid.iter_idx() {
+    for (x, y, h) in hmap.grid.iter() {
         xyz.insert((x as u64, y as u64), h);
     }
 
@@ -1096,7 +1096,7 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
         }
     }
 
-    for (_, _, h) in xyz2.grid.iter_idx_mut() {
+    for (_, _, h) in xyz2.grid.iter_mut() {
         let tmp = (*h / interval + 0.5).floor() * interval;
         if (tmp - *h).abs() < 0.02 {
             if *h - tmp < 0.0 {

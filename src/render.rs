@@ -1237,7 +1237,7 @@ pub fn draw_curves(
 
         // Temporarily convert to HashMap for not having to go through all the logic below.
         let mut xyz: HashMap<(usize, usize), f64> = HashMap::default();
-        for (x, y, h) in hmap.grid.iter_idx() {
+        for (x, y, h) in hmap.grid.iter() {
             xyz.insert((x, y), h);
         }
         y0 = hmap.maxy();

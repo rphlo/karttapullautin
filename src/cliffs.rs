@@ -278,7 +278,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
-    for (x, y, h) in hmap.iter_values() {
+    for (x, y, h) in hmap.iter() {
         if cliff_thin == 1.0 || rng.sample(randdist) {
             list_alt[(
                 ((x - xmin).floor() / 3.0) as usize,

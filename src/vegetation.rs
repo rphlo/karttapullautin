@@ -29,7 +29,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
 
     // Temporarily convert to HashMap for not having to go through all the logic below.
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    for (x, y, h) in hmap.grid.iter_idx() {
+    for (x, y, h) in hmap.grid.iter() {
         xyz.insert((x as u64, y as u64), h);
     }
 
@@ -445,7 +445,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         }
     }
 
-    for (x, y, hh) in hmap.iter_values() {
+    for (x, y, hh) in hmap.iter() {
         if hh < config.waterele {
             draw_filled_rect_mut(
                 &mut imgwater,

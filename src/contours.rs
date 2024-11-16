@@ -208,7 +208,7 @@ pub fn xyz2heightmap(
     xmin += 1.0;
     ymin += 1.0;
 
-    for (_, _, ele) in avg_alt.iter_idx_mut() {
+    for (_, _, ele) in avg_alt.iter_mut() {
         let temp: f64 = (*ele / cinterval + 0.5).floor() * cinterval;
         if (*ele - temp).abs() < 0.02 {
             if *ele - temp < 0.0 {
@@ -258,7 +258,7 @@ pub fn heightmap2contours(
     let size = heightmap.scale;
 
     // this "correction" is needed here since the cinterval of the heightmap might be different from the one used for the contours
-    for (_, _, ele) in avg_alt.iter_idx_mut() {
+    for (_, _, ele) in avg_alt.iter_mut() {
         let temp: f64 = (*ele / cinterval + 0.5).floor() * cinterval;
         if (*ele - temp).abs() < 0.02 {
             if *ele - temp < 0.0 {
@@ -272,7 +272,7 @@ pub fn heightmap2contours(
     // compute hmin and hmax
     let mut hmin: f64 = f64::MAX;
     let mut hmax: f64 = f64::MIN;
-    for (_, _, h) in avg_alt.iter_idx() {
+    for (_, _, h) in avg_alt.iter() {
         if h < hmin {
             hmin = h;
         }
