@@ -74,6 +74,7 @@ Previously, Karttapullautin used regular text-based `.xyz` files to store the te
 ```
 ./pullauta internal2xyz temp/xyztemp.xyz.bin temp/xyztemp.xyz
 ```
+> Note: this also works for the binary `.hmap` files.
 
 ### Fine tuning the output
 
