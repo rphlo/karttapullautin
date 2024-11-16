@@ -48,8 +48,8 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let ystart = hmap.yoffset;
     let size = hmap.scale;
 
-    let sxmax = hmap.grid.width();
-    let symax = hmap.grid.height();
+    let sxmax = hmap.grid.width() - 1;
+    let symax = hmap.grid.height() - 1;
 
     let mut steepness = Vec2D::new(sxmax + 1, symax + 1, f64::NAN);
 
