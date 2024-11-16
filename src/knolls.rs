@@ -147,41 +147,6 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
 
     let interval = 0.3 * scalefactor;
 
-    // let xyz_file_in = tmpfolder.join("xyz_03.xyz.bin");
-    //
-    // let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    // let first = reader.next()?.expect("should have record");
-    // let second = reader.next()?.expect("should have record");
-    // let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
-
-    // let mut xmax: u64 = u64::MIN;
-    // let mut ymax: u64 = u64::MIN;
-    // let mut xmin: u64 = u64::MAX;
-    // let mut ymin: u64 = u64::MAX;
-    // let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    // let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    // while let Some(r) = reader.next()? {
-    //     let (x, y, h) = (r.x, r.y, r.z);
-    //
-    //     let xx = ((x - xstart) / size).floor() as u64;
-    //     let yy = ((y - ystart) / size).floor() as u64;
-    //
-    //     xyz.insert((xx, yy), h);
-    //
-    //     if xmax < xx {
-    //         xmax = xx;
-    //     }
-    //     if ymax < yy {
-    //         ymax = yy;
-    //     }
-    //     if xmin > xx {
-    //         xmin = xx;
-    //     }
-    //     if ymin > yy {
-    //         ymin = yy;
-    //     }
-    // }
-
     let heightmap_in = tmpfolder.join("xyz_03.hmap");
     let mut reader = BufReader::new(File::open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
