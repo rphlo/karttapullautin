@@ -33,8 +33,8 @@ impl HeightMap {
         self.yoffset + self.scale * (self.grid.height() - 1) as f64
     }
 
-    pub fn iter_values(&self) -> impl Iterator<Item = (f64, f64, f64)> + '_ {
-        self.grid.iter_idx().map(|(x, y, v)| {
+    pub fn iter(&self) -> impl Iterator<Item = (f64, f64, f64)> + '_ {
+        self.grid.iter().map(|(x, y, v)| {
             (
                 self.xoffset + self.scale * x as f64,
                 self.yoffset + self.scale * y as f64,

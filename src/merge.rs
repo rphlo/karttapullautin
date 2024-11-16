@@ -540,7 +540,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
 
     // Temporarily convert to HashMap for not having to go through all the logic below.
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    for (x, y, h) in hmap.grid.iter_idx() {
+    for (x, y, h) in hmap.grid.iter() {
         xyz.insert((x as u64, y as u64), h);
     }
 
