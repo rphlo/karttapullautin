@@ -253,10 +253,6 @@ fn main() {
         let xyzfilein = args[1].clone();
         let xyzfileout = args[2].clone();
         let dxffile = args[3].clone();
-        // let mut ground: bool = false;
-        // if args.len() > 4 && args[4] == "ground" {
-        //     ground = true;
-        // }
         let hmap =
             pullauta::contours::xyz2heightmap(&config, &tmpfolder, cinterval, &xyzfilein).unwrap();
 
