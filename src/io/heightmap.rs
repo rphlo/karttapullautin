@@ -3,7 +3,7 @@ use crate::vec2d::Vec2D;
 use super::bytes::FromToBytes;
 
 /// Simple container of a rectangular heightmap
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct HeightMap {
     /// Offset to add to the x-component to get the cell coordinate.
     pub xoffset: f64,
@@ -25,12 +25,12 @@ impl HeightMap {
     }
     /// Get the maximum x-coordinate of the heightmap
     pub fn maxx(&self) -> f64 {
-        self.xoffset + self.scale * (self.grid.width() - 1) as f64
+        self.xoffset + self.scale * (self.grid.width().saturating_sub(1)) as f64
     }
 
     /// Get the maximum y-coordinate of the heightmap
     pub fn maxy(&self) -> f64 {
-        self.yoffset + self.scale * (self.grid.height() - 1) as f64
+        self.yoffset + self.scale * (self.grid.height().saturating_sub(1)) as f64
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (f64, f64, f64)> + '_ {
@@ -65,7 +65,6 @@ impl FromToBytes for HeightMap {
         let xoffset = f64::from_bytes(reader)?;
         let yoffset = f64::from_bytes(reader)?;
         let scale = f64::from_bytes(reader)?;
-
         let data = Vec2D::from_bytes(reader)?;
 
         Ok(HeightMap {
@@ -81,5 +80,32 @@ impl FromToBytes for HeightMap {
         self.yoffset.to_bytes(writer)?;
         self.scale.to_bytes(writer)?;
         self.grid.to_bytes(writer)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_bytes() {
+        let mut data = Vec2D::new(2, 2, 0.0);
+        data[(0, 0)] = 1.0;
+        data[(1, 0)] = 2.0;
+        data[(0, 1)] = 3.0;
+        data[(1, 1)] = 4.0;
+
+        let heightmap = super::HeightMap {
+            xoffset: 3.0,
+            yoffset: -5.0,
+            scale: 1.5,
+            grid: data,
+        };
+
+        let mut bytes = Vec::new();
+        heightmap.to_bytes(&mut bytes).unwrap();
+        let heightmap2 = super::HeightMap::from_bytes(&mut bytes.as_slice()).unwrap();
+
+        assert_eq!(heightmap, heightmap2);
     }
 }
