@@ -5,10 +5,13 @@ use rand::prelude::*;
 use std::borrow::Cow;
 use std::error::Error;
 use std::fs::File;
+use std::io::BufReader;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
+use crate::io::bytes::FromToBytes;
+use crate::io::heightmap::HeightMap;
 use crate::io::xyz::XyzInternalReader;
 use crate::vec2d::Vec2D;
 
@@ -31,64 +34,24 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         no_small_ciffs -= flat_place;
     }
 
-    let mut xmin: f64 = f64::MAX;
-    let mut xmax: f64 = f64::MIN;
+    let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
+    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let hmap = HeightMap::from_bytes(&mut reader)?;
 
-    let mut ymin: f64 = f64::MAX;
-    let mut ymax: f64 = f64::MIN;
+    // in world coordinates
+    let xmax = hmap.maxx();
+    let ymax = hmap.maxy();
+    let xmin = hmap.minx();
+    let ymin = hmap.miny();
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    while let Some(r) = reader.next()? {
-        let (x, y) = (r.x, r.y);
+    let xstart = hmap.xoffset;
+    let ystart = hmap.yoffset;
+    let size = hmap.scale;
 
-        if xmin > x {
-            xmin = x;
-        }
+    let xyz = hmap.grid.clone();
 
-        if xmax < x {
-            xmax = x;
-        }
-
-        if ymin > y {
-            ymin = y;
-        }
-
-        if ymax < y {
-            ymax = y;
-        }
-    }
-
-    let mut sxmax: usize = usize::MIN;
-    let mut symax: usize = usize::MIN;
-
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    let first = reader.next()?.expect("should have record");
-    let second = reader.next()?.expect("should have record");
-    let (xstart, ystart, size) = (first.x, first.y, second.y - first.y);
-
-    let mut xyz = Vec2D::new(
-        ((xmax - xstart) / size).ceil() as usize + 1,
-        ((ymax - ystart) / size).ceil() as usize + 1,
-        f64::NAN,
-    );
-
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    while let Some(r) = reader.next()? {
-        let (x, y, h) = (r.x, r.y, r.z);
-
-        let xx = ((x - xstart) / size).floor() as usize;
-        let yy = ((y - ystart) / size).floor() as usize;
-
-        xyz[(xx, yy)] = h;
-
-        if sxmax < xx {
-            sxmax = xx;
-        }
-        if symax < yy {
-            symax = yy;
-        }
-    }
+    let sxmax = hmap.grid.width();
+    let symax = hmap.grid.height();
 
     let mut steepness = Vec2D::new(sxmax + 1, symax + 1, f64::NAN);
 
@@ -118,8 +81,8 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         Rgb([255, 255, 255]),
     );
 
-    xmin = (xmin / 3.0).floor() * 3.0;
-    ymin = (ymin / 3.0).floor() * 3.0;
+    let xmin = (xmin / 3.0).floor() * 3.0;
+    let ymin = (ymin / 3.0).floor() * 3.0;
 
     let mut list_alt = Vec2D::new(
         (((xmax - xmin) / 3.0).ceil() + 1.0) as usize,
@@ -314,12 +277,12 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         Vec::<(f64, f64, f64)>::new(),
     );
 
-    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    while let Some(r) = reader.next()? {
+    // TODO:
+    let heightmap_in = tmpfolder.join("xyz2.xyz.bin.hmap");
+    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let hmap = HeightMap::from_bytes(&mut reader)?;
+    for (x, y, h) in hmap.iter_values() {
         if cliff_thin == 1.0 || rng.sample(randdist) {
-            let (x, y, h) = (r.x, r.y, r.z);
-
             list_alt[(
                 ((x - xmin).floor() / 3.0) as usize,
                 ((y - ymin).floor() / 3.0) as usize,
