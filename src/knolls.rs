@@ -27,8 +27,8 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     let ystart = hmap.yoffset;
 
     // in grid coordinates
-    let xmax = hmap.grid.width() as f64;
-    let ymax = hmap.grid.height() as f64;
+    let xmax = (hmap.grid.width() - 1) as f64;
+    let ymax = (hmap.grid.height() - 1) as f64;
     let size = hmap.scale;
 
     let mut im = GrayImage::from_pixel(
@@ -194,8 +194,8 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
 
     // in grid coordinates
     let (xmin, ymin) = (0, 0);
-    let xmax = hmap.grid.width() as u64;
-    let ymax = hmap.grid.height() as u64;
+    let xmax = (hmap.grid.width() - 1) as u64;
+    let ymax = (hmap.grid.height() - 1) as u64;
 
     // Temporary hashmap to store the xyz values
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
@@ -914,27 +914,16 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
 
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
-    let xmax = hmap.grid.width();
-    let ymax = hmap.grid.height();
+    let xmax = hmap.grid.width() - 1;
+    let ymax = hmap.grid.height() - 1;
     let size = hmap.scale;
     let xstart = hmap.xoffset;
     let ystart = hmap.yoffset;
 
-    // let mut xyz_new: HashMap<(u64, u64), f64> = HashMap::default();
-    // for (i, j, h) in hmap.grid.iter_idx() {
-    //     xyz_new.insert((i as u64, j as u64), h);
-    // }
-    println!(
-        "xmax: {}, ymax: {}",
-        xmax,
-        ymax,
-        // xyz_new.len(),
-    );
-
     let mut xyz2 = hmap.clone();
 
-    for i in 2..(xmax - 2) {
-        for j in 2..(ymax - 2) {
+    for i in 2..=(xmax - 2) {
+        for j in 2..=(ymax - 2) {
             let mut low = f64::MAX;
             let mut high = f64::MIN;
             let mut val = 0.0;
