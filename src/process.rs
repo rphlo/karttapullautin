@@ -14,7 +14,7 @@ use crate::config::Config;
 use crate::contours;
 use crate::crop;
 use crate::io::heightmap::HeightMap;
-use crate::io::xyz::{XyzInternalWriter, XyzRecordMeta};
+use crate::io::xyz::XyzInternalWriter;
 use crate::knolls;
 use crate::merge;
 use crate::render;
@@ -138,8 +138,7 @@ pub fn process_tile(
             thread_name,
         );
 
-        let mut writer = XyzInternalWriter::create(&target_file, crate::io::xyz::Format::XyzMeta)
-            .expect("Could not create writer");
+        let mut writer = XyzInternalWriter::create(&target_file).expect("Could not create writer");
         read_lines_no_alloc(input_file, |line| {
             let mut parts = line.split(' ');
             let x = parts.next().unwrap().parse::<f64>().unwrap();
@@ -155,11 +154,9 @@ pub fn process_tile(
                     x,
                     y,
                     z,
-                    meta: Some(XyzRecordMeta {
-                        classification,
-                        number_of_returns,
-                        return_number,
-                    }),
+                    classification,
+                    number_of_returns,
+                    return_number,
                 })
                 .expect("Could not write record");
         })
@@ -188,8 +185,7 @@ pub fn process_tile(
 
         let mut reader = Reader::from_path(input_file).expect("Unable to open reader");
 
-        let mut writer =
-            XyzInternalWriter::create(&target_file, crate::io::xyz::Format::XyzMeta).unwrap();
+        let mut writer = XyzInternalWriter::create(&target_file).unwrap();
 
         for ptu in reader.points() {
             let pt = ptu.unwrap();
@@ -198,11 +194,9 @@ pub fn process_tile(
                     x: pt.x * xfactor,
                     y: pt.y * yfactor,
                     z: pt.z * zfactor + zoff,
-                    meta: Some(XyzRecordMeta {
-                        classification: u8::from(pt.classification),
-                        number_of_returns: pt.number_of_returns,
-                        return_number: pt.return_number,
-                    }),
+                    classification: u8::from(pt.classification),
+                    number_of_returns: pt.number_of_returns,
+                    return_number: pt.return_number,
                 })?;
             }
         }
@@ -447,8 +441,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
         let maxy2 = maxy + 127.0;
 
         let tmp_filename = PathBuf::from(format!("temp{}.xyz.bin", thread));
-        let mut writer = XyzInternalWriter::create(&tmp_filename, crate::io::xyz::Format::XyzMeta)
-            .expect("Could not create writer");
+        let mut writer = XyzInternalWriter::create(&tmp_filename).expect("Could not create writer");
 
         for laz_p in &laz_files {
             let laz = laz_p.as_path().file_name().unwrap().to_str().unwrap();
@@ -473,11 +466,9 @@ pub fn batch_process(conf: &Config, thread: &String) {
                                 x: pt.x,
                                 y: pt.y,
                                 z: pt.z + zoff,
-                                meta: Some(XyzRecordMeta {
-                                    classification: u8::from(pt.classification),
-                                    number_of_returns: pt.number_of_returns,
-                                    return_number: pt.return_number,
-                                }),
+                                classification: u8::from(pt.classification),
+                                number_of_returns: pt.number_of_returns,
+                                return_number: pt.return_number,
                             })
                             .expect("Could not write record");
                     }

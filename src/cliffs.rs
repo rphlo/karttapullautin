@@ -97,7 +97,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     while let Some(r) = reader.next()? {
         if cliff_thin == 1.0 || rng.sample(randdist) {
             let (x, y, h) = (r.x, r.y, r.z);
-            let r3 = r.meta.unwrap().classification;
+            let r3 = r.classification;
 
             if r3 == 2 {
                 list_alt[(

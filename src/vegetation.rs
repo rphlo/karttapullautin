@@ -77,10 +77,9 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
             let x: f64 = r.x;
             let y: f64 = r.y;
             let h: f64 = r.z;
-            let m = r.meta.unwrap();
-            let r3 = m.classification;
-            let r4 = m.number_of_returns;
-            let r5 = m.return_number;
+            let r3 = r.classification;
+            let r4 = r.number_of_returns;
+            let r5 = r.return_number;
 
             if xmax < x {
                 xmax = x;
@@ -135,10 +134,9 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
             let x: f64 = r.x;
             let y: f64 = r.y;
             let h: f64 = r.z - zoffset;
-            let m = r.meta.unwrap();
-            let r3 = m.classification;
-            let r4 = m.number_of_returns;
-            let r5 = m.return_number;
+            let r3 = r.classification;
+            let r4 = r.number_of_returns;
+            let r5 = r.return_number;
 
             if x > xmin && y > ymin {
                 if r5 == 1 {
@@ -425,8 +423,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
         let mut reader = XyzInternalReader::open(&xyz_file_in)?;
         while let Some(r) = reader.next()? {
             let (x, y) = (r.x, r.y);
-
-            let c: u8 = r.meta.unwrap().classification;
+            let c: u8 = r.classification;
 
             if c == buildings {
                 draw_filled_rect_mut(

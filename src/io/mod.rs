@@ -14,20 +14,16 @@ pub fn internal2xyz(input: &str, output: &str) -> std::io::Result<()> {
     let mut writer = BufWriter::new(File::create(output)?);
 
     while let Some(record) = reader.next()? {
-        if let Some(meta) = record.meta {
-            writeln!(
-                writer,
-                "{} {} {} {} {} {}",
-                record.x,
-                record.y,
-                record.z,
-                meta.classification,
-                meta.number_of_returns,
-                meta.return_number
-            )?;
-        } else {
-            writeln!(writer, "{} {} {}", record.x, record.y, record.z)?;
-        }
+        writeln!(
+            writer,
+            "{} {} {} {} {} {}",
+            record.x,
+            record.y,
+            record.z,
+            record.classification,
+            record.number_of_returns,
+            record.return_number
+        )?;
     }
 
     Ok(())
