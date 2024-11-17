@@ -27,3 +27,4 @@ cachegrind.out.*
 callgrind.out.*
 perf.data*
 *.svg
+*.xyz.bin
