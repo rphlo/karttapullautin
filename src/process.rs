@@ -128,9 +128,7 @@ pub fn process_tile(
         // if we are here we don't know if the file has at least 6 columns, but we assume that it is in the format
         // x y z classification number_of_returns return_number
 
-        info!(
-            "Converting points from .xyz to internal binary format"
-        );
+        info!("Converting points from .xyz to internal binary format");
 
         let mut writer = XyzInternalWriter::create(&target_file).expect("Could not create writer");
         read_lines_no_alloc(input_file, |line| {
@@ -157,9 +155,7 @@ pub fn process_tile(
         .expect("Could not read file");
         writer.finish().expect("Unable to finish writing");
     } else if filename.ends_with(".laz") || filename.ends_with(".las") {
-        info!(
-            "Converting points from .laz/laz to internal binary format"
-        );
+        info!("Converting points from .laz/laz to internal binary format");
         let &Config {
             thinfactor,
             xfactor,
@@ -375,8 +371,6 @@ pub fn batch_process(conf: &Config, thread: &String) {
 
     let mut rng = rand::thread_rng();
     let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
-
-
 
     fs::create_dir_all(batchoutfolder).expect("Could not create output folder");
 
