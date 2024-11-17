@@ -279,9 +279,9 @@ fn main() {
         for i in 0..proc {
             let config = config.clone();
             let handle = thread::spawn(move || {
-                info!("Starting thread {}", i + 1);
+                info!("Starting thread");
                 pullauta::process::batch_process(&config, &format!("{}", i + 1));
-                info!("Thread {} complete", i + 1);
+                info!("Thread complete");
             });
             thread::sleep(time::Duration::from_millis(100));
             handles.push(handle);

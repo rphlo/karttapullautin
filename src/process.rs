@@ -113,13 +113,8 @@ pub fn process_tile(
         ..
     } = config;
 
-    let mut thread_name = String::new();
-    if !thread.is_empty() {
-        thread_name = format!("Thread {}: ", thread);
-    }
-
     timing.start_section("preparing input file");
-    info!("{}Preparing input file", thread_name);
+    info!("Preparing input file");
 
     let filename = input_file
         .file_name()
@@ -134,8 +129,7 @@ pub fn process_tile(
         // x y z classification number_of_returns return_number
 
         info!(
-            "{}Converting points from .xyz to internal binary format",
-            thread_name,
+            "Converting points from .xyz to internal binary format"
         );
 
         let mut writer = XyzInternalWriter::create(&target_file).expect("Could not create writer");
@@ -164,8 +158,7 @@ pub fn process_tile(
         writer.finish().expect("Unable to finish writing");
     } else if filename.ends_with(".laz") || filename.ends_with(".las") {
         info!(
-            "{}Converting points from .laz/laz to internal binary format",
-            thread_name
+            "Converting points from .laz/laz to internal binary format"
         );
         let &Config {
             thinfactor,
@@ -177,7 +170,7 @@ pub fn process_tile(
         } = config;
 
         if thinfactor != 1.0 {
-            info!("{}Using thinning factor {}", thread_name, thinfactor);
+            info!("Using thinning factor {}", thinfactor);
         }
 
         let mut rng = rand::thread_rng();
@@ -202,15 +195,15 @@ pub fn process_tile(
         }
         writer.finish().expect("Unable to finish writing");
     } else if filename.ends_with(".xyz.bin") {
-        info!("{}Copying input file", thread_name);
+        info!("Copying input file");
         fs::copy(input_file, target_file).expect("Could not copy file");
     } else {
         return Err(format!("Unsupported input file: {}", input_file.display()).into());
     }
 
-    info!("{}Done", thread_name);
+    info!("Done");
 
-    info!("{}Knoll detection part 1", thread_name);
+    info!("Knoll detection part 1");
     timing.start_section("knoll detection part 1");
 
     let &Config {
@@ -255,7 +248,7 @@ pub fn process_tile(
 
     if !vegeonly && !cliffsonly {
         if basemapcontours != 0.0 {
-            info!("{}Basemap contours", thread_name);
+            info!("Basemap contours");
             let xyz2 = HeightMap::from_file(tmpfolder.join("xyz2.hmap"))
                 .expect("could not read xyz2 heightmap");
             contours::heightmap2contours(
@@ -267,15 +260,15 @@ pub fn process_tile(
             .expect("contour generation failed");
         }
         if !skipknolldetection {
-            info!("{}Knoll detection part 2", thread_name);
+            info!("Knoll detection part 2");
             timing.start_section("knoll detection part 2");
             knolls::knolldetector(config, tmpfolder).unwrap();
         }
-        info!("{}Contour generation part 1", thread_name);
+        info!("Contour generation part 1");
         timing.start_section("contour generation part 1");
         knolls::xyzknolls(config, tmpfolder).unwrap(); // modifies the heightmap (but does not change dimensions
 
-        info!("{}Contour generation part 2", thread_name);
+        info!("Contour generation part 2");
         timing.start_section("contour generation part 2");
         if !skipknolldetection {
             // contours 2.5
@@ -299,33 +292,33 @@ pub fn process_tile(
             )
             .unwrap();
         }
-        info!("{}Contour generation part 3", thread_name);
+        info!("Contour generation part 3");
         timing.start_section("contour generation part 3");
         merge::smoothjoin(config, tmpfolder).unwrap();
 
-        info!("{}Contour generation part 4", thread_name);
+        info!("Contour generation part 4");
         timing.start_section("contour generation part 4");
         knolls::dotknolls(config, tmpfolder).unwrap();
     }
 
     if !cliffsonly && !contoursonly {
-        info!("{}Vegetation generation", thread_name);
+        info!("Vegetation generation");
         timing.start_section("vegetation generation");
         vegetation::makevege(config, tmpfolder).unwrap();
     }
 
     if !vegeonly && !contoursonly {
-        info!("{}Cliff generation", thread_name);
+        info!("Cliff generation");
         timing.start_section("cliff generation");
         cliffs::makecliffs(config, tmpfolder).unwrap();
     }
     if !vegeonly && !contoursonly && !cliffsonly && config.detectbuildings {
-        info!("{}Detecting buildings", thread_name);
+        info!("Detecting buildings");
         timing.start_section("detecting buildings");
         blocks::blocks(tmpfolder).unwrap();
     }
     if !skip_rendering && !vegeonly && !contoursonly && !cliffsonly {
-        info!("{}Rendering png map with depressions", thread_name);
+        info!("Rendering png map with depressions");
         timing.start_section("rendering png map with depressions");
         render::render(
             config,
@@ -337,7 +330,7 @@ pub fn process_tile(
         )
         .unwrap();
 
-        info!("{}Rendering png map without depressions", thread_name);
+        info!("Rendering png map without depressions");
         timing.start_section("rendering png map without depressions");
         render::render(
             config,
@@ -349,14 +342,14 @@ pub fn process_tile(
         )
         .unwrap();
     } else if contoursonly {
-        info!("{}Rendering formlines", thread_name);
+        info!("Rendering formlines");
         timing.start_section("rendering formlines");
         let mut img = RgbaImage::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
         render::draw_curves(config, &mut img, tmpfolder, false, false).unwrap();
     } else {
-        info!("{}Skipped rendering", thread_name);
+        info!("Skipped rendering");
     }
-    info!("{}All done!", thread_name);
+    info!("All done!");
     Ok(())
 }
 
@@ -383,10 +376,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
     let mut rng = rand::thread_rng();
     let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
 
-    let mut thread_name = String::new();
-    if !thread.is_empty() {
-        thread_name = format!("Thread {}: ", thread);
-    }
+
 
     fs::create_dir_all(batchoutfolder).expect("Could not create output folder");
 
@@ -417,7 +407,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
             continue;
         }
 
-        info!("{}{} -> {}.png", thread_name, laz, laz);
+        info!("{} -> {}.png", laz, laz);
         File::create(format!("{}/{}.png", batchoutfolder, laz)).unwrap();
         if Path::new(&format!("header{}.xyz", thread)).exists() {
             fs::remove_file(format!("header{}.xyz", thread)).unwrap();
