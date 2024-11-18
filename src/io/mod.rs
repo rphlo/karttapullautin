@@ -1,9 +1,10 @@
 use std::{
     fs::File,
-    io::{BufWriter, Write},
+    io::{BufReader, BufWriter, Write},
     path::Path,
 };
 
+use fs::FileSystem;
 use heightmap::HeightMap;
 
 pub mod bytes;
@@ -12,9 +13,9 @@ pub mod heightmap;
 pub mod xyz;
 
 /// Helper function to convert an internal xyz file to a regular xyz file.
-pub fn internal2xyz(input: &str, output: &str) -> std::io::Result<()> {
+pub fn internal2xyz(fs: &impl FileSystem, input: &str, output: &str) -> std::io::Result<()> {
     if input.ends_with(".xyz.bin") {
-        let mut reader = xyz::XyzInternalReader::open(Path::new(input))?;
+        let mut reader = xyz::XyzInternalReader::new(BufReader::new(fs.open(Path::new(input))?))?;
         let mut writer = BufWriter::new(File::create(output)?);
 
         while let Some(record) = reader.next()? {

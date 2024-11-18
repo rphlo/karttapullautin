@@ -1,8 +1,6 @@
 use crate::io::bytes::FromToBytes;
 use std::{
-    fs::File,
-    io::{BufReader, BufWriter, Read, Seek, Write},
-    path::Path,
+    io::{Read, Seek, Write},
     time::Instant,
 };
 
@@ -63,14 +61,6 @@ pub struct XyzInternalWriter<W: Write + Seek> {
     records_written: u64,
     // for stats
     start: Option<Instant>,
-}
-
-impl XyzInternalWriter<BufWriter<File>> {
-    pub fn create(path: &Path) -> std::io::Result<Self> {
-        debug!("Writing records to {:?}", path);
-        let file = File::create(path)?;
-        Ok(Self::new(BufWriter::new(file)))
-    }
 }
 
 impl<W: Write + Seek> XyzInternalWriter<W> {
@@ -144,14 +134,6 @@ pub struct XyzInternalReader<R: Read> {
     records_read: u64,
     // for stats
     start: Option<Instant>,
-}
-
-impl XyzInternalReader<BufReader<File>> {
-    pub fn open(path: &Path) -> std::io::Result<Self> {
-        debug!("Reading records from: {:?}", path);
-        let file = File::open(path)?;
-        Self::new(BufReader::new(file))
-    }
 }
 
 impl<R: Read> XyzInternalReader<R> {

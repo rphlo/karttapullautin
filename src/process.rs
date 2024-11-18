@@ -1,10 +1,12 @@
 use image::{GrayImage, Luma, Rgb, RgbImage, Rgba, RgbaImage};
 use las::{raw::Header, Reader};
+use log::debug;
 use log::info;
 use rand::distributions;
 use rand::prelude::*;
 use std::error::Error;
-use std::fs::{self, File};
+use std::io::BufRead;
+use std::io::BufReader;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
@@ -13,17 +15,18 @@ use crate::cliffs;
 use crate::config::Config;
 use crate::contours;
 use crate::crop;
+use crate::io::fs::FileSystem;
 use crate::io::heightmap::HeightMap;
 use crate::io::xyz::XyzInternalWriter;
 use crate::knolls;
 use crate::merge;
 use crate::render;
-use crate::util::read_lines;
 use crate::util::read_lines_no_alloc;
 use crate::util::Timing;
 use crate::vegetation;
 
 pub fn process_zip(
+    fs: &impl FileSystem,
     config: &Config,
     thread: &String,
     tmpfolder: &Path,
@@ -38,11 +41,12 @@ pub fn process_zip(
 
     info!("Rendering shape files");
     timing.start_section("unzip and render shape files");
-    unzipmtk(config, tmpfolder, filenames).unwrap();
+    unzipmtk(fs, config, tmpfolder, filenames).unwrap();
 
     info!("Rendering png map with depressions");
     timing.start_section("Rendering png map with depressions");
     render::render(
+        fs,
         config,
         thread,
         tmpfolder,
@@ -55,6 +59,7 @@ pub fn process_zip(
     info!("Rendering png map without depressions");
     timing.start_section("Rendering png map without depressions");
     render::render(
+        fs,
         config,
         thread,
         tmpfolder,
@@ -68,35 +73,37 @@ pub fn process_zip(
 }
 
 pub fn unzipmtk(
+    fs: &impl FileSystem,
     config: &Config,
     tmpfolder: &Path,
     filenames: &[String],
 ) -> Result<(), Box<dyn Error>> {
     let low_file = tmpfolder.join("low.png");
     if low_file.exists() {
-        fs::remove_file(low_file).unwrap();
+        fs.remove_file(low_file).unwrap();
     }
 
     let high_file = tmpfolder.join("high.png");
     if high_file.exists() {
-        fs::remove_file(high_file).unwrap();
+        fs.remove_file(high_file).unwrap();
     }
 
     for zip_name in filenames.iter() {
         info!("Opening zip file {}", zip_name);
-        let file = fs::File::open(zip_name).unwrap();
+        let file = fs.open(zip_name).unwrap();
         let mut archive = zip::ZipArchive::new(file).unwrap();
         info!(
             "Extracting {:?} MB from {zip_name}",
             archive.decompressed_size().map(|s| s / 1024 / 1024)
         );
         archive.extract(tmpfolder).unwrap();
-        render::mtkshaperender(config, tmpfolder).unwrap();
+        render::mtkshaperender(fs, config, tmpfolder).unwrap();
     }
     Ok(())
 }
 
 pub fn process_tile(
+    fs: &impl FileSystem,
     config: &Config,
     thread: &String,
     tmpfolder: &Path,
@@ -104,7 +111,8 @@ pub fn process_tile(
     skip_rendering: bool,
 ) -> Result<(), Box<dyn Error>> {
     let mut timing = Timing::start_now("process_tile");
-    fs::create_dir_all(tmpfolder).expect("Could not create tmp folder");
+    fs.create_dir_all(tmpfolder)
+        .expect("Could not create tmp folder");
 
     let &Config {
         pnorthlinesangle,
@@ -130,8 +138,11 @@ pub fn process_tile(
 
         info!("Converting points from .xyz to internal binary format");
 
-        let mut writer = XyzInternalWriter::create(&target_file).expect("Could not create writer");
-        read_lines_no_alloc(input_file, |line| {
+        debug!("Writing records to {:?}", &target_file);
+        let mut writer = XyzInternalWriter::new(BufWriter::new(
+            fs.create(&target_file).expect("Could not create writer"),
+        ));
+        read_lines_no_alloc(fs, input_file, |line| {
             let mut parts = line.split(' ');
             let x = parts.next().unwrap().parse::<f64>().unwrap();
             let y = parts.next().unwrap().parse::<f64>().unwrap();
@@ -174,7 +185,10 @@ pub fn process_tile(
 
         let mut reader = Reader::from_path(input_file).expect("Unable to open reader");
 
-        let mut writer = XyzInternalWriter::create(&target_file).unwrap();
+        debug!("Writing records to {:?}", &target_file);
+        let mut writer = XyzInternalWriter::new(BufWriter::new(
+            fs.create(&target_file).expect("Could not create writer"),
+        ));
 
         for ptu in reader.points() {
             let pt = ptu.unwrap();
@@ -192,7 +206,8 @@ pub fn process_tile(
         writer.finish().expect("Unable to finish writing");
     } else if filename.ends_with(".xyz.bin") {
         info!("Copying input file");
-        fs::copy(input_file, target_file).expect("Could not copy file");
+        fs.copy(input_file, target_file)
+            .expect("Could not copy file");
     } else {
         return Err(format!("Unsupported input file: {}", input_file.display()).into());
     }
@@ -211,6 +226,7 @@ pub fn process_tile(
     } = config;
 
     let xyz_03 = contours::xyz2heightmap(
+        fs,
         config,
         tmpfolder,
         "xyztemp.xyz.bin", //point cloud in
@@ -221,6 +237,7 @@ pub fn process_tile(
     if vegeonly || cliffsonly {
     } else {
         contours::heightmap2contours(
+            fs,
             tmpfolder,
             scalefactor * 0.3,
             &xyz_03,
@@ -231,7 +248,7 @@ pub fn process_tile(
     drop(xyz_03);
 
     // copy the generated heightmap
-    fs::copy(tmpfolder.join("xyz_03.hmap"), tmpfolder.join("xyz2.hmap"))
+    fs.copy(tmpfolder.join("xyz_03.hmap"), tmpfolder.join("xyz2.hmap"))
         .expect("Could not copy file");
 
     let &Config {
@@ -247,6 +264,7 @@ pub fn process_tile(
             let xyz2 = HeightMap::from_file(tmpfolder.join("xyz2.hmap"))
                 .expect("could not read xyz2 heightmap");
             contours::heightmap2contours(
+                fs,
                 tmpfolder,
                 basemapcontours,
                 &xyz2,
@@ -257,11 +275,11 @@ pub fn process_tile(
         if !skipknolldetection {
             info!("Knoll detection part 2");
             timing.start_section("knoll detection part 2");
-            knolls::knolldetector(config, tmpfolder).unwrap();
+            knolls::knolldetector(fs, config, tmpfolder).unwrap();
         }
         info!("Contour generation part 1");
         timing.start_section("contour generation part 1");
-        knolls::xyzknolls(config, tmpfolder).unwrap(); // modifies the heightmap (but does not change dimensions
+        knolls::xyzknolls(fs, config, tmpfolder).unwrap(); // modifies the heightmap (but does not change dimensions
 
         info!("Contour generation part 2");
         timing.start_section("contour generation part 2");
@@ -270,6 +288,7 @@ pub fn process_tile(
             let xyz_knolls = HeightMap::from_file(tmpfolder.join("xyz_knolls.hmap"))
                 .expect("could not read xyz_knolls heightmap");
             contours::heightmap2contours(
+                fs,
                 tmpfolder,
                 halfinterval,
                 &xyz_knolls,
@@ -277,9 +296,10 @@ pub fn process_tile(
             )
             .unwrap();
         } else {
-            let hmap = contours::xyz2heightmap(config, tmpfolder, "xyztemp.xyz.bin")
+            let hmap = contours::xyz2heightmap(fs, config, tmpfolder, "xyztemp.xyz.bin")
                 .expect("could not generate heightmap");
             contours::heightmap2contours(
+                fs,
                 tmpfolder,
                 halfinterval,
                 &hmap,
@@ -289,33 +309,34 @@ pub fn process_tile(
         }
         info!("Contour generation part 3");
         timing.start_section("contour generation part 3");
-        merge::smoothjoin(config, tmpfolder).unwrap();
+        merge::smoothjoin(fs, config, tmpfolder).unwrap();
 
         info!("Contour generation part 4");
         timing.start_section("contour generation part 4");
-        knolls::dotknolls(config, tmpfolder).unwrap();
+        knolls::dotknolls(fs, config, tmpfolder).unwrap();
     }
 
     if !cliffsonly && !contoursonly {
         info!("Vegetation generation");
         timing.start_section("vegetation generation");
-        vegetation::makevege(config, tmpfolder).unwrap();
+        vegetation::makevege(fs, config, tmpfolder).unwrap();
     }
 
     if !vegeonly && !contoursonly {
         info!("Cliff generation");
         timing.start_section("cliff generation");
-        cliffs::makecliffs(config, tmpfolder).unwrap();
+        cliffs::makecliffs(fs, config, tmpfolder).unwrap();
     }
     if !vegeonly && !contoursonly && !cliffsonly && config.detectbuildings {
         info!("Detecting buildings");
         timing.start_section("detecting buildings");
-        blocks::blocks(tmpfolder).unwrap();
+        blocks::blocks(fs, tmpfolder).unwrap();
     }
     if !skip_rendering && !vegeonly && !contoursonly && !cliffsonly {
         info!("Rendering png map with depressions");
         timing.start_section("rendering png map with depressions");
         render::render(
+            fs,
             config,
             thread,
             tmpfolder,
@@ -328,6 +349,7 @@ pub fn process_tile(
         info!("Rendering png map without depressions");
         timing.start_section("rendering png map without depressions");
         render::render(
+            fs,
             config,
             thread,
             tmpfolder,
@@ -340,7 +362,7 @@ pub fn process_tile(
         info!("Rendering formlines");
         timing.start_section("rendering formlines");
         let mut img = RgbaImage::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
-        render::draw_curves(config, &mut img, tmpfolder, false, false).unwrap();
+        render::draw_curves(fs, config, &mut img, tmpfolder, false, false).unwrap();
     } else {
         info!("Skipped rendering");
     }
@@ -348,7 +370,7 @@ pub fn process_tile(
     Ok(())
 }
 
-pub fn batch_process(conf: &Config, thread: &String) {
+pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
     let &Config {
         vegeonly,
         cliffsonly,
@@ -371,9 +393,11 @@ pub fn batch_process(conf: &Config, thread: &String) {
     let mut rng = rand::thread_rng();
     let randdist = distributions::Bernoulli::new(thinfactor).unwrap();
 
-    fs::create_dir_all(batchoutfolder).expect("Could not create output folder");
+    fs.create_dir_all(batchoutfolder)
+        .expect("Could not create output folder");
 
     let mut zip_files: Vec<String> = Vec::new();
+    // TODO: use fs.list instead
     for element in Path::new(lazfolder).read_dir().unwrap() {
         let path = element.unwrap().path();
         if let Some(extension) = path.extension() {
@@ -401,12 +425,13 @@ pub fn batch_process(conf: &Config, thread: &String) {
         }
 
         info!("{} -> {}.png", laz, laz);
-        File::create(format!("{}/{}.png", batchoutfolder, laz)).unwrap();
-        if Path::new(&format!("header{}.xyz", thread)).exists() {
-            fs::remove_file(format!("header{}.xyz", thread)).unwrap();
+        fs.create(format!("{}/{}.png", batchoutfolder, laz))
+            .unwrap();
+        if fs.exists(Path::new(&format!("header{}.xyz", thread))) {
+            fs.remove_file(format!("header{}.xyz", thread)).unwrap();
         }
 
-        let mut file = File::open(format!("{}/{}", lazfolder, laz)).unwrap();
+        let mut file = fs.open(format!("{}/{}", lazfolder, laz)).unwrap();
         let header = Header::read_from(&mut file).unwrap();
         let minx = header.min_x;
         let miny = header.min_y;
@@ -419,11 +444,14 @@ pub fn batch_process(conf: &Config, thread: &String) {
         let maxy2 = maxy + 127.0;
 
         let tmp_filename = PathBuf::from(format!("temp{}.xyz.bin", thread));
-        let mut writer = XyzInternalWriter::create(&tmp_filename).expect("Could not create writer");
+        debug!("Writing records to {:?}", &tmp_filename);
+        let mut writer = XyzInternalWriter::new(BufWriter::new(
+            fs.create(&tmp_filename).expect("Could not create writer"),
+        ));
 
         for laz_p in &laz_files {
             let laz = laz_p.as_path().file_name().unwrap().to_str().unwrap();
-            let mut file = File::open(format!("{}/{}", lazfolder, laz)).unwrap();
+            let mut file = fs.open(format!("{}/{}", lazfolder, laz)).unwrap();
             let header = Header::read_from(&mut file).unwrap();
             if header.max_x > minx2
                 && header.min_x < maxx2
@@ -457,11 +485,11 @@ pub fn batch_process(conf: &Config, thread: &String) {
 
         let tmpfolder = PathBuf::from(format!("temp{}", thread));
         if zip_files.is_empty() {
-            process_tile(conf, thread, &tmpfolder, &tmp_filename, false).unwrap();
+            process_tile(fs, conf, thread, &tmpfolder, &tmp_filename, false).unwrap();
         } else {
-            process_tile(conf, thread, &tmpfolder, &tmp_filename, true).unwrap();
+            process_tile(fs, conf, thread, &tmpfolder, &tmp_filename, true).unwrap();
             if !vegeonly && !cliffsonly && !contoursonly {
-                process_zip(conf, thread, &tmpfolder, &zip_files).unwrap();
+                process_zip(fs, conf, thread, &tmpfolder, &zip_files).unwrap();
             }
         }
 
@@ -469,8 +497,8 @@ pub fn batch_process(conf: &Config, thread: &String) {
         if Path::new(&format!("pullautus{}.png", thread)).exists() {
             let path = format!("pullautus{}.pgw", thread);
             let tfw_in = Path::new(&path);
-
-            let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
+            let mut lines =
+                BufReader::new(fs.open(tfw_in).expect("PGW file does not exist")).lines();
             let tfw0 = lines
                 .next()
                 .expect("no 1 line")
@@ -511,7 +539,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
             let dx = minx - tfw4;
             let dy = -maxy + tfw5;
 
-            let pgw_file_out = File::create(tfw_in).expect("Unable to create file");
+            let pgw_file_out = fs.create(tfw_in).expect("Unable to create file");
             let mut pgw_file_out = BufWriter::new(pgw_file_out);
             write!(
                 &mut pgw_file_out,
@@ -526,7 +554,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
             .expect("Unable to write to file");
 
             pgw_file_out.flush().unwrap();
-            fs::copy(
+            fs.copy(
                 Path::new(&format!("pullautus{}.pgw", thread)),
                 Path::new(&format!("pullautus_depr{}.pgw", thread)),
             )
@@ -564,22 +592,22 @@ pub fn batch_process(conf: &Config, thread: &String) {
             img.save(Path::new(&format!("pullautus_depr{}.png", thread)))
                 .expect("could not save output png");
 
-            fs::copy(
+            fs.copy(
                 Path::new(&format!("pullautus{}.png", thread)),
                 Path::new(&format!("{}/{}.png", batchoutfolder, laz)),
             )
             .expect("Could not copy file to output folder");
-            fs::copy(
+            fs.copy(
                 Path::new(&format!("pullautus{}.pgw", thread)),
                 Path::new(&format!("{}/{}.pgw", batchoutfolder, laz)),
             )
             .expect("Could not copy file to output folder");
-            fs::copy(
+            fs.copy(
                 Path::new(&format!("pullautus_depr{}.png", thread)),
                 Path::new(&format!("{}/{}_depr.png", batchoutfolder, laz)),
             )
             .expect("Could not copy file to output folder");
-            fs::copy(
+            fs.copy(
                 Path::new(&format!("pullautus_depr{}.pgw", thread)),
                 Path::new(&format!("{}/{}_depr.pgw", batchoutfolder, laz)),
             )
@@ -590,7 +618,8 @@ pub fn batch_process(conf: &Config, thread: &String) {
             if !contoursonly && !cliffsonly {
                 let path = format!("temp{}/undergrowth.pgw", thread);
                 let tfw_in = Path::new(&path);
-                let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
+                let mut lines =
+                    BufReader::new(fs.open(tfw_in).expect("PGW file does not exist")).lines();
                 let tfw0 = lines
                     .next()
                     .expect("no 1 line")
@@ -631,11 +660,12 @@ pub fn batch_process(conf: &Config, thread: &String) {
                 let dx = minx - tfw4;
                 let dy = -maxy + tfw5;
 
-                let pgw_file_out = File::create(Path::new(&format!(
-                    "{}/{}_undergrowth.pgw",
-                    batchoutfolder, laz
-                )))
-                .expect("Unable to create file");
+                let pgw_file_out = fs
+                    .create(PathBuf::from(&format!(
+                        "{}/{}_undergrowth.pgw",
+                        batchoutfolder, laz
+                    )))
+                    .expect("Unable to create file");
                 let mut pgw_file_out = BufWriter::new(pgw_file_out);
                 write!(
                     &mut pgw_file_out,
@@ -686,7 +716,8 @@ pub fn batch_process(conf: &Config, thread: &String) {
                 img.save(Path::new(&format!("{}/{}_vege.png", batchoutfolder, laz)))
                     .expect("could not save output png");
 
-                let pgw_file_out = File::create(format!("{}/{}_vege.pgw", batchoutfolder, laz))
+                let pgw_file_out = fs
+                    .create(format!("{}/{}_vege.pgw", batchoutfolder, laz))
                     .expect("Unable to create file");
                 let mut pgw_file_out = BufWriter::new(pgw_file_out);
                 write!(
@@ -748,13 +779,13 @@ pub fn batch_process(conf: &Config, thread: &String) {
                     )))
                     .expect("could not save output png");
 
-                    fs::copy(
+                    fs.copy(
                         Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
                         Path::new(&format!("{}/{}_vege_bit.pgw", batchoutfolder, laz)),
                     )
                     .expect("Could not copy file");
 
-                    fs::copy(
+                    fs.copy(
                         Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
                         Path::new(&format!("{}/{}_undergrowth_bit.pgw", batchoutfolder, laz)),
                     )
@@ -764,6 +795,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
 
             if Path::new(&format!("temp{}/out2.dxf", thread)).exists() {
                 crop::polylinedxfcrop(
+                    fs,
                     Path::new(&format!("temp{}/out2.dxf", thread)),
                     Path::new(&format!("{}/{}_contours.dxf", batchoutfolder, laz)),
                     minx,
@@ -777,6 +809,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
             for dxf_file in dxf_files.iter() {
                 if Path::new(&format!("temp{}/{}.dxf", thread, dxf_file)).exists() {
                     crop::polylinedxfcrop(
+                        fs,
                         Path::new(&format!("temp{}/{}.dxf", thread, dxf_file)),
                         Path::new(&format!("{}/{}_{}.dxf", batchoutfolder, laz, dxf_file)),
                         minx,
@@ -789,6 +822,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
             }
             if Path::new(&format!("temp{}/dotknolls.dxf", thread)).exists() {
                 crop::pointdxfcrop(
+                    fs,
                     Path::new(&format!("temp{}/dotknolls.dxf", thread)),
                     Path::new(&format!("{}/{}_dotknolls.dxf", batchoutfolder, laz)),
                     minx,
@@ -802,6 +836,7 @@ pub fn batch_process(conf: &Config, thread: &String) {
 
         if Path::new(&format!("temp{}/basemap.dxf", thread)).exists() {
             crop::polylinedxfcrop(
+                fs,
                 Path::new(&format!("temp{}/basemap.dxf", thread)),
                 Path::new(&format!("{}/{}_basemap.dxf", batchoutfolder, laz)),
                 minx,
@@ -813,13 +848,14 @@ pub fn batch_process(conf: &Config, thread: &String) {
         }
 
         if savetempfolders {
-            fs::create_dir_all(format!("temp_{}_dir", laz))
+            fs.create_dir_all(format!("temp_{}_dir", laz))
                 .expect("Could not create output folder");
             for element in Path::new(&format!("temp{}", thread)).read_dir().unwrap() {
                 let path = element.unwrap().path();
                 if path.is_file() {
                     let filename = &path.as_path().file_name().unwrap().to_str().unwrap();
-                    fs::copy(&path, Path::new(&format!("temp_{}_dir/{}", laz, filename))).unwrap();
+                    fs.copy(&path, Path::new(&format!("temp_{}_dir/{}", laz, filename)))
+                        .unwrap();
                 }
             }
         }

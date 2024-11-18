@@ -12,10 +12,15 @@ use std::path::Path;
 
 use crate::config::{Config, Zone};
 use crate::io::bytes::FromToBytes;
+use crate::io::fs::FileSystem;
 use crate::io::heightmap::HeightMap;
 use crate::io::xyz::XyzInternalReader;
 
-pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn makevege(
+    fs: &impl FileSystem,
+    config: &Config,
+    tmpfolder: &Path,
+) -> Result<(), Box<dyn Error>> {
     info!("Generating vegetation...");
 
     let heightmap_in = tmpfolder.join("xyz2.hmap");
@@ -71,7 +76,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let mut noyhit: HashMap<(u64, u64), u64> = HashMap::default();
 
     let mut i = 0;
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let mut reader = XyzInternalReader::new(BufReader::new(fs.open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
         if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
             let x: f64 = r.x;
@@ -128,7 +133,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let step: f32 = 6.0;
 
     let mut i = 0;
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let mut reader = XyzInternalReader::new(BufReader::new(fs.open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
         if vegethin == 0 || ((i + 1) as u32) % vegethin == 0 {
             let x: f64 = r.x;
@@ -420,7 +425,7 @@ pub fn makevege(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>>
     let buildings = config.buildings;
     let water = config.water;
     if buildings > 0 || water > 0 {
-        let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+        let mut reader = XyzInternalReader::new(BufReader::new(fs.open(&xyz_file_in)?))?;
         while let Some(r) = reader.next()? {
             let (x, y) = (r.x, r.y);
             let c: u8 = r.classification;

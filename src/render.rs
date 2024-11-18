@@ -1,8 +1,8 @@
 use crate::canvas::Canvas;
 use crate::config::Config;
 use crate::io::bytes::FromToBytes;
+use crate::io::fs::FileSystem;
 use crate::io::heightmap::HeightMap;
-use crate::util::read_lines;
 use image::ImageBuffer;
 use image::Rgba;
 use imageproc::drawing::{draw_filled_circle_mut, draw_line_segment_mut};
@@ -12,7 +12,7 @@ use shapefile::dbase::{FieldValue, Record};
 use shapefile::{Shape, ShapeType};
 use std::error::Error;
 use std::f64::consts::PI;
-use std::fs::{self, File};
+use std::io::BufRead;
 use std::io::BufReader;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -83,7 +83,11 @@ impl FromStr for Mapping {
     }
 }
 
-pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn mtkshaperender(
+    fs: &impl FileSystem,
+    config: &Config,
+    tmpfolder: &Path,
+) -> Result<(), Box<dyn Error>> {
     let scalefactor = config.scalefactor;
 
     let vectorconf = &config.vectorconf;
@@ -91,7 +95,9 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
 
     let mut vectorconf_mappings: Vec<Mapping> = vec![];
     if !vectorconf.is_empty() {
-        let vectorconf_lines = fs::read_to_string(vectorconf).expect("Can not read input file");
+        let vectorconf_lines = fs
+            .read_to_string(vectorconf)
+            .expect("Can not read input file");
 
         // parse all the lines in the vectorconf file into a list of mappings
         vectorconf_mappings = vectorconf_lines
@@ -105,7 +111,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
     }
 
     let input = tmpfolder.join("vegetation.pgw");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let d: Vec<&str> = data.split('\n').collect();
 
     let x0 = d[4].trim().parse::<f64>().unwrap();
@@ -729,12 +735,12 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
         }
 
         // remove the shapefile and all associated files
-        fs::remove_file(&file).unwrap();
+        fs.remove_file(&file).unwrap();
         for ext in ["dbf", "sbx", "prj", "shx", "sbn", "cpg", "qmd"].iter() {
             file.set_extension(ext);
             if file.exists() {
                 println!("Removing file: {:?}", file);
-                fs::remove_file(&file).unwrap();
+                fs.remove_file(&file).unwrap();
             }
         }
     }
@@ -783,6 +789,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
 }
 
 pub fn render(
+    fs: &impl FileSystem,
     config: &Config,
     thread: &String,
     tmpfolder: &Path,
@@ -798,7 +805,7 @@ pub fn render(
 
     // Draw vegetation ----------
     let tfw_in = tmpfolder.join("vegetation.pgw");
-    let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
+    let mut lines = BufReader::new(fs.open(tfw_in).expect("PGW file does not exist")).lines();
     let x0 = lines
         .nth(4)
         .expect("no 4 line")
@@ -871,8 +878,8 @@ pub fn render(
                     &mut img,
                     (i as f32 + m as f32, 0.0),
                     (
-                        (i as f32 + (angle.tan() * (h as f64) * 600.0 / 254.0 / scalefactor) as f32)
-                            as f32
+                        (i as f32
+                            + (angle.tan() * (h as f64) * 600.0 / 254.0 / scalefactor) as f32)
                             + m as f32,
                         (h as f32 * 600.0 / 254.0 / scalefactor as f32),
                     ),
@@ -883,11 +890,11 @@ pub fn render(
         }
     }
 
-    draw_curves(config, &mut img, tmpfolder, nodepressions, true).unwrap();
+    draw_curves(fs, config, &mut img, tmpfolder, nodepressions, true).unwrap();
 
     // dotknolls----------
     let input = tmpfolder.join("dotknolls.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data = data.split("POINT");
 
     for (j, rec) in data.enumerate() {
@@ -984,7 +991,7 @@ pub fn render(
         ]);
     }
     let input = tmpfolder.join("c2g.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
     for (j, rec) in data.iter().enumerate() {
@@ -1068,7 +1075,7 @@ pub fn render(
     }
 
     let input = &tmpfolder.join("c3g.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
     for (j, rec) in data.iter().enumerate() {
@@ -1177,11 +1184,13 @@ pub fn render(
         .expect("could not save output png");
 
     let file_in = tmpfolder.join("vegetation.pgw");
-    let pgw_file_out = File::create(format!("{}.pgw", filename)).expect("Unable to create file");
+    let pgw_file_out = fs
+        .create(format!("{}.pgw", filename))
+        .expect("Unable to create file");
     let mut pgw_file_out = BufWriter::new(pgw_file_out);
 
-    if let Ok(lines) = read_lines(file_in) {
-        for (i, line) in lines.enumerate() {
+    if let Ok(lines) = fs.open(file_in) {
+        for (i, line) in BufReader::new(lines).lines().enumerate() {
             let ip = line.unwrap_or(String::new());
             let x: f64 = ip.parse::<f64>().unwrap();
             if i == 0 || i == 3 {
@@ -1197,6 +1206,7 @@ pub fn render(
 }
 
 pub fn draw_curves(
+    fs: &impl FileSystem,
     config: &Config,
     canvas: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
     tmpfolder: &Path,
@@ -1226,7 +1236,7 @@ pub fn draw_curves(
 
     if formline > 0.0 {
         let heightmap_in = tmpfolder.join("xyz2.hmap");
-        let mut reader = BufReader::new(File::open(heightmap_in)?);
+        let mut reader = BufReader::new(fs.open(heightmap_in)?);
         let hmap = HeightMap::from_bytes(&mut reader)?;
 
         xstart = hmap.xoffset;
@@ -1416,13 +1426,13 @@ pub fn draw_curves(
     }
 
     let input = &tmpfolder.join("out2.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
     // only create the file if condition is met
     let mut fp = if formline == 2.0 && !nodepressions {
-        let output = &tmpfolder.join("formlines.dxf");
-        let fp = File::create(output).expect("Unable to create file");
+        let output = tmpfolder.join("formlines.dxf");
+        let fp = fs.create(output).expect("Unable to create file");
         let mut fp = BufWriter::new(fp);
         fp.write_all(data[0].as_bytes())
             .expect("Could not write file");
