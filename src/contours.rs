@@ -1,11 +1,11 @@
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
-use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
+use crate::io::fs::FileSystem;
 use crate::io::heightmap::HeightMap;
 use crate::io::xyz::XyzInternalReader;
 use crate::util::read_lines_no_alloc;
@@ -15,6 +15,7 @@ use crate::vec2d::Vec2D;
 ///
 /// Loads all the points and uses those that are classified as ground or water to create a heightmap using averages.
 pub fn xyz2heightmap(
+    fs: &impl FileSystem,
     config: &Config,
     tmpfolder: &Path,
     xyzfilein: &str, // this should be point cloud in
@@ -34,7 +35,7 @@ pub fn xyz2heightmap(
     let mut hmax: f64 = f64::MIN;
 
     let xyz_file_in = tmpfolder.join(xyzfilein);
-    let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
+    let mut reader = XyzInternalReader::new(BufReader::new(fs.open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
         if r.classification == 2 || r.classification == water_class {
             let x: f64 = r.x;
@@ -77,7 +78,7 @@ pub fn xyz2heightmap(
     // a two-dimensional vector of (sum, count) pairs for computing averages
     let mut list_alt = Vec2D::new(w + 2, h + 2, (0f64, 0usize));
 
-    let mut reader = XyzInternalReader::new(BufReader::new(std::fs::File::open(&xyz_file_in)?))?;
+    let mut reader = XyzInternalReader::new(BufReader::new(fs.open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
         if r.classification == 2 || r.classification == water_class {
             let x: f64 = r.x;
@@ -227,6 +228,7 @@ pub fn xyz2heightmap(
 
 /// Creates contour lines from a heightmap.
 pub fn heightmap2contours(
+    fs: &impl FileSystem,
     tmpfolder: &Path,
     cinterval: f64,
     heightmap: &HeightMap,
@@ -275,7 +277,7 @@ pub fn heightmap2contours(
     let mut level: f64 = (hmin / v).floor() * v;
     let polyline_out = tmpfolder.join("temp_polylines.txt");
 
-    let f = File::create(&polyline_out).expect("Unable to create file");
+    let f = fs.create(&polyline_out).expect("Unable to create file");
     let mut f = BufWriter::new(f);
 
     loop {
@@ -497,7 +499,9 @@ pub fn heightmap2contours(
     // explicitly flush and drop to close the file
     drop(f);
 
-    let f = File::create(tmpfolder.join(dxffile)).expect("Unable to create file");
+    let f = fs
+        .create(tmpfolder.join(dxffile))
+        .expect("Unable to create file");
     let mut f = BufWriter::new(f);
 
     write!(
@@ -506,7 +510,7 @@ pub fn heightmap2contours(
         xmin, ymin, xmax, ymax,
     ).expect("Cannot write dxf file");
 
-    read_lines_no_alloc(polyline_out, |line| {
+    read_lines_no_alloc(fs, polyline_out, |line| {
         let parts = line.trim().split(';');
         let r = parts.collect::<Vec<&str>>();
         f.write_all("POLYLINE\r\n 66\r\n1\r\n  8\r\ncont\r\n  0\r\n".as_bytes())

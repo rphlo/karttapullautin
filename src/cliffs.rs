@@ -4,18 +4,21 @@ use rand::distributions;
 use rand::prelude::*;
 use std::borrow::Cow;
 use std::error::Error;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::{BufWriter, Write};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
 use crate::io::bytes::FromToBytes;
+use crate::io::fs::FileSystem;
 use crate::io::heightmap::HeightMap;
 use crate::io::xyz::XyzInternalReader;
 use crate::vec2d::Vec2D;
 
-pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn makecliffs(
+    fs: &impl FileSystem,
+    config: &Config,
+    tmpfolder: &Path,
+) -> Result<(), Box<dyn Error>> {
     info!("Identifying cliffs...");
 
     let &Config {
@@ -35,7 +38,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     }
 
     let heightmap_in = tmpfolder.join("xyz2.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(&heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
     // in world coordinates
@@ -93,7 +96,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let mut rng = rand::thread_rng();
     let randdist = distributions::Bernoulli::new(cliff_thin).unwrap();
 
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
+    let mut reader = XyzInternalReader::new(BufReader::new(fs.open(&xyz_file_in)?))?;
     while let Some(r) = reader.next()? {
         if cliff_thin == 1.0 || rng.sample(randdist) {
             let (x, y, h) = (r.x, r.y, r.z);
@@ -112,12 +115,16 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let w = ((xmax - xmin).floor() / 3.0) as usize;
     let h = ((ymax - ymin).floor() / 3.0) as usize;
 
-    let f2 = File::create(tmpfolder.join("c2g.dxf")).expect("Unable to create file");
+    let f2 = fs
+        .create(tmpfolder.join("c2g.dxf"))
+        .expect("Unable to create file");
     let mut f2 = BufWriter::new(f2);
 
     write!(&mut f2,"  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n", xmin, ymin, xmax, ymax).expect("Cannot write dxf file");
 
-    let f3 = File::create(tmpfolder.join("c3g.dxf")).expect("Unable to create file");
+    let f3 = fs
+        .create(tmpfolder.join("c3g.dxf"))
+        .expect("Unable to create file");
     let mut f3 = BufWriter::new(f3);
 
     write!(&mut f3, "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
@@ -275,8 +282,7 @@ pub fn makecliffs(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         Vec::<(f64, f64, f64)>::new(),
     );
 
-    let heightmap_in = tmpfolder.join("xyz2.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(&heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
     for (x, y, h) in hmap.iter() {
         if cliff_thin == 1.0 || rng.sample(randdist) {

@@ -32,6 +32,8 @@ fn main() {
     let config =
         Arc::new(Config::load_or_create_default().expect("Could not open or create config file"));
 
+    let fs = pullauta::io::fs::LocalFileSystem;
+
     let mut args: Vec<String> = env::args().collect();
 
     args.remove(0); // program name
@@ -72,6 +74,7 @@ fn main() {
     if command.is_empty() && tmpfolder.join("vegetation.png").exists() && !batch {
         info!("Rendering png map with depressions");
         pullauta::render::render(
+            &fs,
             &config,
             &thread,
             &tmpfolder,
@@ -82,6 +85,7 @@ fn main() {
         .unwrap();
         info!("Rendering png map without depressions");
         pullauta::render::render(
+            &fs,
             &config,
             &thread,
             &tmpfolder,
@@ -152,44 +156,44 @@ fn main() {
 
         let input = &args[0];
         let output = &args[1];
-        pullauta::io::internal2xyz(input, output).unwrap();
+        pullauta::io::internal2xyz(&fs, input, output).unwrap();
         return;
     }
 
     if command == "blocks" {
-        pullauta::blocks::blocks(&tmpfolder).unwrap();
+        pullauta::blocks::blocks(&fs, &tmpfolder).unwrap();
         return;
     }
 
     if command == "dotknolls" {
-        pullauta::knolls::dotknolls(&config, &tmpfolder).unwrap();
+        pullauta::knolls::dotknolls(&fs, &config, &tmpfolder).unwrap();
         return;
     }
 
     if command == "dxfmerge" || command == "merge" {
-        pullauta::merge::dxfmerge(&config).unwrap();
+        pullauta::merge::dxfmerge(&fs, &config).unwrap();
         if command == "merge" {
             let mut scale = 1.0;
             if !args.is_empty() {
                 scale = args[0].parse::<f64>().unwrap();
             }
-            pullauta::merge::pngmergevege(&config, scale).unwrap();
+            pullauta::merge::pngmergevege(&fs, &config, scale).unwrap();
         }
         return;
     }
 
     if command == "knolldetector" {
-        pullauta::knolls::knolldetector(&config, &tmpfolder).unwrap();
+        pullauta::knolls::knolldetector(&fs, &config, &tmpfolder).unwrap();
         return;
     }
 
     if command == "makecliffs" {
-        pullauta::cliffs::makecliffs(&config, &tmpfolder).unwrap();
+        pullauta::cliffs::makecliffs(&fs, &config, &tmpfolder).unwrap();
         return;
     }
 
     if command == "makevege" {
-        pullauta::vegetation::makevege(&config, &tmpfolder).unwrap();
+        pullauta::vegetation::makevege(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "pngmerge" || command == "pngmergedepr" {
@@ -197,7 +201,7 @@ fn main() {
         if !args.is_empty() {
             scale = args[0].parse::<f64>().unwrap();
         }
-        pullauta::merge::pngmerge(&config, scale, command == "pngmergedepr").unwrap();
+        pullauta::merge::pngmerge(&fs, &config, scale, command == "pngmergedepr").unwrap();
         return;
     }
 
@@ -206,7 +210,7 @@ fn main() {
         if !args.is_empty() {
             scale = args[0].parse::<f64>().unwrap();
         }
-        pullauta::merge::pngmergevege(&config, scale).unwrap();
+        pullauta::merge::pngmergevege(&fs, &config, scale).unwrap();
         return;
     }
 
@@ -217,7 +221,8 @@ fn main() {
         let miny = args[3].parse::<f64>().unwrap();
         let maxx = args[4].parse::<f64>().unwrap();
         let maxy = args[5].parse::<f64>().unwrap();
-        pullauta::crop::polylinedxfcrop(dxffilein, dxffileout, minx, miny, maxx, maxy).unwrap();
+        pullauta::crop::polylinedxfcrop(&fs, dxffilein, dxffileout, minx, miny, maxx, maxy)
+            .unwrap();
         return;
     }
 
@@ -228,24 +233,24 @@ fn main() {
         let miny = args[3].parse::<f64>().unwrap();
         let maxx = args[4].parse::<f64>().unwrap();
         let maxy = args[5].parse::<f64>().unwrap();
-        pullauta::crop::pointdxfcrop(dxffilein, dxffileout, minx, miny, maxx, maxy).unwrap();
+        pullauta::crop::pointdxfcrop(&fs, dxffilein, dxffileout, minx, miny, maxx, maxy).unwrap();
         return;
     }
 
     if command == "smoothjoin" {
-        pullauta::merge::smoothjoin(&config, &tmpfolder).unwrap();
+        pullauta::merge::smoothjoin(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "xyzknolls" {
-        pullauta::knolls::xyzknolls(&config, &tmpfolder).unwrap();
+        pullauta::knolls::xyzknolls(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "unzipmtk" {
-        pullauta::process::unzipmtk(&config, &tmpfolder, &args).unwrap();
+        pullauta::process::unzipmtk(&fs, &config, &tmpfolder, &args).unwrap();
     }
 
     if command == "mtkshaperender" {
-        pullauta::render::mtkshaperender(&config, &tmpfolder).unwrap();
+        pullauta::render::mtkshaperender(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "xyz2contours" {
@@ -253,13 +258,14 @@ fn main() {
         let xyzfilein = args[1].clone();
         let xyzfileout = args[2].clone();
         let dxffile = args[3].clone();
-        let hmap = pullauta::contours::xyz2heightmap(&config, &tmpfolder, &xyzfilein).unwrap();
+        let hmap = pullauta::contours::xyz2heightmap(&fs, &config, &tmpfolder, &xyzfilein).unwrap();
 
         if xyzfileout != "null" && !xyzfileout.is_empty() {
             hmap.to_file(xyzfileout).unwrap();
         }
 
-        pullauta::contours::heightmap2contours(&tmpfolder, cinterval, &hmap, &dxffile).unwrap();
+        pullauta::contours::heightmap2contours(&fs, &tmpfolder, cinterval, &hmap, &dxffile)
+            .unwrap();
         return;
     }
 
@@ -267,8 +273,16 @@ fn main() {
         let angle: f64 = args[0].parse::<f64>().unwrap();
         let nwidth: usize = args[1].parse::<usize>().unwrap();
         let nodepressions: bool = args.len() > 2 && args[2] == "nodepressions";
-        pullauta::render::render(&config, &thread, &tmpfolder, angle, nwidth, nodepressions)
-            .unwrap();
+        pullauta::render::render(
+            &fs,
+            &config,
+            &thread,
+            &tmpfolder,
+            angle,
+            nwidth,
+            nodepressions,
+        )
+        .unwrap();
         return;
     }
 
@@ -277,9 +291,10 @@ fn main() {
         let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
         for i in 0..proc {
             let config = config.clone();
+            let fs = fs.clone();
             let handle = thread::spawn(move || {
                 info!("Starting thread");
-                pullauta::process::batch_process(&config, &format!("{}", i + 1));
+                pullauta::process::batch_process(&config, &fs, &format!("{}", i + 1));
                 info!("Thread complete");
             });
             thread::sleep(time::Duration::from_millis(100));
@@ -299,13 +314,13 @@ fn main() {
         if thread == "0" {
             thread = String::from("");
         }
-        pullauta::process::batch_process(&config, &thread)
+        pullauta::process::batch_process(&config, &fs, &thread)
     }
 
     if command_lowercase.ends_with(".zip") {
         let mut zips: Vec<String> = vec![command];
         zips.extend(args);
-        pullauta::process::process_zip(&config, &thread, &tmpfolder, &zips).unwrap();
+        pullauta::process::process_zip(&fs, &config, &thread, &tmpfolder, &zips).unwrap();
         return;
     }
 
@@ -319,6 +334,7 @@ fn main() {
             norender = args[1].clone() == "norender";
         }
         pullauta::process::process_tile(
+            &fs,
             &config,
             &thread,
             &tmpfolder,
