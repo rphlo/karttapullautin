@@ -7,6 +7,7 @@ use std::{
 use heightmap::HeightMap;
 
 pub mod bytes;
+pub mod fs;
 pub mod heightmap;
 pub mod xyz;
 
