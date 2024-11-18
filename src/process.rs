@@ -397,28 +397,19 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
         .expect("Could not create output folder");
 
     let mut zip_files: Vec<String> = Vec::new();
-    // TODO: use fs.list instead
-    for element in Path::new(lazfolder).read_dir().unwrap() {
-        let path = element.unwrap().path();
+    let mut laz_files: Vec<PathBuf> = Vec::new();
+    for path in fs.list(lazfolder).unwrap() {
         if let Some(extension) = path.extension() {
             if extension == "zip" {
                 zip_files.push(String::from(path.to_str().unwrap()));
-            }
-        }
-    }
-
-    let mut laz_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(lazfolder).read_dir().unwrap() {
-        let path = element.unwrap().path();
-        if let Some(extension) = path.extension() {
-            if extension == "laz" || extension == "las" {
+            } else if extension == "laz" || extension == "las" {
                 laz_files.push(path);
             }
         }
     }
 
     for laz_path in &laz_files {
-        let laz = laz_path.as_path().file_name().unwrap().to_str().unwrap();
+        let laz = laz_path.file_name().unwrap().to_str().unwrap();
         let outfile = format!("{}/{}.png", batchoutfolder, laz);
         if fs.exists(&outfile) {
             info!("Skipping {}.png it exists already in output folder.", laz);
@@ -857,10 +848,9 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
         if savetempfolders {
             fs.create_dir_all(format!("temp_{}_dir", laz))
                 .expect("Could not create output folder");
-            for element in Path::new(&format!("temp{}", thread)).read_dir().unwrap() {
-                let path = element.unwrap().path();
-                if path.is_file() {
-                    let filename = &path.as_path().file_name().unwrap().to_str().unwrap();
+            for path in fs.list(format!("temp{}", thread)).unwrap() {
+                if fs.exists(&path) {
+                    let filename = path.file_name().unwrap().to_str().unwrap();
                     fs.copy(&path, Path::new(&format!("temp_{}_dir/{}", laz, filename)))
                         .unwrap();
                 }
