@@ -232,7 +232,7 @@ pub fn process_tile(
         "xyztemp.xyz.bin", //point cloud in
     )
     .expect("contour generation failed");
-    xyz_03.to_file(tmpfolder.join("xyz_03.hmap")).unwrap();
+    xyz_03.to_file(fs, tmpfolder.join("xyz_03.hmap")).unwrap();
 
     if vegeonly || cliffsonly {
     } else {
@@ -261,7 +261,7 @@ pub fn process_tile(
     if !vegeonly && !cliffsonly {
         if basemapcontours != 0.0 {
             info!("Basemap contours");
-            let xyz2 = HeightMap::from_file(tmpfolder.join("xyz2.hmap"))
+            let xyz2 = HeightMap::from_file(fs, tmpfolder.join("xyz2.hmap"))
                 .expect("could not read xyz2 heightmap");
             contours::heightmap2contours(
                 fs,
@@ -285,7 +285,7 @@ pub fn process_tile(
         timing.start_section("contour generation part 2");
         if !skipknolldetection {
             // contours 2.5
-            let xyz_knolls = HeightMap::from_file(tmpfolder.join("xyz_knolls.hmap"))
+            let xyz_knolls = HeightMap::from_file(fs, tmpfolder.join("xyz_knolls.hmap"))
                 .expect("could not read xyz_knolls heightmap");
             contours::heightmap2contours(
                 fs,
