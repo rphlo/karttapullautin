@@ -26,6 +26,9 @@ pub trait FileSystem {
     /// Remove a file.
     fn remove_file(&self, path: impl AsRef<Path>) -> Result<(), io::Error>;
 
+    /// Get the size of a file in bytes.
+    fn file_size(&self, path: impl AsRef<Path>) -> Result<u64, io::Error>;
+
     /// Copy a file.
     fn copy(&self, from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), io::Error>;
 }
@@ -66,6 +69,11 @@ impl FileSystem for LocalFileSystem {
 
     fn remove_file(&self, path: impl AsRef<Path>) -> Result<(), io::Error> {
         std::fs::remove_file(path)
+    }
+
+    fn file_size(&self, path: impl AsRef<Path>) -> Result<u64, io::Error> {
+        let metadata = std::fs::metadata(path)?;
+        Ok(metadata.len())
     }
 
     fn copy(&self, from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), io::Error> {
