@@ -2,7 +2,6 @@ use image::{Rgb, RgbImage};
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
-use std::fs::{self};
 use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
@@ -33,8 +32,8 @@ fn merge_png(
         let width = img.width() as f64;
         let height = img.height() as f64;
         let pgw = full_filename.replace(".png", ".pgw");
-        if Path::new(&pgw).exists() {
-            let input = Path::new(&pgw);
+        let input = Path::new(&pgw);
+        if fs.exists(input) {
             let data = fs.read_to_string(input).expect("Can not read input file");
             let d: Vec<&str> = data.split('\n').collect();
             let tfw0 = d[0].trim().parse::<f64>().unwrap();
@@ -67,14 +66,15 @@ fn merge_png(
         let filename = png.as_path().file_name().unwrap().to_str().unwrap();
         let png = format!("{}/{}", batchoutfolder, filename);
         let pgw = png.replace(".png", ".pgw");
-        let filesize = Path::new(&png).metadata().unwrap().len();
-        if Path::new(&png).exists() && Path::new(&pgw).exists() && filesize > 0 {
-            let img = image::open(Path::new(&png)).expect("Opening image failed");
+        let png = Path::new(&png);
+        let pgw = Path::new(&pgw);
+        let filesize = fs.file_size(png).unwrap();
+        if fs.exists(png) && fs.exists(pgw) && filesize > 0 {
+            let img = image::open(png).expect("Opening image failed");
             let width = img.width() as f64;
             let height = img.height() as f64;
 
-            let input = Path::new(&pgw);
-            let data = fs.read_to_string(input).expect("Can not read input file");
+            let data = fs.read_to_string(pgw).expect("Can not read input file");
             let d: Vec<&str> = data.split('\n').collect();
             let tfw4 = d[4].trim().parse::<f64>().unwrap();
             let tfw5 = d[5].trim().parse::<f64>().unwrap();
@@ -111,7 +111,7 @@ fn merge_png(
     )
     .expect("Could not write to file");
     tfw_out.flush().expect("Cannot flush");
-    fs::copy(
+    fs.copy(
         Path::new(&format!("{}.pgw", outfilename)),
         Path::new(&format!("{}.jgw", outfilename)),
     )
@@ -210,9 +210,8 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("contours.dxf") {
-            let input = Path::new(&dxf_filename);
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("contours.dxf") {
             let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
@@ -258,8 +257,8 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_c2f.dxf") {
-            let input = Path::new(&dxf_filename);
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_c2f.dxf") {
             let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
@@ -296,8 +295,8 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_c2g.dxf") {
-            let input = Path::new(&dxf_filename);
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_c2g.dxf") {
             let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
@@ -340,8 +339,8 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
         for dx in dxf_files.iter() {
             let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
             let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-            if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_basemap.dxf") {
-                let input = Path::new(&dxf_filename);
+            let input = Path::new(&dxf_filename);
+            if fs.exists(input) && dxf_filename.ends_with("_basemap.dxf") {
                 let data = fs.read_to_string(input).expect("Can not read input file");
                 if data.contains("POLYLINE") {
                     let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
@@ -379,8 +378,8 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_c3g.dxf") {
-            let input = Path::new(&dxf_filename);
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_c3g.dxf") {
             let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
@@ -417,8 +416,8 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_formlines.dxf") {
-            let input = Path::new(&dxf_filename);
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_formlines.dxf") {
             let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
@@ -457,8 +456,8 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_dotknolls.dxf") {
-            let input = Path::new(&dxf_filename);
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_dotknolls.dxf") {
             let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POINT") {
                 let d: Vec<&str> = data.splitn(2, "POINT").collect();
@@ -497,8 +496,8 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_detected.dxf") {
-            let input = Path::new(&dxf_filename);
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_detected.dxf") {
             let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();

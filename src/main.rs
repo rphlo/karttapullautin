@@ -1,5 +1,6 @@
 use log::info;
 use pullauta::config::Config;
+use pullauta::io::fs::FileSystem;
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -71,7 +72,7 @@ fn main() {
     let pnorthlinesangle = config.pnorthlinesangle;
     let pnorthlineswidth = config.pnorthlineswidth;
 
-    if command.is_empty() && tmpfolder.join("vegetation.png").exists() && !batch {
+    if command.is_empty() && fs.exists(tmpfolder.join("vegetation.png")) && !batch {
         info!("Rendering png map with depressions");
         pullauta::render::render(
             &fs,

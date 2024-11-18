@@ -79,12 +79,12 @@ pub fn unzipmtk(
     filenames: &[String],
 ) -> Result<(), Box<dyn Error>> {
     let low_file = tmpfolder.join("low.png");
-    if low_file.exists() {
+    if fs.exists(&low_file) {
         fs.remove_file(low_file).unwrap();
     }
 
     let high_file = tmpfolder.join("high.png");
-    if high_file.exists() {
+    if fs.exists(&high_file) {
         fs.remove_file(high_file).unwrap();
     }
 
@@ -419,16 +419,18 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
 
     for laz_path in &laz_files {
         let laz = laz_path.as_path().file_name().unwrap().to_str().unwrap();
-        if Path::new(&format!("{}/{}.png", batchoutfolder, laz)).exists() {
+        let outfile = format!("{}/{}.png", batchoutfolder, laz);
+        if fs.exists(&outfile) {
             info!("Skipping {}.png it exists already in output folder.", laz);
             continue;
         }
 
         info!("{} -> {}.png", laz, laz);
-        fs.create(format!("{}/{}.png", batchoutfolder, laz))
-            .unwrap();
-        if fs.exists(Path::new(&format!("header{}.xyz", thread))) {
-            fs.remove_file(format!("header{}.xyz", thread)).unwrap();
+        fs.create(&outfile).unwrap();
+
+        let headerfile = PathBuf::from(format!("header{}.xyz", thread));
+        if fs.exists(&headerfile) {
+            fs.remove_file(&headerfile).unwrap();
         }
 
         let mut file = fs.open(format!("{}/{}", lazfolder, laz)).unwrap();
@@ -494,11 +496,10 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
         }
 
         // crop
-        if Path::new(&format!("pullautus{}.png", thread)).exists() {
-            let path = format!("pullautus{}.pgw", thread);
-            let tfw_in = Path::new(&path);
+        let tfw_in = PathBuf::from(format!("pullautus{}.pgw", thread));
+        if fs.exists(&tfw_in) {
             let mut lines =
-                BufReader::new(fs.open(tfw_in).expect("PGW file does not exist")).lines();
+                BufReader::new(fs.open(&tfw_in).expect("PGW file does not exist")).lines();
             let tfw0 = lines
                 .next()
                 .expect("no 1 line")
@@ -536,10 +537,12 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                 .parse::<f64>()
                 .unwrap();
 
+            drop(lines);
+
             let dx = minx - tfw4;
             let dy = -maxy + tfw5;
 
-            let pgw_file_out = fs.create(tfw_in).expect("Unable to create file");
+            let pgw_file_out = fs.create(&tfw_in).expect("Unable to create file");
             let mut pgw_file_out = BufWriter::new(pgw_file_out);
             write!(
                 &mut pgw_file_out,
@@ -594,7 +597,7 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
 
             fs.copy(
                 Path::new(&format!("pullautus{}.png", thread)),
-                Path::new(&format!("{}/{}.png", batchoutfolder, laz)),
+                Path::new(&outfile),
             )
             .expect("Could not copy file to output folder");
             fs.copy(
@@ -793,10 +796,11 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                 }
             }
 
-            if Path::new(&format!("temp{}/out2.dxf", thread)).exists() {
+            let out2_path = PathBuf::from(format!("temp{}/out2.dxf", thread));
+            if fs.exists(&out2_path) {
                 crop::polylinedxfcrop(
                     fs,
-                    Path::new(&format!("temp{}/out2.dxf", thread)),
+                    &out2_path,
                     Path::new(&format!("{}/{}_contours.dxf", batchoutfolder, laz)),
                     minx,
                     miny,
@@ -807,10 +811,11 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
             }
             let dxf_files = ["c2g", "c3g", "contours03", "detected", "formlines"];
             for dxf_file in dxf_files.iter() {
-                if Path::new(&format!("temp{}/{}.dxf", thread, dxf_file)).exists() {
+                let dxf_path = PathBuf::from(format!("temp{}/{}.dxf", thread, dxf_file));
+                if fs.exists(&dxf_path) {
                     crop::polylinedxfcrop(
                         fs,
-                        Path::new(&format!("temp{}/{}.dxf", thread, dxf_file)),
+                        &dxf_path,
                         Path::new(&format!("{}/{}_{}.dxf", batchoutfolder, laz, dxf_file)),
                         minx,
                         miny,
@@ -820,10 +825,11 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                     .unwrap();
                 }
             }
-            if Path::new(&format!("temp{}/dotknolls.dxf", thread)).exists() {
+            let dotknolls_file = PathBuf::from(format!("temp{}/dotknolls.dxf", thread));
+            if fs.exists(&dotknolls_file) {
                 crop::pointdxfcrop(
                     fs,
-                    Path::new(&format!("temp{}/dotknolls.dxf", thread)),
+                    &dotknolls_file,
                     Path::new(&format!("{}/{}_dotknolls.dxf", batchoutfolder, laz)),
                     minx,
                     miny,
@@ -834,10 +840,11 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
             }
         }
 
-        if Path::new(&format!("temp{}/basemap.dxf", thread)).exists() {
+        let basemap_file = PathBuf::from(format!("temp{}/basemap.dxf", thread));
+        if fs.exists(&basemap_file) {
             crop::polylinedxfcrop(
                 fs,
-                Path::new(&format!("temp{}/basemap.dxf", thread)),
+                &basemap_file,
                 Path::new(&format!("{}/{}_basemap.dxf", batchoutfolder, laz)),
                 minx,
                 miny,

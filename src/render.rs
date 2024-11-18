@@ -105,12 +105,13 @@ pub fn mtkshaperender(
             .map(Mapping::from_str)
             .collect::<Result<Vec<_>, _>>()?;
     }
-    if !tmpfolder.join("vegetation.pgw").exists() {
+
+    let input = tmpfolder.join("vegetation.pgw");
+    if !fs.exists(&input) {
         info!("Could not find vegetation file");
         return Ok(());
     }
 
-    let input = tmpfolder.join("vegetation.pgw");
     let data = fs.read_to_string(input).expect("Can not read input file");
     let d: Vec<&str> = data.split('\n').collect();
 
@@ -738,7 +739,7 @@ pub fn mtkshaperender(
         fs.remove_file(&file).unwrap();
         for ext in ["dbf", "sbx", "prj", "shx", "sbn", "cpg", "qmd"].iter() {
             file.set_extension(ext);
-            if file.exists() {
+            if fs.exists(&file) {
                 println!("Removing file: {:?}", file);
                 fs.remove_file(&file).unwrap();
             }
@@ -773,13 +774,13 @@ pub fn mtkshaperender(
     imgblue.overlay(&mut imgbrowntop, 0.0, 0.0);
 
     let low_file = tmpfolder.join("low.png");
-    if low_file.exists() {
+    if fs.exists(&low_file) {
         let mut low = Canvas::load_from(&low_file);
         imgyellow.overlay(&mut low, 0.0, 0.0);
     }
 
     let high_file = tmpfolder.join("high.png");
-    if high_file.exists() {
+    if fs.exists(&high_file) {
         let mut high = Canvas::load_from(&high_file);
         imgblue.overlay(&mut high, 0.0, 0.0);
     }
@@ -856,7 +857,7 @@ pub fn render(
     image::imageops::overlay(&mut img, &imgug, 0, 0);
 
     let low_file = tmpfolder.join("low.png");
-    if low_file.exists() {
+    if fs.exists(&low_file) {
         let mut low_reader = image::ImageReader::open(low_file).expect("Opening low image failed");
         low_reader.no_limits();
         let low = low_reader.decode().unwrap();
@@ -925,7 +926,7 @@ pub fn render(
     }
     // blocks -------------
     let blocks_file = tmpfolder.join("blocks.png");
-    if blocks_file.exists() {
+    if fs.exists(&blocks_file) {
         let mut blockpurple_reader =
             image::ImageReader::open(blocks_file).expect("Opening blocks image failed");
         blockpurple_reader.no_limits();
@@ -958,7 +959,7 @@ pub fn render(
     }
     // blueblack -------------
     let blueblack_file = tmpfolder.join("blueblack.png");
-    if blueblack_file.exists() {
+    if fs.exists(&blueblack_file) {
         let mut imgbb_reader =
             image::ImageReader::open(blueblack_file).expect("Opening blueblack image failed");
         imgbb_reader.no_limits();
@@ -1160,7 +1161,7 @@ pub fn render(
     }
     // high -------------
     let high_file = tmpfolder.join("high.png");
-    if high_file.exists() {
+    if fs.exists(&high_file) {
         let mut high_reader =
             image::ImageReader::open(high_file).expect("Opening high image failed");
         high_reader.no_limits();
