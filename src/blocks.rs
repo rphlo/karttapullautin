@@ -4,7 +4,7 @@ use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
-use std::{error::Error, fs::File, io::BufReader, path::Path};
+use std::{error::Error, io::BufReader, path::Path};
 
 use crate::io::{bytes::FromToBytes, fs::FileSystem, heightmap::HeightMap, xyz::XyzInternalReader};
 
@@ -12,7 +12,7 @@ pub fn blocks(fs: &impl FileSystem, tmpfolder: &Path) -> Result<(), Box<dyn Erro
     info!("Identifying blocks...");
 
     let heightmap_in = tmpfolder.join("xyz2.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
     let xstartxyz = hmap.xoffset;

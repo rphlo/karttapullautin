@@ -6,7 +6,6 @@ use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::f32::consts::SQRT_2;
-use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
@@ -24,7 +23,7 @@ pub fn makevege(
     info!("Generating vegetation...");
 
     let heightmap_in = tmpfolder.join("xyz2.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
     // in world coordinates
