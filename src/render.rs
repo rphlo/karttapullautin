@@ -152,8 +152,7 @@ pub fn mtkshaperender(
     let olive = (194, 176, 33);
 
     let mut shp_files: Vec<PathBuf> = Vec::new();
-    for element in tmpfolder.read_dir().unwrap() {
-        let path = element.unwrap().path();
+    for path in fs.list(tmpfolder).unwrap() {
         if let Some(extension) = path.extension() {
             if extension == "shp" {
                 shp_files.push(path);

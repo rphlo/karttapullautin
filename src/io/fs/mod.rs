@@ -1,6 +1,6 @@
 use std::{
     io::{self, Read, Seek, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 /// Trait for file system operations.
@@ -9,7 +9,7 @@ pub trait FileSystem {
     fn create_dir_all(&self, path: impl AsRef<Path>) -> Result<(), io::Error>;
 
     /// List the contents of a directory.
-    fn list(&self, path: impl AsRef<Path>) -> Result<Vec<String>, io::Error>;
+    fn list(&self, path: impl AsRef<Path>) -> Result<Vec<PathBuf>, io::Error>;
 
     /// Check if a file exists.
     fn exists(&self, path: impl AsRef<Path>) -> bool;
@@ -42,11 +42,12 @@ impl FileSystem for LocalFileSystem {
         std::fs::create_dir_all(path)
     }
 
-    fn list(&self, path: impl AsRef<Path>) -> Result<Vec<String>, io::Error> {
+    fn list(&self, path: impl AsRef<Path>) -> Result<Vec<PathBuf>, io::Error> {
+        let path = path.as_ref();
         let mut entries = vec![];
         for entry in std::fs::read_dir(path)? {
             let entry = entry?;
-            entries.push(entry.file_name().to_string_lossy().to_string());
+            entries.push(path.join(entry.file_name()));
         }
         Ok(entries)
     }

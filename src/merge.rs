@@ -127,9 +127,8 @@ pub fn pngmergevege(
     let batchoutfolder = &config.batchoutfolder;
 
     let mut png_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(batchoutfolder).read_dir().unwrap() {
-        let path = element.unwrap().path();
-        let filename = &path.as_path().file_name().unwrap().to_str().unwrap();
+    for path in fs.list(batchoutfolder).unwrap() {
+        let filename = path.file_name().unwrap().to_str().unwrap();
         if filename.ends_with("_vege.png") {
             png_files.push(path);
         }
@@ -151,9 +150,8 @@ pub fn pngmerge(
     let batchoutfolder = &config.batchoutfolder;
 
     let mut png_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(batchoutfolder).read_dir().unwrap() {
-        let path = element.unwrap().path();
-        let filename = &path.as_path().file_name().unwrap().to_str().unwrap();
+    for path in fs.list(batchoutfolder).unwrap() {
+        let filename = path.file_name().unwrap().to_str().unwrap();
         if filename.ends_with(".png")
             && !filename.ends_with("_undergrowth.png")
             && !filename.ends_with("_undergrowth_bit.png")
@@ -182,8 +180,7 @@ pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Err
     let batchoutfolder = &config.batchoutfolder;
 
     let mut dxf_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(batchoutfolder).read_dir().unwrap() {
-        let path = element.unwrap().path();
+    for path in fs.list(batchoutfolder).unwrap() {
         if let Some(extension) = path.extension() {
             if extension == "dxf" {
                 dxf_files.push(path);
