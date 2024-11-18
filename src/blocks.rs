@@ -4,36 +4,28 @@ use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
-use std::{error::Error, path::Path};
+use std::{error::Error, fs::File, io::BufReader, path::Path};
 
-use crate::io::xyz::XyzInternalReader;
+use crate::io::{bytes::FromToBytes, heightmap::HeightMap, xyz::XyzInternalReader};
 
 pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying blocks...");
-    let xyz_file_in = tmpfolder.join("xyz2.xyz.bin");
-    let mut xmax: u64 = u64::MIN;
-    let mut ymax: u64 = u64::MIN;
 
-    let mut reader = XyzInternalReader::open(&xyz_file_in)?;
-    let first = reader.next()?.expect("should have record");
-    let second = reader.next()?.expect("should have record");
-    let (xstartxyz, ystartxyz, size) = (first.x, first.y, second.y - first.y);
+    let heightmap_in = tmpfolder.join("xyz2.hmap");
+    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let hmap = HeightMap::from_bytes(&mut reader)?;
 
+    let xstartxyz = hmap.xoffset;
+    let ystartxyz = hmap.yoffset;
+    let size = hmap.scale;
+
+    let xmax = hmap.grid.width() - 1;
+    let ymax = hmap.grid.height() - 1;
+
+    // Temporarily convert to HashMap for not having to go through all the logic below.
     let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
-    while let Some(r) = reader.next().unwrap() {
-        let (x, y, h) = (r.x, r.y, r.z);
-
-        let xx = ((x - xstartxyz) / size).floor() as u64;
-        let yy = ((y - ystartxyz) / size).floor() as u64;
-        xyz.insert((xx, yy), h);
-
-        if xmax < xx {
-            xmax = xx;
-        }
-        if ymax < yy {
-            ymax = yy;
-        }
+    for (x, y, h) in hmap.grid.iter() {
+        xyz.insert((x as u64, y as u64), h);
     }
 
     let mut img = RgbImage::from_pixel(xmax as u32 * 2, ymax as u32 * 2, Rgb([255, 255, 255]));
