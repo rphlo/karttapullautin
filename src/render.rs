@@ -1180,8 +1180,13 @@ pub fn render(
         format!("pullautus_depr{}", thread)
     };
 
-    img.save(&format!("{}.png", filename))
-        .expect("could not save output png");
+    img.write_to(
+        &mut fs
+            .create(format!("{}.png", filename))
+            .expect("could not save output png"),
+        image::ImageFormat::Png,
+    )
+    .expect("could not write image");
 
     let file_in = tmpfolder.join("vegetation.pgw");
     let pgw_file_out = fs

@@ -69,8 +69,13 @@ pub fn blocks(fs: &impl FileSystem, tmpfolder: &Path) -> Result<(), Box<dyn Erro
         }
     }
 
-    img2.save(tmpfolder.join("blocks2.png"))
-        .expect("error saving png");
+    img2.write_to(
+        &mut fs
+            .create(tmpfolder.join("blocks2.png"))
+            .expect("error saving png"),
+        image::ImageFormat::Png,
+    )
+    .expect("error saving png");
 
     let mut img = DynamicImage::ImageRgb8(img);
 
@@ -79,8 +84,13 @@ pub fn blocks(fs: &impl FileSystem, tmpfolder: &Path) -> Result<(), Box<dyn Erro
     let filter_size = 2;
     img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
 
-    img.save(tmpfolder.join("blocks.png"))
-        .expect("error saving png");
+    img.write_to(
+        &mut fs
+            .create(tmpfolder.join("blocks.png"))
+            .expect("error saving png"),
+        image::ImageFormat::Png,
+    )
+    .expect("error saving png");
     info!("Done");
     Ok(())
 }
