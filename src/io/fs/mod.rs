@@ -31,6 +31,18 @@ pub trait FileSystem {
 
     /// Copy a file.
     fn copy(&self, from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), io::Error>;
+
+    /// Write an image with the desired format.
+    fn read_image(
+        &self,
+        path: impl AsRef<Path>,
+    ) -> Result<image::DynamicImage, image::error::ImageError> {
+        image::ImageReader::new(std::io::BufReader::new(
+            self.open(path).expect("Could not open file"),
+        ))
+        .with_guessed_format()?
+        .decode()
+    }
 }
 
 /// [`FileSystem`] implementation for the local file system.

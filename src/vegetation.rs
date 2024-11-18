@@ -360,22 +360,41 @@ pub fn makevege(
     }
 
     imgye2
-        .save(tmpfolder.join("yellow.png"))
+        .write_to(
+            &mut fs
+                .create(tmpfolder.join("yellow.png"))
+                .expect("error saving png"),
+            image::ImageFormat::Png,
+        )
         .expect("could not save output png");
+
     imggr1
-        .save(tmpfolder.join("greens.png"))
+        .write_to(
+            &mut fs
+                .create(tmpfolder.join("greens.png"))
+                .expect("error saving png"),
+            image::ImageFormat::Png,
+        )
         .expect("could not save output png");
 
     let mut img = DynamicImage::ImageRgb8(imggr1);
     image::imageops::overlay(&mut img, &DynamicImage::ImageRgba8(imgye2), 0, 0);
-    img.save(tmpfolder.join("vegetation.png"))
-        .expect("could not save output png");
+
+    img.write_to(
+        &mut fs
+            .create(tmpfolder.join("vegetation.png"))
+            .expect("error saving png"),
+        image::ImageFormat::Png,
+    )
+    .expect("could not save output png");
 
     // drop img to free memory
     drop(img);
 
     if vege_bitmode {
-        let g_img = image::open(tmpfolder.join("greens.png")).expect("Opening image failed");
+        let g_img = fs
+            .read_image(tmpfolder.join("greens.png"))
+            .expect("Opening image failed");
         let mut g_img = g_img.to_rgb8();
         for pixel in g_img.pixels_mut() {
             let mut found = false;
@@ -391,11 +410,19 @@ pub fn makevege(
             }
         }
         let g_img = DynamicImage::ImageRgb8(g_img).to_luma8();
+
         g_img
-            .save(tmpfolder.join("greens_bit.png"))
+            .write_to(
+                &mut fs
+                    .create(tmpfolder.join("greens_bit.png"))
+                    .expect("error saving png"),
+                image::ImageFormat::Png,
+            )
             .expect("could not save output png");
 
-        let y_img = image::open(tmpfolder.join("yellow.png")).expect("Opening image failed");
+        let y_img = fs
+            .read_image(tmpfolder.join("yellow.png"))
+            .expect("Opening image failed");
         let mut y_img = y_img.to_rgba8();
         for pixel in y_img.pixels_mut() {
             if pixel[0] == ye2[0] && pixel[1] == ye2[1] && pixel[2] == ye2[2] && pixel[3] == ye2[3]
@@ -406,15 +433,27 @@ pub fn makevege(
             }
         }
         let y_img = DynamicImage::ImageRgba8(y_img).to_luma_alpha8();
+
         y_img
-            .save(tmpfolder.join("yellow_bit.png"))
+            .write_to(
+                &mut fs
+                    .create(tmpfolder.join("yellow_bit.png"))
+                    .expect("error saving png"),
+                image::ImageFormat::Png,
+            )
             .expect("could not save output png");
 
         let mut img_bit = DynamicImage::ImageLuma8(g_img);
         let img_bit2 = DynamicImage::ImageLumaA8(y_img);
         image::imageops::overlay(&mut img_bit, &img_bit2, 0, 0);
+
         img_bit
-            .save(tmpfolder.join("vegetation_bit.png"))
+            .write_to(
+                &mut fs
+                    .create(tmpfolder.join("vegetation_bit.png"))
+                    .expect("error saving png"),
+                image::ImageFormat::Png,
+            )
             .expect("could not save output png");
     }
 
@@ -457,7 +496,12 @@ pub fn makevege(
     }
 
     imgwater
-        .save(tmpfolder.join("blueblack.png"))
+        .write_to(
+            &mut fs
+                .create(tmpfolder.join("blueblack.png"))
+                .expect("error saving png"),
+            image::ImageFormat::Png,
+        )
         .expect("could not save output png");
 
     drop(imgwater); // explicitly drop imgwater to free memory
@@ -596,11 +640,23 @@ pub fn makevege(
         x += bf32 * step;
     }
     imgug
-        .save(tmpfolder.join("undergrowth.png"))
+        .write_to(
+            &mut fs
+                .create(tmpfolder.join("undergrowth.png"))
+                .expect("error saving png"),
+            image::ImageFormat::Png,
+        )
         .expect("could not save output png");
+
     let img_ug_bit_b = median_filter(&img_ug_bit, (bf32 * step) as u32, (bf32 * step) as u32);
+
     img_ug_bit_b
-        .save(tmpfolder.join("undergrowth_bit.png"))
+        .write_to(
+            &mut fs
+                .create(tmpfolder.join("undergrowth_bit.png"))
+                .expect("error saving png"),
+            image::ImageFormat::Png,
+        )
         .expect("could not save output png");
 
     std::fs::write(

@@ -554,7 +554,8 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
             )
             .expect("Could not copy file");
 
-            let orig_img = image::open(Path::new(&format!("pullautus{}.png", thread)))
+            let orig_img = fs
+                .read_image(format!("pullautus{}.png", thread))
                 .expect("Opening image failed");
             let mut img = RgbImage::from_pixel(
                 ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
@@ -567,10 +568,17 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                 (-dx * 600.0 / 254.0 / scalefactor) as i64,
                 (-dy * 600.0 / 254.0 / scalefactor) as i64,
             );
-            img.save(Path::new(&format!("pullautus{}.png", thread)))
-                .expect("could not save output png");
 
-            let orig_img = image::open(Path::new(&format!("pullautus_depr{}.png", thread)))
+            img.write_to(
+                &mut fs
+                    .create(format!("pullautus{}.png", thread))
+                    .expect("could not save output png"),
+                image::ImageFormat::Png,
+            )
+            .expect("could not save output png");
+
+            let orig_img = fs
+                .read_image(format!("pullautus_depr{}.png", thread))
                 .expect("Opening image failed");
             let mut img = RgbImage::from_pixel(
                 ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
@@ -583,27 +591,30 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                 (-dx * 600.0 / 254.0 / scalefactor) as i64,
                 (-dy * 600.0 / 254.0 / scalefactor) as i64,
             );
-            img.save(Path::new(&format!("pullautus_depr{}.png", thread)))
-                .expect("could not save output png");
 
+            img.write_to(
+                &mut fs
+                    .create(format!("pullautus_depr{}.png", thread))
+                    .expect("could not save output png"),
+                image::ImageFormat::Png,
+            )
+            .expect("could not save output png");
+
+            fs.copy(format!("pullautus{}.png", thread), &outfile)
+                .expect("Could not copy file to output folder");
             fs.copy(
-                Path::new(&format!("pullautus{}.png", thread)),
-                Path::new(&outfile),
+                format!("pullautus{}.pgw", thread),
+                format!("{}/{}.pgw", batchoutfolder, laz),
             )
             .expect("Could not copy file to output folder");
             fs.copy(
-                Path::new(&format!("pullautus{}.pgw", thread)),
-                Path::new(&format!("{}/{}.pgw", batchoutfolder, laz)),
+                format!("pullautus_depr{}.png", thread),
+                format!("{}/{}_depr.png", batchoutfolder, laz),
             )
             .expect("Could not copy file to output folder");
             fs.copy(
-                Path::new(&format!("pullautus_depr{}.png", thread)),
-                Path::new(&format!("{}/{}_depr.png", batchoutfolder, laz)),
-            )
-            .expect("Could not copy file to output folder");
-            fs.copy(
-                Path::new(&format!("pullautus_depr{}.pgw", thread)),
-                Path::new(&format!("{}/{}_depr.pgw", batchoutfolder, laz)),
+                format!("pullautus_depr{}.pgw", thread),
+                format!("{}/{}_depr.pgw", batchoutfolder, laz),
             )
             .expect("Could not copy file to output folder");
         }
@@ -690,10 +701,13 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                     (-dx * 600.0 / 254.0 / scalefactor) as i64,
                     (-dy * 600.0 / 254.0 / scalefactor) as i64,
                 );
-                img.save(Path::new(&format!(
-                    "{}/{}_undergrowth.png",
-                    batchoutfolder, laz
-                )))
+
+                img.write_to(
+                    &mut fs
+                        .create(format!("{}/{}_undergrowth.png", batchoutfolder, laz))
+                        .expect("could not save output png"),
+                    image::ImageFormat::Png,
+                )
                 .expect("could not save output png");
 
                 let mut orig_img_reader =
@@ -707,8 +721,14 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                     Rgb([255, 255, 255]),
                 );
                 image::imageops::overlay(&mut img, &orig_img.to_rgb8(), -dx as i64, -dy as i64);
-                img.save(Path::new(&format!("{}/{}_vege.png", batchoutfolder, laz)))
-                    .expect("could not save output png");
+
+                img.write_to(
+                    &mut fs
+                        .create(format!("{}/{}_vege.png", batchoutfolder, laz))
+                        .expect("could not save output png"),
+                    image::ImageFormat::Png,
+                )
+                .expect("could not save output png");
 
                 let pgw_file_out = fs
                     .create(format!("{}/{}_vege.pgw", batchoutfolder, laz))
@@ -743,10 +763,12 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                         -dx as i64,
                         -dy as i64,
                     );
-                    img.save(Path::new(&format!(
-                        "{}/{}_vege_bit.png",
-                        batchoutfolder, laz
-                    )))
+                    img.write_to(
+                        &mut fs
+                            .create(format!("{}/{}_vege_bit.png", batchoutfolder, laz))
+                            .expect("could not save output png"),
+                        image::ImageFormat::Png,
+                    )
                     .expect("could not save output png");
 
                     let mut orig_img_reader = image::ImageReader::open(Path::new(&format!(
@@ -767,21 +789,23 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                         -dx as i64,
                         -dy as i64,
                     );
-                    img.save(Path::new(&format!(
-                        "{}/{}_undergrowth_bit.png",
-                        batchoutfolder, laz
-                    )))
+                    img.write_to(
+                        &mut fs
+                            .create(format!("{}/{}_undergrowth_bit.png", batchoutfolder, laz))
+                            .expect("could not save output png"),
+                        image::ImageFormat::Png,
+                    )
                     .expect("could not save output png");
 
                     fs.copy(
-                        Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
-                        Path::new(&format!("{}/{}_vege_bit.pgw", batchoutfolder, laz)),
+                        format!("{}/{}_vege.pgw", batchoutfolder, laz),
+                        format!("{}/{}_vege_bit.pgw", batchoutfolder, laz),
                     )
                     .expect("Could not copy file");
 
                     fs.copy(
-                        Path::new(&format!("{}/{}_vege.pgw", batchoutfolder, laz)),
-                        Path::new(&format!("{}/{}_undergrowth_bit.pgw", batchoutfolder, laz)),
+                        format!("{}/{}_vege.pgw", batchoutfolder, laz),
+                        format!("{}/{}_undergrowth_bit.pgw", batchoutfolder, laz),
                     )
                     .expect("Could not copy file");
                 }

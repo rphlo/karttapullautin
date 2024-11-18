@@ -353,8 +353,15 @@ pub fn makecliffs(
 
     f3.write_all(b"ENDSEC\r\n  0\r\nEOF\r\n")
         .expect("Cannot write dxf file");
-    img.save(tmpfolder.join("c2.png"))
-        .expect("could not save output png");
+
+    img.write_to(
+        &mut fs
+            .create(tmpfolder.join("c2.png"))
+            .expect("could not save output png"),
+        image::ImageFormat::Png,
+    )
+    .expect("could not save output png");
+
     info!("Done");
     Ok(())
 }
