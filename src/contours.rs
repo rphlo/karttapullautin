@@ -204,17 +204,6 @@ pub fn xyz2heightmap(
     xmin += 1.0;
     ymin += 1.0;
 
-    for (_, _, ele) in avg_alt.iter_mut() {
-        let temp: f64 = (*ele / cinterval + 0.5).floor() * cinterval;
-        if (*ele - temp).abs() < 0.02 {
-            if *ele - temp < 0.0 {
-                *ele = temp - 0.02;
-            } else {
-                *ele = temp + 0.02;
-            }
-        }
-    }
-
     // make sure we do not have any NaNs
     for x in 0..avg_alt.width() {
         for y in 0..avg_alt.height() {
