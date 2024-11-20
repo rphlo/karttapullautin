@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use super::FileSystem;
 
 /// [`FileSystem`] implementation for the local file system.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct LocalFileSystem;
 
 impl FileSystem for LocalFileSystem {
@@ -30,7 +30,7 @@ impl FileSystem for LocalFileSystem {
         std::fs::read_to_string(path)
     }
 
-    fn open(&self, path: impl AsRef<Path>) -> Result<impl Read + Seek, io::Error> {
+    fn open(&self, path: impl AsRef<Path>) -> Result<impl Read + Seek + Send + 'static, io::Error> {
         std::fs::File::open(path)
     }
 

@@ -6,7 +6,7 @@ use std::{
 pub mod local;
 
 /// Trait for file system operations.
-pub trait FileSystem {
+pub trait FileSystem: std::fmt::Debug {
     /// Create a new directory.
     fn create_dir_all(&self, path: impl AsRef<Path>) -> Result<(), io::Error>;
 
@@ -17,7 +17,7 @@ pub trait FileSystem {
     fn exists(&self, path: impl AsRef<Path>) -> bool;
 
     /// Open a file for reading.
-    fn open(&self, path: impl AsRef<Path>) -> Result<impl Read + Seek, io::Error>;
+    fn open(&self, path: impl AsRef<Path>) -> Result<impl Read + Seek + Send + 'static, io::Error>;
 
     /// Open a file for writing.
     fn create(&self, path: impl AsRef<Path>) -> Result<impl Write + Seek, io::Error>;

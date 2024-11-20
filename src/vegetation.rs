@@ -6,7 +6,7 @@ use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
 use std::f32::consts::SQRT_2;
-use std::io::BufReader;
+use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 use crate::config::{Config, Zone};
@@ -659,21 +659,28 @@ pub fn makevege(
         )
         .expect("could not save output png");
 
-    std::fs::write(
-        tmpfolder.join("undergrowth.pgw"),
-        format!(
-            "{}\r\n0.0\r\n0.0\r\n{}\r\n{}\r\n{}\r\n",
-            1.0 / tmpfactor,
-            -1.0 / tmpfactor,
-            xmin,
-            ymax,
-        ),
+    let mut writer = BufWriter::new(
+        fs.create(tmpfolder.join("undergrowth.pgw"))
+            .expect("cannot create pgw file"),
+    );
+    write!(
+        &mut writer,
+        "{}\r\n0.0\r\n0.0\r\n{}\r\n{}\r\n{}\r\n",
+        1.0 / tmpfactor,
+        -1.0 / tmpfactor,
+        xmin,
+        ymax,
     )
     .expect("Cannot write pgw file");
 
-    std::fs::write(
-        tmpfolder.join("vegetation.pgw"),
-        format!("1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n", xmin, ymax),
+    let mut writer = BufWriter::new(
+        fs.create(tmpfolder.join("vegetation.pgw"))
+            .expect("cannot create pgw file"),
+    );
+    write!(
+        &mut writer,
+        "1.0\r\n0.0\r\n0.0\r\n-1.0\r\n{}\r\n{}\r\n",
+        xmin, ymax
     )
     .expect("Cannot write pgw file");
 
