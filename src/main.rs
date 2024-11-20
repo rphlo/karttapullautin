@@ -33,7 +33,7 @@ fn main() {
     let config =
         Arc::new(Config::load_or_create_default().expect("Could not open or create config file"));
 
-    let fs = pullauta::io::fs::LocalFileSystem;
+    let fs = pullauta::io::fs::local::LocalFileSystem;
 
     let mut args: Vec<String> = env::args().collect();
 
