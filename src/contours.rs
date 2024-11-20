@@ -17,7 +17,6 @@ use crate::vec2d::Vec2D;
 pub fn xyz2heightmap(
     config: &Config,
     tmpfolder: &Path,
-    cinterval: f64,  // shared parameter...
     xyzfilein: &str, // this should be point cloud in
 ) -> Result<HeightMap, Box<dyn Error>> {
     info!("Generating curves...");

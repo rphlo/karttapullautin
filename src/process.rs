@@ -213,7 +213,6 @@ pub fn process_tile(
     let xyz_03 = contours::xyz2heightmap(
         config,
         tmpfolder,
-        scalefactor * 0.3,
         "xyztemp.xyz.bin", //point cloud in
     )
     .expect("contour generation failed");
@@ -278,7 +277,7 @@ pub fn process_tile(
             )
             .unwrap();
         } else {
-            let hmap = contours::xyz2heightmap(config, tmpfolder, halfinterval, "xyztemp.xyz.bin")
+            let hmap = contours::xyz2heightmap(config, tmpfolder, "xyztemp.xyz.bin")
                 .expect("could not generate heightmap");
             contours::heightmap2contours(
                 tmpfolder,

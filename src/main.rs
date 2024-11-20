@@ -254,7 +254,7 @@ fn main() {
         let xyzfileout = args[2].clone();
         let dxffile = args[3].clone();
         let hmap =
-            pullauta::contours::xyz2heightmap(&config, &tmpfolder, cinterval, &xyzfilein).unwrap();
+            pullauta::contours::xyz2heightmap(&config, &tmpfolder, &xyzfilein).unwrap();
 
         if xyzfileout != "null" && !xyzfileout.is_empty() {
             hmap.to_file(xyzfileout).unwrap();
