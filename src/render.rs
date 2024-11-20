@@ -119,8 +119,11 @@ pub fn mtkshaperender(
     let y0 = d[5].trim().parse::<f64>().unwrap();
     // let resvege = d[0].trim().parse::<f64>().unwrap();
 
-    let mut img_reader = image::ImageReader::open(tmpfolder.join("vegetation.png"))
-        .expect("Opening vegetation image failed");
+    let mut img_reader = image::ImageReader::new(BufReader::new(
+        fs.open(tmpfolder.join("vegetation.png"))
+            .expect("Opening vegetation image failed"),
+    ));
+    img_reader.set_format(image::ImageFormat::Png);
     img_reader.no_limits();
     let img = img_reader.decode().unwrap();
     let w = img.width() as f64;
@@ -819,13 +822,19 @@ pub fn render(
         .parse::<f64>()
         .unwrap();
 
-    let mut img_reader = image::ImageReader::open(tmpfolder.join("vegetation.png"))
-        .expect("Opening vegetation image failed");
+    let mut img_reader = image::ImageReader::new(BufReader::new(
+        fs.open(tmpfolder.join("vegetation.png"))
+            .expect("Opening vegetation image failed"),
+    ));
+    img_reader.set_format(image::ImageFormat::Png);
     img_reader.no_limits();
     let img = img_reader.decode().unwrap();
 
-    let mut imgug_reader = image::ImageReader::open(tmpfolder.join("undergrowth.png"))
-        .expect("Opening undergrowth image failed");
+    let mut imgug_reader = image::ImageReader::new(BufReader::new(
+        fs.open(tmpfolder.join("undergrowth.png"))
+            .expect("Opening undergrowth image failed"),
+    ));
+    imgug_reader.set_format(image::ImageFormat::Png);
     imgug_reader.no_limits();
     let imgug = imgug_reader.decode().unwrap();
 
@@ -857,7 +866,10 @@ pub fn render(
 
     let low_file = tmpfolder.join("low.png");
     if fs.exists(&low_file) {
-        let mut low_reader = image::ImageReader::open(low_file).expect("Opening low image failed");
+        let mut low_reader = image::ImageReader::new(BufReader::new(
+            fs.open(low_file).expect("Opening low image failed"),
+        ));
+        low_reader.set_format(image::ImageFormat::Png);
         low_reader.no_limits();
         let low = low_reader.decode().unwrap();
         let low = image::imageops::resize(
@@ -926,8 +938,10 @@ pub fn render(
     // blocks -------------
     let blocks_file = tmpfolder.join("blocks.png");
     if fs.exists(&blocks_file) {
-        let mut blockpurple_reader =
-            image::ImageReader::open(blocks_file).expect("Opening blocks image failed");
+        let mut blockpurple_reader = image::ImageReader::new(BufReader::new(
+            fs.open(blocks_file).expect("Opening blocks image failed"),
+        ));
+        blockpurple_reader.set_format(image::ImageFormat::Png);
         blockpurple_reader.no_limits();
         let blockpurple = blockpurple_reader.decode().unwrap();
         let mut blockpurple = blockpurple.to_rgba8();
@@ -959,8 +973,11 @@ pub fn render(
     // blueblack -------------
     let blueblack_file = tmpfolder.join("blueblack.png");
     if fs.exists(&blueblack_file) {
-        let mut imgbb_reader =
-            image::ImageReader::open(blueblack_file).expect("Opening blueblack image failed");
+        let mut imgbb_reader = image::ImageReader::new(BufReader::new(
+            fs.open(blueblack_file)
+                .expect("Opening blueblack image failed"),
+        ));
+        imgbb_reader.set_format(image::ImageFormat::Png);
         imgbb_reader.no_limits();
         let imgbb = imgbb_reader.decode().unwrap();
         let mut imgbb = imgbb.to_rgba8();
@@ -1161,8 +1178,10 @@ pub fn render(
     // high -------------
     let high_file = tmpfolder.join("high.png");
     if fs.exists(&high_file) {
-        let mut high_reader =
-            image::ImageReader::open(high_file).expect("Opening high image failed");
+        let mut high_reader = image::ImageReader::new(BufReader::new(
+            fs.open(high_file).expect("Opening high image failed"),
+        ));
+        high_reader.set_format(image::ImageFormat::Png);
         high_reader.no_limits();
         let high = high_reader.decode().unwrap();
         let high_thumb = image::imageops::resize(
