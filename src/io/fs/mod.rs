@@ -4,6 +4,7 @@ use std::{
 };
 
 pub mod local;
+pub mod memory;
 
 /// Trait for file system operations.
 pub trait FileSystem: std::fmt::Debug {
