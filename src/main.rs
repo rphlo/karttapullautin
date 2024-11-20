@@ -1,8 +1,13 @@
+use log::debug;
 use log::info;
 use pullauta::config::Config;
+use pullauta::io::fs::memory::MemoryFileSystem;
 use pullauta::io::fs::FileSystem;
 use std::env;
 use std::fs;
+use std::io::BufReader;
+use std::io::BufWriter;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -334,14 +339,53 @@ fn main() {
         if args.len() > 1 {
             norender = args[1].clone() == "norender";
         }
+
+        // TEMP: use MemoryFileSystem for testing
+        let fs = pullauta::io::fs::memory::MemoryFileSystem::new();
+
+        debug!("Copying input file into memory fs: {}", command);
+        {
+            // copy the input file into the memory file system
+            let bytes = std::fs::read(Path::new(&command)).expect("Could not read input file");
+
+            let mut writer = fs
+                .create("input.laz")
+                .expect("Could not create output file");
+            writer
+                .write_all(&bytes)
+                .expect("Could not write to output file");
+        }
+        debug!("Done");
+
         pullauta::process::process_tile(
             &fs,
             &config,
             &thread,
             &tmpfolder,
-            Path::new(&command),
+            // Path::new(&command),
+            Path::new("input.laz"),
             norender,
         )
         .unwrap();
+
+        debug!("{:#?}", fs);
+
+        // now write the output files to disk
+        fn copy(fs: &MemoryFileSystem, name: &str) {
+            if fs.exists(name) {
+                let mut reader = BufReader::new(
+                    fs.open(name)
+                        .expect("Could not open output file for reading"),
+                );
+
+                let mut writer = BufWriter::new(
+                    std::fs::File::create(name).expect("Could not create output file"),
+                );
+
+                std::io::copy(&mut reader, &mut writer).expect("Could not copy output file");
+            }
+        }
+        copy(&fs, "pullautus.png");
+        copy(&fs, "pullautus_depr.png");
     }
 }
