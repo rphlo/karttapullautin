@@ -291,20 +291,55 @@ fn main() {
 
     let proc = config.processes;
     if command.is_empty() && batch && proc > 1 {
-        let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
-        for i in 0..proc {
-            let config = config.clone();
-            let fs = fs.clone();
-            let handle = thread::spawn(move || {
-                info!("Starting thread");
-                pullauta::process::batch_process(&config, &fs, &format!("{}", i + 1));
-                info!("Thread complete");
-            });
-            thread::sleep(time::Duration::from_millis(100));
-            handles.push(handle);
-        }
-        for handle in handles {
-            handle.join().unwrap();
+        if config.experimental_use_in_memory_fs {
+            // copy all the input files into the memory file system
+            let fs = pullauta::io::fs::memory::MemoryFileSystem::new();
+            fs.create_dir_all(&config.lazfolder).unwrap();
+            for file in fs::read_dir(&config.lazfolder).unwrap() {
+                let file = file.unwrap();
+                let path = file.path();
+                println!("Copying {} into memory fs", path.display());
+                fs.load_from_disk(&path, &path).unwrap();
+            }
+
+            // do the processing
+            let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
+            for i in 0..proc {
+                let config = config.clone();
+                let fs = fs.clone();
+                let handle = thread::spawn(move || {
+                    info!("Starting thread");
+                    pullauta::process::batch_process(&config, &fs, &format!("{}", i + 1));
+                    info!("Thread complete");
+                });
+                thread::sleep(time::Duration::from_millis(100));
+                handles.push(handle);
+            }
+            for handle in handles {
+                handle.join().unwrap();
+            }
+
+            // copy the output files back to disk
+            for path in fs.list(&config.batchoutfolder).unwrap() {
+                println!("Copying {} from memory fs to disk", path.display());
+                fs.save_to_disk(&path, &path).unwrap();
+            }
+        } else {
+            let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
+            for i in 0..proc {
+                let config = config.clone();
+                let fs = fs.clone();
+                let handle = thread::spawn(move || {
+                    info!("Starting thread");
+                    pullauta::process::batch_process(&config, &fs, &format!("{}", i + 1));
+                    info!("Thread complete");
+                });
+                thread::sleep(time::Duration::from_millis(100));
+                handles.push(handle);
+            }
+            for handle in handles {
+                handle.join().unwrap();
+            }
         }
         return;
     }
