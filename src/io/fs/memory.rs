@@ -16,6 +16,12 @@ pub struct MemoryFileSystem {
     root: Arc<RwLock<Directory>>,
 }
 
+impl Default for MemoryFileSystem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MemoryFileSystem {
     /// Create a new empty memory file system.
     pub fn new() -> Self {
@@ -38,6 +44,42 @@ impl Directory {
             subdirs: HashMap::default(),
             files: HashMap::default(),
         }
+    }
+
+    fn get_directory(&self, path: impl AsRef<Path>) -> Result<&Directory, io::Error> {
+        let path = path.as_ref();
+        let mut dir: &Directory = self;
+        for component in path.components() {
+            let name = component.as_os_str().to_string_lossy().to_string();
+            dir = match dir.subdirs.get(&name) {
+                Some(subdir) => subdir,
+                None => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::NotFound,
+                        "directory not found",
+                    ))
+                }
+            };
+        }
+        Ok(dir)
+    }
+
+    fn get_directory_mut(&mut self, path: impl AsRef<Path>) -> Result<&mut Directory, io::Error> {
+        let path = path.as_ref();
+        let mut dir: &mut Directory = self;
+        for component in path.components() {
+            let name = component.as_os_str().to_string_lossy().to_string();
+            dir = match dir.subdirs.get_mut(&name) {
+                Some(subdir) => subdir,
+                None => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::NotFound,
+                        "directory not found",
+                    ))
+                }
+            };
+        }
+        Ok(dir)
     }
 }
 
@@ -96,34 +138,27 @@ impl Drop for WritableFile {
     }
 }
 
-// struct ReadableFile(io::Cursor<Arc<[u8]>>);
-// struct ReadableFile(io::Cursor<Arc<Vec<u8>>>);
-/// Holds the data of a file. Cheap to clone because it is an Arc.
+/// Holds the data of a file. Cheap to clone because the data is behind an [`Arc`].
 #[derive(Clone)]
 struct FileData(Arc<Vec<u8>>);
+
 impl FileData {
     fn new() -> Self {
         Self(Arc::new(Vec::new()))
     }
 }
 
-// this allows us to treat FileData as a slice of bytes, which is useful for the Read trait
+/// this allows us to treat [`FileData`] as a slice of bytes, which is useful for the [`Read`] trait
 impl AsRef<[u8]> for FileData {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
-// impl Read for ReadableFile {
-//     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-//         self.0.read(buf)
-//     }
-// }
-//
-// impl Seek for ReadableFile {
-//     fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
-//         self.0.seek(pos)
-//     }
-// }
+
+fn file_parent(path: &Path) -> Result<&Path, io::Error> {
+    path.parent()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "parent directory not found"))
+}
 
 impl FileSystem for MemoryFileSystem {
     fn create_dir_all(&self, path: impl AsRef<Path>) -> Result<(), io::Error> {
@@ -144,19 +179,7 @@ impl FileSystem for MemoryFileSystem {
         let path = path.as_ref();
 
         // find the directory
-        let mut dir: &Directory = &root;
-        for component in path.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            dir = match dir.subdirs.get(&name) {
-                Some(subdir) => subdir,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        "directory not found",
-                    ))
-                }
-            };
-        }
+        let dir = root.get_directory(path)?;
 
         // list the contents
         let mut entries = vec![];
@@ -177,15 +200,10 @@ impl FileSystem for MemoryFileSystem {
             return false;
         };
 
-        // find the directory
-        let mut dir: &Directory = &root;
-        for component in parent.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            dir = match dir.subdirs.get(&name) {
-                Some(subdir) => subdir,
-                None => return false,
-            };
-        }
+        // find the directory or return false if it does not exist
+        let Some(dir) = root.get_directory(parent).ok() else {
+            return false;
+        };
 
         // get file / directory name
         let name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -198,27 +216,10 @@ impl FileSystem for MemoryFileSystem {
         let root = self.root.read().unwrap();
         let path = path.as_ref();
 
-        let Some(parent) = path.parent() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "parent directory not found",
-            ));
-        };
+        let parent = file_parent(path)?;
 
         // find the directory
-        let mut dir: &Directory = &root;
-        for component in parent.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            dir = match dir.subdirs.get(&name) {
-                Some(subdir) => subdir,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        "parent directory not found",
-                    ))
-                }
-            };
-        }
+        let dir = root.get_directory(parent)?;
 
         // get file name
         let name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -238,27 +239,10 @@ impl FileSystem for MemoryFileSystem {
         let mut root = self.root.write().unwrap();
         let path = path.as_ref();
 
-        let Some(parent) = path.parent() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "parent directory not found",
-            ));
-        };
+        let parent = file_parent(path)?;
 
         // find the parent directory
-        let mut dir: &mut Directory = &mut root;
-        for component in parent.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            dir = match dir.subdirs.get_mut(&name) {
-                Some(subdir) => subdir,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        "parent directory not found",
-                    ))
-                }
-            };
-        }
+        let dir = root.get_directory_mut(parent)?;
 
         // get file name
         let name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -279,27 +263,10 @@ impl FileSystem for MemoryFileSystem {
         let root = self.root.read().unwrap();
         let path = path.as_ref();
 
-        let Some(parent) = path.parent() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "parent directory not found",
-            ));
-        };
+        let parent = file_parent(path)?;
 
         // find the directory
-        let mut dir: &Directory = &root;
-        for component in parent.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            dir = match dir.subdirs.get(&name) {
-                Some(subdir) => subdir,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        "parent directory not found",
-                    ))
-                }
-            };
-        }
+        let dir = root.get_directory(parent)?;
 
         // get file name
         let name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -325,27 +292,10 @@ impl FileSystem for MemoryFileSystem {
         let mut root = self.root.write().unwrap();
         let path = path.as_ref();
 
-        let Some(parent) = path.parent() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "parent directory not found",
-            ));
-        };
+        let parent = file_parent(path)?;
 
         // find the directory
-        let mut dir: &mut Directory = &mut root;
-        for component in parent.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            dir = match dir.subdirs.get_mut(&name) {
-                Some(subdir) => subdir,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        "parent directory not found",
-                    ))
-                }
-            };
-        }
+        let dir = root.get_directory_mut(parent)?;
 
         // get file name
         let name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -362,27 +312,10 @@ impl FileSystem for MemoryFileSystem {
         let root = self.root.read().unwrap();
         let path = path.as_ref();
 
-        let Some(parent) = path.parent() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "parent directory not found",
-            ));
-        };
+        let parent = file_parent(path)?;
 
         // find the directory
-        let mut dir: &Directory = &root;
-        for component in parent.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            dir = match dir.subdirs.get(&name) {
-                Some(subdir) => subdir,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        "parent directory not found",
-                    ))
-                }
-            };
-        }
+        let dir = root.get_directory(parent)?;
 
         // get file name
         let name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -402,34 +335,12 @@ impl FileSystem for MemoryFileSystem {
         let from = from.as_ref();
         let to = to.as_ref();
 
-        let Some(from_parent) = from.parent() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "from parent directory not found",
-            ));
-        };
-
-        let Some(to_parent) = to.parent() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "to parent directory not found",
-            ));
-        };
+        let from_parent = file_parent(from)?;
+        let to_parent = file_parent(to)?;
 
         // find the from directory
-        let mut from_dir: &Directory = &root;
-        for component in from_parent.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            from_dir = match from_dir.subdirs.get(&name) {
-                Some(subdir) => subdir,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        "from parent directory not found",
-                    ))
-                }
-            };
-        }
+        let from_dir = root.get_directory(from_parent)?;
+
         // get the from file entry and clone the data
         let from_name = from.file_name().unwrap().to_string_lossy().to_string();
         let from_file = match from_dir.files.get(&from_name) {
@@ -443,19 +354,7 @@ impl FileSystem for MemoryFileSystem {
             .clone();
 
         // find the to directory
-        let mut to_dir: &mut Directory = &mut root;
-        for component in to_parent.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
-            to_dir = match to_dir.subdirs.get_mut(&name) {
-                Some(subdir) => subdir,
-                None => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::NotFound,
-                        "from parent directory not found",
-                    ))
-                }
-            };
-        }
+        let to_dir = root.get_directory_mut(to_parent)?;
 
         // get file names
         let to_name = to.file_name().unwrap().to_string_lossy().to_string();
