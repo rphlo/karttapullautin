@@ -3,7 +3,7 @@ use rustc_hash::FxHashMap as HashMap;
 
 use core::str;
 use std::io::{self, Read, Seek, Write};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 /// An in-memory implementation of [`FileSystem`] for use whenever there is no access to a local
@@ -73,7 +73,10 @@ impl Directory {
         let path = path.as_ref();
         let mut dir: &Directory = self;
         for component in path.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
+            let Component::Normal(component) = component else {
+                continue;
+            };
+            let name = component.to_string_lossy().to_string();
             dir = match dir.subdirs.get(&name) {
                 Some(subdir) => subdir,
                 None => {
@@ -91,7 +94,10 @@ impl Directory {
         let path = path.as_ref();
         let mut dir: &mut Directory = self;
         for component in path.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
+            let Component::Normal(component) = component else {
+                continue;
+            };
+            let name = component.to_string_lossy().to_string();
             dir = match dir.subdirs.get_mut(&name) {
                 Some(subdir) => subdir,
                 None => {
@@ -191,7 +197,10 @@ impl FileSystem for MemoryFileSystem {
         // make sure all directories in the path exist
         let mut dir: &mut Directory = &mut root;
         for component in path.components() {
-            let name = component.as_os_str().to_string_lossy().to_string();
+            let Component::Normal(component) = component else {
+                continue;
+            };
+            let name = component.to_string_lossy().to_string();
             dir = dir.subdirs.entry(name).or_insert_with(Directory::new);
         }
         Ok(())
