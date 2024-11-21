@@ -117,9 +117,9 @@ fi
 cd "$RELEASE_DIR"
 
 if [[ "$VERSION" == "latest" ]]; then
-  TAG==$(curl -sL https://api.github.com/repos/rphlo/karttapullautin/releases/latest | jq -r ".tag_name")
+  TAG=$(curl -sL https://api.github.com/repos/rphlo/karttapullautin/releases/latest | jq -r ".tag_name")
 else
-  TAG="$VERSION"
+  TAG=$VERSION
 fi
 if [ ! -d "$TAG" ]; then
     echo "Directory does not exist. Creating..."
