@@ -29,6 +29,29 @@ impl MemoryFileSystem {
             root: Arc::new(RwLock::new(Directory::new())),
         }
     }
+
+    /// Load the contents of a file on the local file system into the memory file system.
+    pub fn load_from_disk(
+        &self,
+        from_disk: impl AsRef<Path>,
+        to_internal: impl AsRef<Path>,
+    ) -> io::Result<()> {
+        let bytes = std::fs::read(from_disk)?;
+        let mut writer = self.create(to_internal)?;
+        writer.write_all(&bytes)?;
+        Ok(())
+    }
+    /// Write the contents of a  file in the memory file system to the local file system.
+    pub fn save_to_disk(
+        &self,
+        from_internal: impl AsRef<Path>,
+        to_external: impl AsRef<Path>,
+    ) -> io::Result<()> {
+        let mut reader = io::BufReader::new(self.open(from_internal)?);
+        let mut writer = io::BufWriter::new(std::fs::File::create(to_external)?);
+        std::io::copy(&mut reader, &mut writer)?;
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
