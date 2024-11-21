@@ -174,5 +174,13 @@ cd ..
 
 echo -e "\n############ Comparing the outputs ############\n"
 
-pngcomp "$WORK_DIR/pullautus.png" "$RELEASE_DIR/$TAG/pullautus.png" | tee -a pngcomp.txt
-pngcomp "$WORK_DIR/pullautus_depr.png" "$RELEASE_DIR/$TAG/pullautus_depr.png" | tee -a pngcomp_depr.txt
+if command -v pngcomp &> /dev/null; then
+  pngcomp "$WORK_DIR/pullautus.png" "$RELEASE_DIR/$TAG/pullautus.png" | tee -a "pngcomp_$TAG.txt"
+  pngcomp "$WORK_DIR/pullautus_depr.png" "$RELEASE_DIR/$TAG/pullautus_depr.png" | tee -a "pngcomp_depr_$TAG.txt"
+fi
+
+if command -v magick &> /dev/null; then
+  magick compare "$WORK_DIR/pullautus.png" "$RELEASE_DIR/$TAG/pullautus.png" "pullautus_comp_$TAG.png"
+  magick compare "$WORK_DIR/pullautus_depr.png" "$RELEASE_DIR/$TAG/pullautus_depr.png" "pullautus_comp_depr_$TAG.png"
+fi
+
