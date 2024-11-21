@@ -7,6 +7,8 @@ pub struct Config {
     pub batch: bool,
     pub processes: u64,
 
+    pub experimental_use_in_memory_fs: bool,
+
     // only one can be set at a time
     pub vegeonly: bool,
     pub cliffsonly: bool,
@@ -152,6 +154,8 @@ impl Config {
         let pnorthlineswidth: usize = parse_typed(gs, "northlineswidth", 0);
 
         let processes: u64 = gs.get("processes").unwrap().parse::<u64>().unwrap();
+        let experimental_use_in_memory_fs: bool =
+            gs.get("experimental_use_in_memory_fs").unwrap_or("0") == "1";
 
         let lazfolder = gs.get("lazfolder").unwrap_or("").to_string();
         let batchoutfolder = gs.get("batchoutfolder").unwrap_or("").to_string();
@@ -327,6 +331,7 @@ impl Config {
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             processes,
+            experimental_use_in_memory_fs,
             vegeonly,
             cliffsonly,
             contoursonly,

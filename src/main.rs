@@ -337,37 +337,48 @@ fn main() {
             norender = args[1].clone() == "norender";
         }
 
-        // TEMP: use MemoryFileSystem for testing
-        let fs = pullauta::io::fs::memory::MemoryFileSystem::new();
+        if config.experimental_use_in_memory_fs {
+            let fs = pullauta::io::fs::memory::MemoryFileSystem::new();
 
-        debug!("Copying input file into memory fs: {}", command);
-        // copy the input file into the memory file system
-        fs.load_from_disk(Path::new(&command), Path::new("input.laz"))
-            .expect("Could not copy input file into memory fs");
+            debug!("Copying input file into memory fs: {}", command);
+            // copy the input file into the memory file system
+            fs.load_from_disk(Path::new(&command), Path::new("input.laz"))
+                .expect("Could not copy input file into memory fs");
 
-        debug!("Done");
+            debug!("Done");
 
-        pullauta::process::process_tile(
-            &fs,
-            &config,
-            &thread,
-            &tmpfolder,
-            // Path::new(&command),
-            Path::new("input.laz"),
-            norender,
-        )
-        .unwrap();
+            pullauta::process::process_tile(
+                &fs,
+                &config,
+                &thread,
+                &tmpfolder,
+                // Path::new(&command),
+                Path::new("input.laz"),
+                norender,
+            )
+            .unwrap();
 
-        debug!("{:#?}", fs);
+            debug!("{:#?}", fs);
 
-        // now write the output files to disk
-        fn copy(fs: &MemoryFileSystem, name: &str) {
-            if fs.exists(name) {
-                fs.save_to_disk(name, name)
-                    .expect("Could not copy from memory fs to disk");
+            // now write the output files to disk
+            fn copy(fs: &MemoryFileSystem, name: &str) {
+                if fs.exists(name) {
+                    fs.save_to_disk(name, name)
+                        .expect("Could not copy from memory fs to disk");
+                }
             }
+            copy(&fs, "pullautus.png");
+            copy(&fs, "pullautus_depr.png");
+        } else {
+            pullauta::process::process_tile(
+                &fs,
+                &config,
+                &thread,
+                &tmpfolder,
+                Path::new(&command),
+                norender,
+            )
+            .unwrap();
         }
-        copy(&fs, "pullautus.png");
-        copy(&fs, "pullautus_depr.png");
     }
 }
