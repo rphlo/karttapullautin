@@ -6,25 +6,34 @@ against the latest release
 where:
 	-h  show this help text
 	-v  use a specific release version
-	-p  location of pullauta executable to test"
+	-p  location of pullauta executable to test
+	-i  location of the pullauta.ini file to use
+"
 
 VERSION="latest"
 PULLAUTA="auto"
-while getopts "hp:v:" opt; do
+INI="auto"
+while getopts "hp:v:i:" opt; do
 	case $opt in
 		h) echo "$usage"
 		exit
 		;;
 		v) VERSION="$OPTARG"
-		echo " version $VERSION"
 		;;
 		p) PULLAUTA="$OPTARG"
-		echo "pullauta $PULLAUTA"
 		if [ ! -e "$PULLAUTA" ] || [ ! -x "$PULLAUTA" ]; then
 			echo "The file $PULLAUTA either does not exist or is not executable."
 			exit 1
 		else
 			PULLAUTA=$(realpath "$PULLAUTA")
+		fi
+		;;
+		i) INI="$OPTARG"
+		if [ ! -e "$INI" ] || [ "$INI" == *.ini ]; then
+			echo "The file $INI either does not exist or does not have the correct extension."
+			exit 1
+		else
+			INI=$(realpath "$INI")
 		fi
 		;;
 		\?) echo "Invalid option -$OPTARG" >&2
@@ -79,6 +88,7 @@ if [ ! -d "$DIR" ]; then
 		echo "Directory created: $DIR"
 	else
 		echo "Failed to create directory."
+		exit 1
 	fi
 else
 	echo "Directory already exists: $DIR"
@@ -91,6 +101,7 @@ if [ ! -f "$FILE" ]; then
 		echo "Download complete: $FILE"
 	else
 		echo "Failed to download file."
+		exit 1
 	fi
 fi
 
@@ -106,6 +117,7 @@ if [ ! -d "$WORK_DIR" ]; then
 		echo "Directory created: $WORK_DIR"
 	else
 		echo "Failed to create directory."
+		exit 1
 	fi
 else
 	echo "Directory already exists: $WORK_DIR"
@@ -115,11 +127,15 @@ else
 		echo "Contents cleared from $WORK_DIR."
 	else
 		echo "Failed to clear contents of $WORK_DIR."
+		exit 1
 	fi
 fi
+WORK_DIR=$(realpath "$WORK_DIR")
 
 cd "$WORK_DIR"
-
+if [ "$INI" != "auto" ]; then
+	cp $INI "pullauta.ini"
+fi
 "$PULLAUTA" ../test_file.laz
 
 cd ..
@@ -134,11 +150,13 @@ if [ ! -d "$RELEASE_DIR" ]; then
 		echo "Directory created: $RELEASE_DIR"
 	else
 		echo "Failed to create directory."
+		exit 1
 	fi
 else
 		echo "Directory already exists: $RELEASE_DIR"
 fi
 
+RELEASE_DIR=$(realpath "$RELEASE_DIR")
 cd "$RELEASE_DIR"
 
 if [[ "$VERSION" == "latest" ]]; then
@@ -186,6 +204,12 @@ if [ ! -d "$TAG" ]; then
 
 		curl -L $URL | tar xvz
 
+		if [ "$INI" != "auto" ]; then
+			cp $INI "pullauta.ini"
+			echo "$INI" > "whatInit.txt"
+		else
+			echo "auto" > "whatInit.txt"
+		fi
 		./pullauta ../../test_file.laz
 		cd ..
 	else
@@ -193,11 +217,37 @@ if [ ! -d "$TAG" ]; then
 	fi
 else
 	echo "Directory already exists: $TAG"
+	cd $TAG
+	if [ "$INI" != "auto" ]; then
+		if ! diff <(grep -Ev '^\s*$|^\s*#' "$INI") <(grep -Ev '^\s*$|^\s*#' "pullauta.ini") > /dev/null; then
+			cp $INI "pullauta.ini"
+			echo "$INI" > "whatInit.txt"
+			./pullauta ../../test_file.laz
+		fi
+	else
+		if [ "$(<"whatInit.txt")" != "auto" ]; then
+			echo "auto" > "whatInit.txt"
+			rm "pullauta.ini"
+			./pullauta ../../test_file.laz
+		fi
+	fi
+	cd ..
 fi
 
 cd ..
 
 echo -e "\n############ Comparing the outputs ############\n"
+
+CURRENT="Results-$(date +'%Y%m%d_%H%M%S')"
+mkdir "$CURRENT"
+cd "$CURRENT"
+
+cp "$WORK_DIR/pullauta.ini" "pullauta.ini"
+printf "%s\n" ".ini file: $INI" >> "specs.txt"
+printf "%s\n" "release: $TAG" >> "specs.txt"
+printf "%s\n" "commit: $(git rev-parse --short HEAD)" >> "specs.txt"
+printf "%s\n" "status:" >> "specs.txt"
+printf "%s\n" "$(git status -s)" >> "specs.txt"
 
 if command -v pngcomp &> /dev/null; then
 	pngcomp "$WORK_DIR/pullautus.png" "$RELEASE_DIR/$TAG/pullautus.png" | tee -a "pngcomp_$TAG.txt"
