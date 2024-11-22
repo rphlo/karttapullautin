@@ -177,10 +177,16 @@ echo -e "\n############ Comparing the outputs ############\n"
 if command -v pngcomp &> /dev/null; then
 	pngcomp "$WORK_DIR/pullautus.png" "$RELEASE_DIR/$TAG/pullautus.png" | tee -a "pngcomp_$TAG.txt"
 	pngcomp "$WORK_DIR/pullautus_depr.png" "$RELEASE_DIR/$TAG/pullautus_depr.png" | tee -a "pngcomp_depr_$TAG.txt"
+else
+	echo "Comparison failed. Please install the pngnq package."
+	exit 1
 fi
 
 if command -v magick &> /dev/null; then
 	magick compare "$WORK_DIR/pullautus.png" "$RELEASE_DIR/$TAG/pullautus.png" "pullautus_comp_$TAG.png"
 	magick compare "$WORK_DIR/pullautus_depr.png" "$RELEASE_DIR/$TAG/pullautus_depr.png" "pullautus_comp_depr_$TAG.png"
+else
+	echo "Comparison failed. Please install the imagemagick package."
+	exit 1
 fi
 
