@@ -72,12 +72,8 @@ impl Directory {
     fn get_directory(&self, path: impl AsRef<Path>) -> Result<&Directory, io::Error> {
         let path = path.as_ref();
         let mut dir: &Directory = self;
-        for component in path.components() {
-            let Component::Normal(component) = component else {
-                continue;
-            };
-            let name = component.to_string_lossy().to_string();
-            dir = match dir.subdirs.get(&name) {
+        for name in &resolve_path(path)? {
+            dir = match dir.subdirs.get(name) {
                 Some(subdir) => subdir,
                 None => {
                     return Err(io::Error::new(
@@ -93,12 +89,8 @@ impl Directory {
     fn get_directory_mut(&mut self, path: impl AsRef<Path>) -> Result<&mut Directory, io::Error> {
         let path = path.as_ref();
         let mut dir: &mut Directory = self;
-        for component in path.components() {
-            let Component::Normal(component) = component else {
-                continue;
-            };
-            let name = component.to_string_lossy().to_string();
-            dir = match dir.subdirs.get_mut(&name) {
+        for name in &resolve_path(path)? {
+            dir = match dir.subdirs.get_mut(name) {
                 Some(subdir) => subdir,
                 None => {
                     return Err(io::Error::new(
@@ -110,6 +102,45 @@ impl Directory {
         }
         Ok(dir)
     }
+}
+
+/// Resolve a path to a canonical path (removing "..", "." and "/") containing only the direct path coponents.
+fn resolve_path(path: &Path) -> Result<Vec<String>, io::Error> {
+    let mut part: Vec<String> = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::Normal(component) => {
+                let name = component.to_string_lossy().to_string();
+
+                part.push(name);
+            }
+            Component::ParentDir => {
+                if part.pop().is_none() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::NotFound,
+                        "parent directory not found",
+                    ));
+                }
+            }
+            Component::CurDir => {}
+            Component::RootDir => {
+                part.clear();
+            }
+            Component::Prefix(_) => {
+                return Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "path prefix not supported",
+                ));
+            }
+        }
+    }
+    Ok(part)
+}
+
+/// Get the parent directory of a file or directory path.
+fn file_parent(path: &Path) -> Result<&Path, io::Error> {
+    path.parent()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "parent directory not found"))
 }
 
 #[derive(Debug)]
@@ -184,11 +215,6 @@ impl AsRef<[u8]> for FileData {
     }
 }
 
-fn file_parent(path: &Path) -> Result<&Path, io::Error> {
-    path.parent()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "parent directory not found"))
-}
-
 impl FileSystem for MemoryFileSystem {
     fn create_dir_all(&self, path: impl AsRef<Path>) -> Result<(), io::Error> {
         let mut root = self.root.write().unwrap();
@@ -196,11 +222,7 @@ impl FileSystem for MemoryFileSystem {
 
         // make sure all directories in the path exist
         let mut dir: &mut Directory = &mut root;
-        for component in path.components() {
-            let Component::Normal(component) = component else {
-                continue;
-            };
-            let name = component.to_string_lossy().to_string();
+        for name in resolve_path(path)? {
             dir = dir.subdirs.entry(name).or_insert_with(Directory::new);
         }
         Ok(())
@@ -407,29 +429,72 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_path_components() {
-        // setup simple folder structure
-        let mut dir = Directory::new();
-        let mut subdir = Directory::new();
-        subdir
-            .subdirs
-            .insert("folder2".to_string(), Directory::new());
-        dir.subdirs.insert("folder1".to_string(), subdir);
+    fn test_resolve_path() {
+        assert_eq!(resolve_path(Path::new("folder")).unwrap(), ["folder"]);
+        assert_eq!(
+            resolve_path(Path::new("folder/folder2")).unwrap(),
+            ["folder", "folder2"]
+        );
+        assert_eq!(
+            resolve_path(Path::new("folder/folder2/folder3")).unwrap(),
+            ["folder", "folder2", "folder3"]
+        );
+        assert_eq!(
+            resolve_path(Path::new("folder/../folder2")).unwrap(),
+            ["folder2"]
+        );
+        assert_eq!(
+            resolve_path(Path::new("./folder/../folder2")).unwrap(),
+            ["folder2"]
+        );
+        assert_eq!(
+            resolve_path(Path::new("folder/./folder2")).unwrap(),
+            ["folder", "folder2"]
+        );
+        assert_eq!(
+            resolve_path(Path::new("folder/folder2/./folder3")).unwrap(),
+            ["folder", "folder2", "folder3"]
+        );
+        assert_eq!(
+            resolve_path(Path::new("folder/folder2/../folder3")).unwrap(),
+            ["folder", "folder3"]
+        );
+        assert_eq!(
+            resolve_path(Path::new("folder/folder2/../../folder3")).unwrap(),
+            ["folder3"]
+        );
+        assert_eq!(
+            resolve_path(Path::new("/folder/../folder2")).unwrap(),
+            ["folder2"]
+        );
 
-        // make sure all of these find the correct directory
-        dir.get_directory(Path::new("folder1")).unwrap();
-        dir.get_directory(Path::new("./folder1/folder2")).unwrap();
-        dir.get_directory(Path::new("./folder1/./folder2")).unwrap();
-        dir.get_directory(Path::new("./folder1/../folder1/folder2"))
-            .unwrap();
+        // test error cases
+        assert!(resolve_path(Path::new("..")).is_err());
+        assert!(resolve_path(Path::new("folder/../..")).is_err());
+        assert!(resolve_path(Path::new("folder/folder2/../../..")).is_err());
+    }
 
-        dir.get_directory_mut(Path::new("folder1")).unwrap();
-        dir.get_directory_mut(Path::new("./folder1/folder2"))
-            .unwrap();
-        dir.get_directory_mut(Path::new("./folder1/./folder2"))
-            .unwrap();
-        dir.get_directory_mut(Path::new("./folder1/../folder1/folder2"))
-            .unwrap();
+    #[test]
+    fn test_file_parent() {
+        assert_eq!(file_parent(Path::new("folder")).unwrap(), Path::new(""));
+        assert_eq!(
+            file_parent(Path::new("folder/folder2")).unwrap(),
+            Path::new("folder")
+        );
+        assert_eq!(
+            file_parent(Path::new("folder/folder2/folder3")).unwrap(),
+            Path::new("folder/folder2")
+        );
+        assert_eq!(
+            file_parent(Path::new("folder/../folder2")).unwrap(),
+            Path::new("folder/..")
+        );
+
+        assert_eq!(file_parent(Path::new("./")).unwrap(), Path::new(""));
+
+        // test error cases
+        assert!(file_parent(Path::new("/")).is_err());
+        assert!(file_parent(Path::new("")).is_err());
     }
 
     #[test]
