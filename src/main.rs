@@ -321,7 +321,7 @@ fn main() {
 
             // copy the output files back to disk
             for path in fs.list(&config.batchoutfolder).unwrap() {
-                println!("Copying {} from memory fs to disk", path.display());
+                info!("Copying {} from memory fs to disk", path.display());
                 fs.save_to_disk(&path, &path).unwrap();
             }
         } else {
@@ -393,11 +393,10 @@ fn main() {
             )
             .unwrap();
 
-            debug!("{:#?}", fs);
-
             // now write the output files to disk
             fn copy(fs: &MemoryFileSystem, name: &str) {
                 if fs.exists(name) {
+                    info!("Copying {} from memory fs to disk", name);
                     fs.save_to_disk(name, name)
                         .expect("Could not copy from memory fs to disk");
                 }
