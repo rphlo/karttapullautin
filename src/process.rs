@@ -39,9 +39,12 @@ pub fn process_zip(
         ..
     } = config;
 
-    info!("Rendering shape files");
-    timing.start_section("unzip and render shape files");
-    crate::shapefile::unzipmtk(fs, config, tmpfolder, filenames).unwrap();
+    #[cfg(feature = "shapefile")]
+    {
+        info!("Rendering shape files");
+        timing.start_section("unzip and render shape files");
+        crate::shapefile::unzipmtk(fs, config, tmpfolder, filenames).unwrap();
+    }
 
     info!("Rendering png map with depressions");
     timing.start_section("Rendering png map with depressions");
