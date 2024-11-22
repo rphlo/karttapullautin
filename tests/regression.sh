@@ -1,8 +1,18 @@
 #! /bin/bash
 
+usage="$(basename "$0") [-h] [-v latest] -- test the current build of pullauta (assumed to be in target/release/) \
+against the latest release
+
+where:
+	-h  show this help text
+	-v  use a specific release version"
+
 VERSION="latest"
-while getopts ":v:" opt; do
+while getopts ":hv:" opt; do
 	case $opt in
+		h) echo "$usage"
+		exit
+		;;
 		v) VERSION="$OPTARG"
 		;;
 		\?) echo "Invalid option -$OPTARG" >&2
