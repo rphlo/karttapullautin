@@ -1,20 +1,21 @@
 use std::{
-    fs::File,
-    io::{BufWriter, Write},
+    io::{BufReader, BufWriter, Write},
     path::Path,
 };
 
+use fs::FileSystem;
 use heightmap::HeightMap;
 
 pub mod bytes;
+pub mod fs;
 pub mod heightmap;
 pub mod xyz;
 
 /// Helper function to convert an internal xyz file to a regular xyz file.
-pub fn internal2xyz(input: &str, output: &str) -> std::io::Result<()> {
+pub fn internal2xyz(fs: &impl FileSystem, input: &str, output: &str) -> std::io::Result<()> {
     if input.ends_with(".xyz.bin") {
-        let mut reader = xyz::XyzInternalReader::open(Path::new(input))?;
-        let mut writer = BufWriter::new(File::create(output)?);
+        let mut reader = xyz::XyzInternalReader::new(BufReader::new(fs.open(Path::new(input))?))?;
+        let mut writer = BufWriter::new(fs.create(output)?);
 
         while let Some(record) = reader.next()? {
             writeln!(
@@ -29,8 +30,8 @@ pub fn internal2xyz(input: &str, output: &str) -> std::io::Result<()> {
             )?;
         }
     } else if input.ends_with(".hmap") {
-        let hmap = HeightMap::from_file(input)?;
-        let mut writer = BufWriter::new(File::create(output)?);
+        let hmap = HeightMap::from_file(fs, input)?;
+        let mut writer = BufWriter::new(fs.create(output)?);
 
         for (x, y, h) in hmap.iter() {
             writeln!(writer, "{} {} {}", x, y, h)?;

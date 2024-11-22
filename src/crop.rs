@@ -1,9 +1,11 @@
 use std::error::Error;
-use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+use crate::io::fs::FileSystem;
+
 pub fn polylinedxfcrop(
+    fs: &impl FileSystem,
     input: &Path,
     output: &Path,
     minx: f64,
@@ -11,7 +13,9 @@ pub fn polylinedxfcrop(
     maxx: f64,
     maxy: f64,
 ) -> Result<(), Box<dyn Error>> {
-    let data = fs::read_to_string(input).expect("Should have been able to read the file");
+    let data = fs
+        .read_to_string(input)
+        .expect("Should have been able to read the file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
     let dxfhead = data[0];
     let mut out = String::new();
@@ -77,13 +81,14 @@ pub fn polylinedxfcrop(
     if !out.contains("EOF") {
         out.push_str("ENDSEC\r\n  0\r\nEOF\r\n");
     }
-    let fp = File::create(output).expect("Unable to create file");
+    let fp = fs.create(output).expect("Unable to create file");
     let mut fp = BufWriter::new(fp);
     fp.write_all(out.as_bytes()).expect("Unable to write file");
     Ok(())
 }
 
 pub fn pointdxfcrop(
+    fs: &impl FileSystem,
     input: &Path,
     output: &Path,
     minx: f64,
@@ -91,11 +96,13 @@ pub fn pointdxfcrop(
     maxx: f64,
     maxy: f64,
 ) -> Result<(), Box<dyn Error>> {
-    let data = fs::read_to_string(input).expect("Should have been able to read the file");
+    let data = fs
+        .read_to_string(input)
+        .expect("Should have been able to read the file");
     let mut data: Vec<&str> = data.split("POINT").collect();
     let dxfhead = data[0];
 
-    let fp = File::create(output).expect("Unable to create file");
+    let fp = fs.create(output).expect("Unable to create file");
     let mut fp = BufWriter::new(fp);
 
     fp.write_all(dxfhead.as_bytes())

@@ -1,6 +1,6 @@
 use crate::vec2d::Vec2D;
 
-use super::bytes::FromToBytes;
+use super::{bytes::FromToBytes, fs::FileSystem};
 
 /// Simple container of a rectangular heightmap
 #[derive(Debug, Clone, PartialEq)]
@@ -46,15 +46,22 @@ impl HeightMap {
 
 impl HeightMap {
     /// Helper for easily reading a HeightMap from a file
-    pub fn from_file<P: AsRef<std::path::Path>>(path: P) -> std::io::Result<Self> {
-        let file = std::fs::File::open(path)?;
+    pub fn from_file<P: AsRef<std::path::Path>>(
+        fs: &impl FileSystem,
+        path: P,
+    ) -> std::io::Result<Self> {
+        let file = fs.open(path)?;
         let mut reader = std::io::BufReader::new(file);
         HeightMap::from_bytes(&mut reader)
     }
 
     /// Helper for easily writing a HeightMap to a file
-    pub fn to_file<P: AsRef<std::path::Path>>(&self, path: P) -> std::io::Result<()> {
-        let file = std::fs::File::create(path)?;
+    pub fn to_file<P: AsRef<std::path::Path>>(
+        &self,
+        fs: &impl FileSystem,
+        path: P,
+    ) -> std::io::Result<()> {
+        let file = fs.create(path)?;
         let mut writer = std::io::BufWriter::new(file);
         self.to_bytes(&mut writer)
     }

@@ -2,16 +2,17 @@ use image::{Rgb, RgbImage};
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
-use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use crate::config::Config;
 use crate::io::bytes::FromToBytes;
+use crate::io::fs::FileSystem;
 use crate::io::heightmap::HeightMap;
 use crate::vec2d::Vec2D;
 
 fn merge_png(
+    fs: &impl FileSystem,
     config: &Config,
     png_files: Vec<PathBuf>,
     outfilename: &str,
@@ -27,13 +28,14 @@ fn merge_png(
     for png in png_files.iter() {
         let filename = png.as_path().file_name().unwrap().to_str().unwrap();
         let full_filename = format!("{}/{}", batchoutfolder, filename);
-        let img = image::open(Path::new(&full_filename)).expect("Opening image failed");
+        let img = fs.read_image(&full_filename).expect("Opening image failed");
+
         let width = img.width() as f64;
         let height = img.height() as f64;
         let pgw = full_filename.replace(".png", ".pgw");
-        if Path::new(&pgw).exists() {
-            let input = Path::new(&pgw);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+        let input = Path::new(&pgw);
+        if fs.exists(input) {
+            let data = fs.read_to_string(input).expect("Can not read input file");
             let d: Vec<&str> = data.split('\n').collect();
             let tfw0 = d[0].trim().parse::<f64>().unwrap();
             let tfw4 = d[4].trim().parse::<f64>().unwrap();
@@ -65,14 +67,15 @@ fn merge_png(
         let filename = png.as_path().file_name().unwrap().to_str().unwrap();
         let png = format!("{}/{}", batchoutfolder, filename);
         let pgw = png.replace(".png", ".pgw");
-        let filesize = Path::new(&png).metadata().unwrap().len();
-        if Path::new(&png).exists() && Path::new(&pgw).exists() && filesize > 0 {
-            let img = image::open(Path::new(&png)).expect("Opening image failed");
+        let png = Path::new(&png);
+        let pgw = Path::new(&pgw);
+        let filesize = fs.file_size(png).unwrap();
+        if fs.exists(png) && fs.exists(pgw) && filesize > 0 {
+            let img = fs.read_image(png).expect("Opening image failed");
             let width = img.width() as f64;
             let height = img.height() as f64;
 
-            let input = Path::new(&pgw);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+            let data = fs.read_to_string(pgw).expect("Can not read input file");
             let d: Vec<&str> = data.split('\n').collect();
             let tfw4 = d[4].trim().parse::<f64>().unwrap();
             let tfw5 = d[5].trim().parse::<f64>().unwrap();
@@ -90,12 +93,26 @@ fn merge_png(
             );
         }
     }
-    im.save(Path::new(&format!("{}.jpg", outfilename)))
-        .expect("could not save output jpg");
-    im.save(Path::new(&format!("{}.png", outfilename)))
-        .expect("could not save output png");
 
-    let tfw_file = File::create(format!("{}.pgw", outfilename)).expect("Unable to create file");
+    im.write_to(
+        &mut fs
+            .create(format!("{}.jpg", outfilename))
+            .expect("could not save output jpg"),
+        image::ImageFormat::Jpeg,
+    )
+    .expect("could not save output jpg");
+
+    im.write_to(
+        &mut fs
+            .create(format!("{}.png", outfilename))
+            .expect("could not save output png"),
+        image::ImageFormat::Png,
+    )
+    .expect("could not save output Png");
+
+    let tfw_file = fs
+        .create(format!("{}.pgw", outfilename))
+        .expect("Unable to create file");
     let mut tfw_out = BufWriter::new(tfw_file);
     write!(
         &mut tfw_out,
@@ -107,7 +124,7 @@ fn merge_png(
     )
     .expect("Could not write to file");
     tfw_out.flush().expect("Cannot flush");
-    fs::copy(
+    fs.copy(
         Path::new(&format!("{}.pgw", outfilename)),
         Path::new(&format!("{}.jgw", outfilename)),
     )
@@ -115,13 +132,16 @@ fn merge_png(
     Ok(())
 }
 
-pub fn pngmergevege(config: &Config, scale: f64) -> Result<(), Box<dyn Error>> {
+pub fn pngmergevege(
+    fs: &impl FileSystem,
+    config: &Config,
+    scale: f64,
+) -> Result<(), Box<dyn Error>> {
     let batchoutfolder = &config.batchoutfolder;
 
     let mut png_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(batchoutfolder).read_dir().unwrap() {
-        let path = element.unwrap().path();
-        let filename = &path.as_path().file_name().unwrap().to_str().unwrap();
+    for path in fs.list(batchoutfolder).unwrap() {
+        let filename = path.file_name().unwrap().to_str().unwrap();
         if filename.ends_with("_vege.png") {
             png_files.push(path);
         }
@@ -130,17 +150,21 @@ pub fn pngmergevege(config: &Config, scale: f64) -> Result<(), Box<dyn Error>> {
         info!("No _vege.png files found in output directory");
         return Ok(());
     }
-    merge_png(config, png_files, "merged_vege", scale).unwrap();
+    merge_png(fs, config, png_files, "merged_vege", scale).unwrap();
     Ok(())
 }
 
-pub fn pngmerge(config: &Config, scale: f64, depr: bool) -> Result<(), Box<dyn Error>> {
+pub fn pngmerge(
+    fs: &impl FileSystem,
+    config: &Config,
+    scale: f64,
+    depr: bool,
+) -> Result<(), Box<dyn Error>> {
     let batchoutfolder = &config.batchoutfolder;
 
     let mut png_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(batchoutfolder).read_dir().unwrap() {
-        let path = element.unwrap().path();
-        let filename = &path.as_path().file_name().unwrap().to_str().unwrap();
+    for path in fs.list(batchoutfolder).unwrap() {
+        let filename = path.file_name().unwrap().to_str().unwrap();
         if filename.ends_with(".png")
             && !filename.ends_with("_undergrowth.png")
             && !filename.ends_with("_undergrowth_bit.png")
@@ -161,16 +185,15 @@ pub fn pngmerge(config: &Config, scale: f64, depr: bool) -> Result<(), Box<dyn E
     if depr {
         outfilename = "merged_depr";
     }
-    merge_png(config, png_files, outfilename, scale).unwrap();
+    merge_png(fs, config, png_files, outfilename, scale).unwrap();
     Ok(())
 }
 
-pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
+pub fn dxfmerge(fs: &impl FileSystem, config: &Config) -> Result<(), Box<dyn Error>> {
     let batchoutfolder = &config.batchoutfolder;
 
     let mut dxf_files: Vec<PathBuf> = Vec::new();
-    for element in Path::new(batchoutfolder).read_dir().unwrap() {
-        let path = element.unwrap().path();
+    for path in fs.list(batchoutfolder).unwrap() {
         if let Some(extension) = path.extension() {
             if extension == "dxf" {
                 dxf_files.push(path);
@@ -183,9 +206,11 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    let out2_file = File::create("merged.dxf").expect("Unable to create file");
+    let out2_file = fs.create("merged.dxf").expect("Unable to create file");
     let mut out2 = BufWriter::new(out2_file);
-    let out_file = File::create("merged_contours.dxf").expect("Unable to create file");
+    let out_file = fs
+        .create("merged_contours.dxf")
+        .expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     let mut headprinted = false;
@@ -195,10 +220,9 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("contours.dxf") {
-            let input = Path::new(&dxf_filename);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("contours.dxf") {
+            let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
                 let head = d[0];
@@ -237,15 +261,15 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
 
     headprinted = false;
 
-    let out_file = File::create("merged_c2f.dxf").expect("Unable to create file");
+    let out_file = fs.create("merged_c2f.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_c2f.dxf") {
-            let input = Path::new(&dxf_filename);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_c2f.dxf") {
+            let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
                 let body = d[1];
@@ -275,15 +299,15 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
 
     headprinted = false;
 
-    let out_file = File::create("merged_c2.dxf").expect("Unable to create file");
+    let out_file = fs.create("merged_c2.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_c2g.dxf") {
-            let input = Path::new(&dxf_filename);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_c2g.dxf") {
+            let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
                 let body = d[1];
@@ -317,15 +341,17 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
     let basemapcontours: f64 = config.basemapcontours;
 
     if basemapcontours > 0.0 {
-        let out_file = File::create("merged_basemap.dxf").expect("Unable to create file");
+        let out_file = fs
+            .create("merged_basemap.dxf")
+            .expect("Unable to create file");
         let mut out = BufWriter::new(out_file);
 
         for dx in dxf_files.iter() {
             let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
             let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-            if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_basemap.dxf") {
-                let input = Path::new(&dxf_filename);
-                let data = fs::read_to_string(input).expect("Can not read input file");
+            let input = Path::new(&dxf_filename);
+            if fs.exists(input) && dxf_filename.ends_with("_basemap.dxf") {
+                let data = fs.read_to_string(input).expect("Can not read input file");
                 if data.contains("POLYLINE") {
                     let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
                     let body = d[1];
@@ -356,15 +382,15 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
         headprinted = false;
     }
 
-    let out_file = File::create("merged_c3.dxf").expect("Unable to create file");
+    let out_file = fs.create("merged_c3.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_c3g.dxf") {
-            let input = Path::new(&dxf_filename);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_c3g.dxf") {
+            let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
                 let body = d[1];
@@ -394,15 +420,15 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
 
     headprinted = false;
 
-    let out_file = File::create("formlines.dxf").expect("Unable to create file");
+    let out_file = fs.create("formlines.dxf").expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_formlines.dxf") {
-            let input = Path::new(&dxf_filename);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_formlines.dxf") {
+            let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
                 let body = d[1];
@@ -432,15 +458,17 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
 
     headprinted = false;
 
-    let out_file = File::create("merged_dotknolls.dxf").expect("Unable to create file");
+    let out_file = fs
+        .create("merged_dotknolls.dxf")
+        .expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_dotknolls.dxf") {
-            let input = Path::new(&dxf_filename);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_dotknolls.dxf") {
+            let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POINT") {
                 let d: Vec<&str> = data.splitn(2, "POINT").collect();
                 let body = d[1];
@@ -470,15 +498,17 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
 
     headprinted = false;
 
-    let out_file = File::create("merged_detected.dxf").expect("Unable to create file");
+    let out_file = fs
+        .create("merged_detected.dxf")
+        .expect("Unable to create file");
     let mut out = BufWriter::new(out_file);
 
     for dx in dxf_files.iter() {
         let dxf = dx.as_path().file_name().unwrap().to_str().unwrap();
         let dxf_filename = format!("{}/{}", batchoutfolder, dxf);
-        if Path::new(&dxf_filename).exists() && dxf_filename.ends_with("_detected.dxf") {
-            let input = Path::new(&dxf_filename);
-            let data = fs::read_to_string(input).expect("Can not read input file");
+        let input = Path::new(&dxf_filename);
+        if fs.exists(input) && dxf_filename.ends_with("_detected.dxf") {
+            let data = fs.read_to_string(input).expect("Can not read input file");
             if data.contains("POLYLINE") {
                 let d: Vec<&str> = data.splitn(2, "POLYLINE").collect();
                 let body = d[1];
@@ -505,7 +535,11 @@ pub fn dxfmerge(config: &Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn smoothjoin(
+    fs: &impl FileSystem,
+    config: &Config,
+    tmpfolder: &Path,
+) -> Result<(), Box<dyn Error>> {
     info!("Smooth curves...");
 
     let &Config {
@@ -528,7 +562,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let interval = halfinterval;
 
     let heightmap_in = tmpfolder.join("xyz_knolls.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
     // in world coordinates
@@ -565,7 +599,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         }
     }
     let input = tmpfolder.join("out.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
     let mut dxfheadtmp = data[0];
     dxfheadtmp = dxfheadtmp.split("ENDSEC").collect::<Vec<&str>>()[0];
@@ -573,7 +607,7 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
     let dxfhead = &format!("HEADER{}ENDSEC", dxfheadtmp);
 
     let output = tmpfolder.join("out2.dxf");
-    let fp = File::create(output).expect("Unable to create file");
+    let fp = fs.create(output).expect("Unable to create file");
     let mut fp = BufWriter::new(fp);
 
     fp.write_all(b"  0\r\nSECTION\r\n  2\r\n")
@@ -584,15 +618,15 @@ pub fn smoothjoin(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error
         .expect("Could not write file");
 
     let depr_output = tmpfolder.join("depressions.txt");
-    let depr_fp = File::create(depr_output).expect("Unable to create file");
+    let depr_fp = fs.create(depr_output).expect("Unable to create file");
     let mut depr_fp = BufWriter::new(depr_fp);
 
     let dotknoll_output = tmpfolder.join("dotknolls.txt");
-    let dotknoll_fp = File::create(dotknoll_output).expect("Unable to create file");
+    let dotknoll_fp = fs.create(dotknoll_output).expect("Unable to create file");
     let mut dotknoll_fp = BufWriter::new(dotknoll_fp);
 
     let knollhead_output = tmpfolder.join("knollheads.txt");
-    let knollhead_fp = File::create(knollhead_output).expect("Unable to create file");
+    let knollhead_fp = fs.create(knollhead_output).expect("Unable to create file");
     let mut knollhead_fp = BufWriter::new(knollhead_fp);
 
     let mut heads1: HashMap<String, usize> = HashMap::default();

@@ -1,8 +1,8 @@
 use crate::canvas::Canvas;
 use crate::config::Config;
 use crate::io::bytes::FromToBytes;
+use crate::io::fs::FileSystem;
 use crate::io::heightmap::HeightMap;
-use crate::util::read_lines;
 use image::ImageBuffer;
 use image::Rgba;
 use imageproc::drawing::{draw_filled_circle_mut, draw_line_segment_mut};
@@ -12,7 +12,7 @@ use shapefile::dbase::{FieldValue, Record};
 use shapefile::{Shape, ShapeType};
 use std::error::Error;
 use std::f64::consts::PI;
-use std::fs::{self, File};
+use std::io::BufRead;
 use std::io::BufReader;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -83,7 +83,11 @@ impl FromStr for Mapping {
     }
 }
 
-pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn mtkshaperender(
+    fs: &impl FileSystem,
+    config: &Config,
+    tmpfolder: &Path,
+) -> Result<(), Box<dyn Error>> {
     let scalefactor = config.scalefactor;
 
     let vectorconf = &config.vectorconf;
@@ -91,7 +95,9 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
 
     let mut vectorconf_mappings: Vec<Mapping> = vec![];
     if !vectorconf.is_empty() {
-        let vectorconf_lines = fs::read_to_string(vectorconf).expect("Can not read input file");
+        let vectorconf_lines = fs
+            .read_to_string(vectorconf)
+            .expect("Can not read input file");
 
         // parse all the lines in the vectorconf file into a list of mappings
         vectorconf_mappings = vectorconf_lines
@@ -99,21 +105,25 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
             .map(Mapping::from_str)
             .collect::<Result<Vec<_>, _>>()?;
     }
-    if !tmpfolder.join("vegetation.pgw").exists() {
+
+    let input = tmpfolder.join("vegetation.pgw");
+    if !fs.exists(&input) {
         info!("Could not find vegetation file");
         return Ok(());
     }
 
-    let input = tmpfolder.join("vegetation.pgw");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let d: Vec<&str> = data.split('\n').collect();
 
     let x0 = d[4].trim().parse::<f64>().unwrap();
     let y0 = d[5].trim().parse::<f64>().unwrap();
     // let resvege = d[0].trim().parse::<f64>().unwrap();
 
-    let mut img_reader = image::ImageReader::open(tmpfolder.join("vegetation.png"))
-        .expect("Opening vegetation image failed");
+    let mut img_reader = image::ImageReader::new(BufReader::new(
+        fs.open(tmpfolder.join("vegetation.png"))
+            .expect("Opening vegetation image failed"),
+    ));
+    img_reader.set_format(image::ImageFormat::Png);
     img_reader.no_limits();
     let img = img_reader.decode().unwrap();
     let w = img.width() as f64;
@@ -145,8 +155,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
     let olive = (194, 176, 33);
 
     let mut shp_files: Vec<PathBuf> = Vec::new();
-    for element in tmpfolder.read_dir().unwrap() {
-        let path = element.unwrap().path();
+    for path in fs.list(tmpfolder).unwrap() {
         if let Some(extension) = path.extension() {
             if extension == "shp" {
                 shp_files.push(path);
@@ -729,12 +738,12 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
         }
 
         // remove the shapefile and all associated files
-        fs::remove_file(&file).unwrap();
+        fs.remove_file(&file).unwrap();
         for ext in ["dbf", "sbx", "prj", "shx", "sbn", "cpg", "qmd"].iter() {
             file.set_extension(ext);
-            if file.exists() {
+            if fs.exists(&file) {
                 println!("Removing file: {:?}", file);
-                fs::remove_file(&file).unwrap();
+                fs.remove_file(&file).unwrap();
             }
         }
     }
@@ -767,13 +776,13 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
     imgblue.overlay(&mut imgbrowntop, 0.0, 0.0);
 
     let low_file = tmpfolder.join("low.png");
-    if low_file.exists() {
+    if fs.exists(&low_file) {
         let mut low = Canvas::load_from(&low_file);
         imgyellow.overlay(&mut low, 0.0, 0.0);
     }
 
     let high_file = tmpfolder.join("high.png");
-    if high_file.exists() {
+    if fs.exists(&high_file) {
         let mut high = Canvas::load_from(&high_file);
         imgblue.overlay(&mut high, 0.0, 0.0);
     }
@@ -783,6 +792,7 @@ pub fn mtkshaperender(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn E
 }
 
 pub fn render(
+    fs: &impl FileSystem,
     config: &Config,
     thread: &String,
     tmpfolder: &Path,
@@ -798,7 +808,7 @@ pub fn render(
 
     // Draw vegetation ----------
     let tfw_in = tmpfolder.join("vegetation.pgw");
-    let mut lines = read_lines(tfw_in).expect("PGW file does not exist");
+    let mut lines = BufReader::new(fs.open(tfw_in).expect("PGW file does not exist")).lines();
     let x0 = lines
         .nth(4)
         .expect("no 4 line")
@@ -812,13 +822,19 @@ pub fn render(
         .parse::<f64>()
         .unwrap();
 
-    let mut img_reader = image::ImageReader::open(tmpfolder.join("vegetation.png"))
-        .expect("Opening vegetation image failed");
+    let mut img_reader = image::ImageReader::new(BufReader::new(
+        fs.open(tmpfolder.join("vegetation.png"))
+            .expect("Opening vegetation image failed"),
+    ));
+    img_reader.set_format(image::ImageFormat::Png);
     img_reader.no_limits();
     let img = img_reader.decode().unwrap();
 
-    let mut imgug_reader = image::ImageReader::open(tmpfolder.join("undergrowth.png"))
-        .expect("Opening undergrowth image failed");
+    let mut imgug_reader = image::ImageReader::new(BufReader::new(
+        fs.open(tmpfolder.join("undergrowth.png"))
+            .expect("Opening undergrowth image failed"),
+    ));
+    imgug_reader.set_format(image::ImageFormat::Png);
     imgug_reader.no_limits();
     let imgug = imgug_reader.decode().unwrap();
 
@@ -849,8 +865,11 @@ pub fn render(
     image::imageops::overlay(&mut img, &imgug, 0, 0);
 
     let low_file = tmpfolder.join("low.png");
-    if low_file.exists() {
-        let mut low_reader = image::ImageReader::open(low_file).expect("Opening low image failed");
+    if fs.exists(&low_file) {
+        let mut low_reader = image::ImageReader::new(BufReader::new(
+            fs.open(low_file).expect("Opening low image failed"),
+        ));
+        low_reader.set_format(image::ImageFormat::Png);
         low_reader.no_limits();
         let low = low_reader.decode().unwrap();
         let low = image::imageops::resize(
@@ -871,8 +890,8 @@ pub fn render(
                     &mut img,
                     (i as f32 + m as f32, 0.0),
                     (
-                        (i as f32 + (angle.tan() * (h as f64) * 600.0 / 254.0 / scalefactor) as f32)
-                            as f32
+                        (i as f32
+                            + (angle.tan() * (h as f64) * 600.0 / 254.0 / scalefactor) as f32)
                             + m as f32,
                         (h as f32 * 600.0 / 254.0 / scalefactor as f32),
                     ),
@@ -883,11 +902,11 @@ pub fn render(
         }
     }
 
-    draw_curves(config, &mut img, tmpfolder, nodepressions, true).unwrap();
+    draw_curves(fs, config, &mut img, tmpfolder, nodepressions, true).unwrap();
 
     // dotknolls----------
     let input = tmpfolder.join("dotknolls.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data = data.split("POINT");
 
     for (j, rec) in data.enumerate() {
@@ -918,9 +937,11 @@ pub fn render(
     }
     // blocks -------------
     let blocks_file = tmpfolder.join("blocks.png");
-    if blocks_file.exists() {
-        let mut blockpurple_reader =
-            image::ImageReader::open(blocks_file).expect("Opening blocks image failed");
+    if fs.exists(&blocks_file) {
+        let mut blockpurple_reader = image::ImageReader::new(BufReader::new(
+            fs.open(blocks_file).expect("Opening blocks image failed"),
+        ));
+        blockpurple_reader.set_format(image::ImageFormat::Png);
         blockpurple_reader.no_limits();
         let blockpurple = blockpurple_reader.decode().unwrap();
         let mut blockpurple = blockpurple.to_rgba8();
@@ -951,9 +972,12 @@ pub fn render(
     }
     // blueblack -------------
     let blueblack_file = tmpfolder.join("blueblack.png");
-    if blueblack_file.exists() {
-        let mut imgbb_reader =
-            image::ImageReader::open(blueblack_file).expect("Opening blueblack image failed");
+    if fs.exists(&blueblack_file) {
+        let mut imgbb_reader = image::ImageReader::new(BufReader::new(
+            fs.open(blueblack_file)
+                .expect("Opening blueblack image failed"),
+        ));
+        imgbb_reader.set_format(image::ImageFormat::Png);
         imgbb_reader.no_limits();
         let imgbb = imgbb_reader.decode().unwrap();
         let mut imgbb = imgbb.to_rgba8();
@@ -984,7 +1008,7 @@ pub fn render(
         ]);
     }
     let input = tmpfolder.join("c2g.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
     for (j, rec) in data.iter().enumerate() {
@@ -1068,7 +1092,7 @@ pub fn render(
     }
 
     let input = &tmpfolder.join("c3g.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
     for (j, rec) in data.iter().enumerate() {
@@ -1153,9 +1177,11 @@ pub fn render(
     }
     // high -------------
     let high_file = tmpfolder.join("high.png");
-    if high_file.exists() {
-        let mut high_reader =
-            image::ImageReader::open(high_file).expect("Opening high image failed");
+    if fs.exists(&high_file) {
+        let mut high_reader = image::ImageReader::new(BufReader::new(
+            fs.open(high_file).expect("Opening high image failed"),
+        ));
+        high_reader.set_format(image::ImageFormat::Png);
         high_reader.no_limits();
         let high = high_reader.decode().unwrap();
         let high_thumb = image::imageops::resize(
@@ -1173,15 +1199,22 @@ pub fn render(
         format!("pullautus_depr{}", thread)
     };
 
-    img.save(&format!("{}.png", filename))
-        .expect("could not save output png");
+    img.write_to(
+        &mut fs
+            .create(format!("{}.png", filename))
+            .expect("could not save output png"),
+        image::ImageFormat::Png,
+    )
+    .expect("could not write image");
 
     let file_in = tmpfolder.join("vegetation.pgw");
-    let pgw_file_out = File::create(format!("{}.pgw", filename)).expect("Unable to create file");
+    let pgw_file_out = fs
+        .create(format!("{}.pgw", filename))
+        .expect("Unable to create file");
     let mut pgw_file_out = BufWriter::new(pgw_file_out);
 
-    if let Ok(lines) = read_lines(file_in) {
-        for (i, line) in lines.enumerate() {
+    if let Ok(lines) = fs.open(file_in) {
+        for (i, line) in BufReader::new(lines).lines().enumerate() {
             let ip = line.unwrap_or(String::new());
             let x: f64 = ip.parse::<f64>().unwrap();
             if i == 0 || i == 3 {
@@ -1197,6 +1230,7 @@ pub fn render(
 }
 
 pub fn draw_curves(
+    fs: &impl FileSystem,
     config: &Config,
     canvas: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
     tmpfolder: &Path,
@@ -1226,7 +1260,7 @@ pub fn draw_curves(
 
     if formline > 0.0 {
         let heightmap_in = tmpfolder.join("xyz2.hmap");
-        let mut reader = BufReader::new(File::open(heightmap_in)?);
+        let mut reader = BufReader::new(fs.open(heightmap_in)?);
         let hmap = HeightMap::from_bytes(&mut reader)?;
 
         xstart = hmap.xoffset;
@@ -1416,13 +1450,13 @@ pub fn draw_curves(
     }
 
     let input = &tmpfolder.join("out2.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
     // only create the file if condition is met
     let mut fp = if formline == 2.0 && !nodepressions {
-        let output = &tmpfolder.join("formlines.dxf");
-        let fp = File::create(output).expect("Unable to create file");
+        let output = tmpfolder.join("formlines.dxf");
+        let fp = fs.create(output).expect("Unable to create file");
         let mut fp = BufWriter::new(fp);
         fp.write_all(data[0].as_bytes())
             .expect("Could not write file");
