@@ -402,7 +402,35 @@ impl FileSystem for MemoryFileSystem {
 #[cfg(test)]
 mod test {
 
+    use io::BufReader;
+
     use super::*;
+
+    #[test]
+    fn test_path_components() {
+        // setup simple folder structure
+        let mut dir = Directory::new();
+        let mut subdir = Directory::new();
+        subdir
+            .subdirs
+            .insert("folder2".to_string(), Directory::new());
+        dir.subdirs.insert("folder1".to_string(), subdir);
+
+        // make sure all of these find the correct directory
+        dir.get_directory(Path::new("folder1")).unwrap();
+        dir.get_directory(Path::new("./folder1/folder2")).unwrap();
+        dir.get_directory(Path::new("./folder1/./folder2")).unwrap();
+        dir.get_directory(Path::new("./folder1/../folder1/folder2"))
+            .unwrap();
+
+        dir.get_directory_mut(Path::new("folder1")).unwrap();
+        dir.get_directory_mut(Path::new("./folder1/folder2"))
+            .unwrap();
+        dir.get_directory_mut(Path::new("./folder1/./folder2"))
+            .unwrap();
+        dir.get_directory_mut(Path::new("./folder1/../folder1/folder2"))
+            .unwrap();
+    }
 
     #[test]
     fn test_write_read_to_string_root() {
@@ -435,6 +463,158 @@ mod test {
 
         let read = fs.read_to_string(path).unwrap();
 
+        assert_eq!(read, content);
+    }
+
+    #[test]
+    fn test_read_string_invalid_utf8() {
+        let fs = super::MemoryFileSystem::new();
+        let folder = Path::new("folder");
+        fs.create_dir_all(folder).unwrap();
+        let path = folder.join("invalid.file");
+        let content = [0, 1, 2, 3, 4, 5, 6, 255]; // invalid utf8
+
+        fs.create(&path).unwrap().write_all(&content).unwrap();
+
+        let read = fs.read_to_string(path).unwrap_err();
+        assert_eq!(read.kind(), io::ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn test_create_open() {
+        let fs = super::MemoryFileSystem::new();
+        let path = "file.json";
+        let content = "contents of the file";
+
+        fs.create(path)
+            .unwrap()
+            .write_all(content.as_bytes())
+            .unwrap();
+
+        let mut read = BufReader::new(fs.open(path).unwrap());
+        let mut buff = Vec::new();
+        assert_eq!(read.read_to_end(&mut buff).unwrap(), content.len());
+
+        assert_eq!(buff, content.as_bytes());
+    }
+
+    #[test]
+    fn test_create_not_found() {
+        let fs = super::MemoryFileSystem::new();
+        let folder = Path::new("folder");
+        let path = folder.join("nonexistant_subdirectory").join("file.json");
+
+        fs.create_dir_all(folder).unwrap();
+        match fs.create(&path) {
+            Ok(_) => panic!("file should not exist"),
+            Err(e) => assert_eq!(e.kind(), io::ErrorKind::NotFound),
+        };
+    }
+
+    #[test]
+    fn test_file_does_not_exist() {
+        let fs = super::MemoryFileSystem::new();
+        let path = "test.txt";
+
+        assert!(!fs.exists(path));
+
+        match fs.open(path) {
+            Ok(_) => panic!("file should not exist"),
+            Err(e) => assert_eq!(e.kind(), io::ErrorKind::NotFound),
+        }
+    }
+
+    #[test]
+    fn test_file_does_not_exist_subdirs() {
+        let fs = super::MemoryFileSystem::new();
+        let folder = Path::new("folder1/folder2");
+        let path = folder.join("nonexistant_subfolder").join("test.txt");
+
+        fs.create_dir_all(folder).unwrap();
+        assert!(!fs.exists(&path));
+
+        match fs.open(path) {
+            Ok(_) => panic!("file should not exist"),
+            Err(e) => assert_eq!(e.kind(), io::ErrorKind::NotFound),
+        }
+    }
+
+    #[test]
+    fn test_create_and_remove_file() {
+        let fs = super::MemoryFileSystem::new();
+        let path = "test.txt";
+        let content = "Hello, World!";
+
+        fs.create(path)
+            .unwrap()
+            .write_all(content.as_bytes())
+            .unwrap();
+
+        assert!(fs.exists(path));
+
+        fs.remove_file(path).unwrap();
+
+        assert!(!fs.exists(path));
+
+        match fs.open(path) {
+            Ok(_) => panic!("file should not exist"),
+            Err(e) => assert_eq!(e.kind(), io::ErrorKind::NotFound),
+        }
+    }
+
+    #[test]
+    fn test_create_and_list_files_and_folders() {
+        let fs = super::MemoryFileSystem::new();
+        let folder = Path::new("folder");
+        fs.create_dir_all(folder).unwrap();
+        let path1 = folder.join("test1.txt");
+        let path2 = folder.join("test2.txt");
+        let path3 = folder.join("subfolder1");
+        let path4 = folder.join("subfolder2");
+
+        fs.create(&path1).unwrap();
+        fs.create(&path2).unwrap();
+        fs.create_dir_all(&path3).unwrap();
+        fs.create_dir_all(&path4).unwrap();
+
+        let files = fs.list(folder).unwrap();
+        assert_eq!(files.len(), 4);
+        assert!(files.contains(&path1));
+        assert!(files.contains(&path2));
+        assert!(files.contains(&path3));
+        assert!(files.contains(&path4));
+    }
+
+    #[test]
+    fn test_file_size() {
+        let fs = super::MemoryFileSystem::new();
+        let path = "test.txt";
+        let content = "Hello, World!";
+
+        fs.create(path)
+            .unwrap()
+            .write_all(content.as_bytes())
+            .unwrap();
+
+        let size = fs.file_size(path).unwrap();
+        assert_eq!(size, content.len() as u64);
+    }
+
+    #[test]
+    fn test_copy_file() {
+        let fs = super::MemoryFileSystem::new();
+        let path1 = "test1.txt";
+        let path2 = "test2.txt";
+        let content = "Hello, World!";
+
+        fs.create(path1)
+            .unwrap()
+            .write_all(content.as_bytes())
+            .unwrap();
+
+        fs.copy(path1, path2).unwrap();
+
+        let read = fs.read_to_string(path2).unwrap();
         assert_eq!(read, content);
     }
 }
