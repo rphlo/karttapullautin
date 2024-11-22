@@ -1,19 +1,31 @@
 #! /bin/bash
 
-usage="$(basename "$0") [-h] [-v latest] -- test the current build of pullauta (assumed to be in target/release/) \
+usage="$(basename "$0") [-h] [-v latest] [-p pullauta] -- test the current build of pullauta (assumed to be in target/release/) \
 against the latest release
 
 where:
 	-h  show this help text
-	-v  use a specific release version"
+	-v  use a specific release version
+	-p  location of pullauta executable to test"
 
 VERSION="latest"
-while getopts ":hv:" opt; do
+PULLAUTA="auto"
+while getopts "hp:v:" opt; do
 	case $opt in
 		h) echo "$usage"
 		exit
 		;;
 		v) VERSION="$OPTARG"
+		echo " version $VERSION"
+		;;
+		p) PULLAUTA="$OPTARG"
+		echo "pullauta $PULLAUTA"
+		if [ ! -e "$PULLAUTA" ] || [ ! -x "$PULLAUTA" ]; then
+			echo "The file $PULLAUTA either does not exist or is not executable."
+			exit 1
+		else
+			PULLAUTA=$(realpath "$PULLAUTA")
+		fi
 		;;
 		\?) echo "Invalid option -$OPTARG" >&2
 		exit 1
@@ -52,6 +64,9 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 # Change the current directory to the script's directory
 cd "$SCRIPT_DIR" || exit 1  # Exit if changing the directory fails
+if [[ "$PULLAUTA" == "auto" ]]; then
+	PULLAUTA=$(realpath "../target/release/pullauta")
+fi
 
 # Print the current directory to confirm
 echo "Current directory is: $(pwd)"
@@ -105,7 +120,7 @@ fi
 
 cd "$WORK_DIR"
 
-../../../target/release/pullauta ../test_file.laz
+"$PULLAUTA" ../test_file.laz
 
 cd ..
 
