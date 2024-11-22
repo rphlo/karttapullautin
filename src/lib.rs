@@ -4,7 +4,6 @@
 #![deny(clippy::undocumented_unsafe_blocks)]
 
 pub mod blocks;
-pub mod canvas;
 pub mod cliffs;
 pub mod config;
 pub mod contours;
@@ -14,6 +13,7 @@ pub mod knolls;
 pub mod merge;
 pub mod process;
 pub mod render;
+pub mod shapefile;
 pub mod util;
 pub mod vec2d;
 pub mod vegetation;

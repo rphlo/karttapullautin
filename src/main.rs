@@ -249,11 +249,11 @@ fn main() {
     }
 
     if command == "unzipmtk" {
-        pullauta::process::unzipmtk(&fs, &config, &tmpfolder, &args).unwrap();
+        pullauta::shapefile::unzipmtk(&fs, &config, &tmpfolder, &args).unwrap();
     }
 
     if command == "mtkshaperender" {
-        pullauta::render::mtkshaperender(&fs, &config, &tmpfolder).unwrap();
+        pullauta::shapefile::mtkshaperender(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "xyz2contours" {
