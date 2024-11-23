@@ -136,7 +136,11 @@ cd "$WORK_DIR"
 if [ "$INI" != "auto" ]; then
 	cp $INI "pullauta.ini"
 fi
-"$PULLAUTA" ../test_file.laz
+if [ ! -e "$PULLAUTA" ] || [ ! -x "$PULLAUTA" ]; then
+	cargo run --release -- ../test_file.laz
+else
+	"$PULLAUTA" ../test_file.laz
+fi
 
 cd ..
 
