@@ -13,7 +13,7 @@ use std::sync::{Arc, RwLock};
 /// cheap to clone.
 #[derive(Debug, Clone)]
 pub struct MemoryFileSystem {
-    root: Arc<RwLock<Directory>>,
+    root: Arc<RwLock<Root>>,
 }
 
 impl Default for MemoryFileSystem {
@@ -26,7 +26,7 @@ impl MemoryFileSystem {
     /// Create a new empty memory file system.
     pub fn new() -> Self {
         Self {
-            root: Arc::new(RwLock::new(Directory::new())),
+            root: Arc::new(RwLock::new(Root(Directory::default()))),
         }
     }
 
@@ -54,25 +54,16 @@ impl MemoryFileSystem {
     }
 }
 
+/// Represents the root of the file system.
 #[derive(Debug)]
-struct Directory {
-    subdirs: HashMap<String, Directory>,
-    files: HashMap<String, FileEntry>,
-}
+struct Root(Directory);
 
-impl Directory {
-    /// Create a new empty directory.
-    fn new() -> Self {
-        Self {
-            subdirs: HashMap::default(),
-            files: HashMap::default(),
-        }
-    }
-
+impl Root {
+    /// Traverse the file system to find the directory at the given path.
     fn get_directory(&self, path: impl AsRef<Path>) -> Result<&Directory, io::Error> {
         let path = path.as_ref();
-        let mut dir: &Directory = self;
-        for name in &resolve_path(path)? {
+        let mut dir: &Directory = &self.0;
+        for name in &self.resolve_path(path)? {
             dir = match dir.subdirs.get(name) {
                 Some(subdir) => subdir,
                 None => {
@@ -86,10 +77,12 @@ impl Directory {
         Ok(dir)
     }
 
+    /// Traverse the file system to find the mutable directory at the given path.
     fn get_directory_mut(&mut self, path: impl AsRef<Path>) -> Result<&mut Directory, io::Error> {
         let path = path.as_ref();
-        let mut dir: &mut Directory = self;
-        for name in &resolve_path(path)? {
+        let parts = self.resolve_path(path)?;
+        let mut dir: &mut Directory = &mut self.0;
+        for name in &parts {
             dir = match dir.subdirs.get_mut(name) {
                 Some(subdir) => subdir,
                 None => {
@@ -102,39 +95,46 @@ impl Directory {
         }
         Ok(dir)
     }
-}
 
-/// Resolve a path to a canonical path (removing "..", "." and "/") containing only the direct path coponents.
-fn resolve_path(path: &Path) -> Result<Vec<String>, io::Error> {
-    let mut part: Vec<String> = Vec::new();
-    for component in path.components() {
-        match component {
-            Component::Normal(component) => {
-                let name = component.to_string_lossy().to_string();
+    /// Resolve a path to a canonical path (removing "..", "." and "/") containing only the direct path coponents.
+    fn resolve_path(&self, path: &Path) -> Result<Vec<String>, io::Error> {
+        let mut part: Vec<String> = Vec::new();
+        for component in path.components() {
+            match component {
+                Component::Normal(component) => {
+                    let name = component.to_string_lossy().to_string();
 
-                part.push(name);
-            }
-            Component::ParentDir => {
-                if part.pop().is_none() {
+                    part.push(name);
+                }
+                Component::ParentDir => {
+                    // since this is the root directory, we cannot have paths like "../a", thus return an error
+                    if part.pop().is_none() {
+                        return Err(io::Error::new(
+                            io::ErrorKind::NotFound,
+                            "root has no parent directory",
+                        ));
+                    }
+                }
+                Component::CurDir => {}
+                Component::RootDir => {
+                    part.clear();
+                }
+                Component::Prefix(_) => {
                     return Err(io::Error::new(
                         io::ErrorKind::NotFound,
-                        "parent directory not found",
+                        "path prefix not supported",
                     ));
                 }
             }
-            Component::CurDir => {}
-            Component::RootDir => {
-                part.clear();
-            }
-            Component::Prefix(_) => {
-                return Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    "path prefix not supported",
-                ));
-            }
         }
+        Ok(part)
     }
-    Ok(part)
+}
+
+#[derive(Debug, Default)]
+struct Directory {
+    subdirs: HashMap<String, Directory>,
+    files: HashMap<String, FileEntry>,
 }
 
 /// Get the parent directory of a file or directory path.
@@ -146,7 +146,7 @@ fn file_parent(path: &Path) -> Result<&Path, io::Error> {
 #[derive(Debug)]
 struct FileEntry {
     /// data is stored as an Arc to allow for multiple readers.
-    /// Wrapped in an Arc to allow for swapping the value when the Writer is dropped / finished.
+    /// Wrapped in an [`RwLock`] to allow for swapping the value when the Writer is dropped / finished.
     data: Arc<RwLock<FileData>>,
 }
 
@@ -165,7 +165,8 @@ impl std::fmt::Debug for FileData {
     }
 }
 
-// TODO: these should implement Read, Write, Seek and be returned by the FileSystem methods
+/// A file that is currently being written too. Has a link back to the [`FileData`] so it can
+/// swap it whenever the writer is dropped.
 struct WritableFile {
     /// The data beeing written to the file
     data: io::Cursor<Vec<u8>>,
@@ -193,7 +194,7 @@ impl Drop for WritableFile {
     // swap the data into the file entry on drop
     fn drop(&mut self) {
         let data = core::mem::replace(&mut self.data, io::Cursor::new(Vec::new()));
-        let mut data_link = self.data_link.write().unwrap();
+        let mut data_link = self.data_link.write().expect("file data lock poisoned");
         *data_link = FileData(Arc::new(data.into_inner()));
     }
 }
@@ -217,19 +218,20 @@ impl AsRef<[u8]> for FileData {
 
 impl FileSystem for MemoryFileSystem {
     fn create_dir_all(&self, path: impl AsRef<Path>) -> Result<(), io::Error> {
-        let mut root = self.root.write().unwrap();
+        let mut root = self.root.write().expect("root lock poisoned");
         let path = path.as_ref();
 
         // make sure all directories in the path exist
-        let mut dir: &mut Directory = &mut root;
-        for name in resolve_path(path)? {
-            dir = dir.subdirs.entry(name).or_insert_with(Directory::new);
+        let parts = root.resolve_path(path)?;
+        let mut dir: &mut Directory = &mut root.0;
+        for name in parts {
+            dir = dir.subdirs.entry(name).or_default();
         }
         Ok(())
     }
 
     fn list(&self, path: impl AsRef<Path>) -> Result<Vec<PathBuf>, io::Error> {
-        let root = self.root.read().unwrap();
+        let root = self.root.read().expect("root lock poisoned");
         let path = path.as_ref();
 
         // find the directory
@@ -247,7 +249,7 @@ impl FileSystem for MemoryFileSystem {
     }
 
     fn exists(&self, path: impl AsRef<Path>) -> bool {
-        let root = self.root.read().unwrap();
+        let root = self.root.read().expect("root lock poisoned");
         let path = path.as_ref();
 
         let Some(parent) = path.parent() else {
@@ -267,7 +269,7 @@ impl FileSystem for MemoryFileSystem {
     }
 
     fn open(&self, path: impl AsRef<Path>) -> Result<impl Read + Seek + Send + 'static, io::Error> {
-        let root = self.root.read().unwrap();
+        let root = self.root.read().expect("root lock poisoned");
         let path = path.as_ref();
 
         let parent = file_parent(path)?;
@@ -290,7 +292,7 @@ impl FileSystem for MemoryFileSystem {
     }
 
     fn create(&self, path: impl AsRef<Path>) -> Result<impl Write + Seek, io::Error> {
-        let mut root = self.root.write().unwrap();
+        let mut root = self.root.write().expect("root lock poisoned");
         let path = path.as_ref();
 
         let parent = file_parent(path)?;
@@ -314,7 +316,7 @@ impl FileSystem for MemoryFileSystem {
     }
 
     fn read_to_string(&self, path: impl AsRef<Path>) -> Result<String, io::Error> {
-        let root = self.root.read().unwrap();
+        let root = self.root.read().expect("root lock poisoned");
         let path = path.as_ref();
 
         let parent = file_parent(path)?;
@@ -343,7 +345,7 @@ impl FileSystem for MemoryFileSystem {
     }
 
     fn remove_file(&self, path: impl AsRef<Path>) -> Result<(), io::Error> {
-        let mut root = self.root.write().unwrap();
+        let mut root = self.root.write().expect("root lock poisoned");
         let path = path.as_ref();
 
         let parent = file_parent(path)?;
@@ -363,7 +365,7 @@ impl FileSystem for MemoryFileSystem {
     }
 
     fn file_size(&self, path: impl AsRef<Path>) -> Result<u64, io::Error> {
-        let root = self.root.read().unwrap();
+        let root = self.root.read().expect("root lock poisoned");
         let path = path.as_ref();
 
         let parent = file_parent(path)?;
@@ -385,7 +387,7 @@ impl FileSystem for MemoryFileSystem {
     }
 
     fn copy(&self, from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), io::Error> {
-        let mut root = self.root.write().unwrap();
+        let mut root = self.root.write().expect("root lock poisoned");
         let from = from.as_ref();
         let to = to.as_ref();
 
@@ -430,48 +432,56 @@ mod test {
 
     #[test]
     fn test_resolve_path() {
-        assert_eq!(resolve_path(Path::new("folder")).unwrap(), ["folder"]);
+        let root = Root(Directory::default());
+        assert_eq!(root.resolve_path(Path::new("folder")).unwrap(), ["folder"]);
         assert_eq!(
-            resolve_path(Path::new("folder/folder2")).unwrap(),
+            root.resolve_path(Path::new("folder/folder2")).unwrap(),
             ["folder", "folder2"]
         );
         assert_eq!(
-            resolve_path(Path::new("folder/folder2/folder3")).unwrap(),
+            root.resolve_path(Path::new("folder/folder2/folder3"))
+                .unwrap(),
             ["folder", "folder2", "folder3"]
         );
         assert_eq!(
-            resolve_path(Path::new("folder/../folder2")).unwrap(),
+            root.resolve_path(Path::new("folder/../folder2")).unwrap(),
             ["folder2"]
         );
         assert_eq!(
-            resolve_path(Path::new("./folder/../folder2")).unwrap(),
+            root.resolve_path(Path::new("./folder/../folder2")).unwrap(),
             ["folder2"]
         );
         assert_eq!(
-            resolve_path(Path::new("folder/./folder2")).unwrap(),
+            root.resolve_path(Path::new("folder/./folder2")).unwrap(),
             ["folder", "folder2"]
         );
         assert_eq!(
-            resolve_path(Path::new("folder/folder2/./folder3")).unwrap(),
+            root.resolve_path(Path::new("folder/folder2/./folder3"))
+                .unwrap(),
             ["folder", "folder2", "folder3"]
         );
         assert_eq!(
-            resolve_path(Path::new("folder/folder2/../folder3")).unwrap(),
+            root.resolve_path(Path::new("folder/folder2/../folder3"))
+                .unwrap(),
             ["folder", "folder3"]
         );
         assert_eq!(
-            resolve_path(Path::new("folder/folder2/../../folder3")).unwrap(),
+            root.resolve_path(Path::new("folder/folder2/../../folder3"))
+                .unwrap(),
             ["folder3"]
         );
         assert_eq!(
-            resolve_path(Path::new("/folder/../folder2")).unwrap(),
+            root.resolve_path(Path::new("/folder/../folder2")).unwrap(),
             ["folder2"]
         );
 
         // test error cases
-        assert!(resolve_path(Path::new("..")).is_err());
-        assert!(resolve_path(Path::new("folder/../..")).is_err());
-        assert!(resolve_path(Path::new("folder/folder2/../../..")).is_err());
+        assert!(root.resolve_path(Path::new("..")).is_err());
+        assert!(root.resolve_path(Path::new("../a")).is_err());
+        assert!(root.resolve_path(Path::new("folder/../..")).is_err());
+        assert!(root
+            .resolve_path(Path::new("folder/folder2/../../.."))
+            .is_err());
     }
 
     #[test]
