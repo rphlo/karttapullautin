@@ -897,13 +897,13 @@ pub fn render(
             let val = rec.split('\n').collect::<Vec<&str>>();
             let layer = val[2].trim();
             for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
+                let vt = v.trim_end();
+                if vt == " 10" {
                     x = (val[i + 1].trim().parse::<f64>().unwrap() - x0) * 600.0
                         / 254.0
                         / scalefactor;
                 }
-                if vt == "20" {
+                if vt == " 20" {
                     y = (y0 - val[i + 1].trim().parse::<f64>().unwrap()) * 600.0
                         / 254.0
                         / scalefactor;
@@ -999,11 +999,11 @@ pub fn render(
             let val = apu.split('\n').collect::<Vec<&str>>();
             layer = val[2].trim();
             for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
+                let vt = v.trim_end();
+                if vt == " 10" {
                     xline = i + 1;
                 }
-                if vt == "20" {
+                if vt == " 20" {
                     yline = i + 1;
                 }
             }
@@ -1083,11 +1083,11 @@ pub fn render(
             let val = apu.split('\n').collect::<Vec<&str>>();
             layer = val[2].trim();
             for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
+                let vt = v.trim_end();
+                if vt == " 10" {
                     xline = i + 1;
                 }
-                if vt == "20" {
+                if vt == " 20" {
                     yline = i + 1;
                 }
             }
@@ -1444,11 +1444,11 @@ pub fn draw_curves(
             let val = apu.split('\n').collect::<Vec<&str>>();
             layer = val[2].trim();
             for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
+                let vt = v.trim_end();
+                if vt == " 10" {
                     xline = i + 1;
                 }
-                if vt == "20" {
+                if vt == " 20" {
                     yline = i + 1;
                 }
             }

@@ -57,11 +57,11 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
             let apu = r[1];
             let val = apu.split('\n').collect::<Vec<&str>>();
             for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
+                let vt = v.trim_end();
+                if vt == " 10" {
                     xline = i + 1;
                 }
-                if vt == "20" {
+                if vt == " 20" {
                     yline = i + 1;
                 }
             }
@@ -197,11 +197,11 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
             let apu = r[1];
             let val = apu.split('\n').collect::<Vec<&str>>();
             for (i, v) in val.iter().enumerate() {
-                let vt = v.trim();
-                if vt == "10" {
+                let vt = v.trim_end();
+                if vt == " 10" {
                     xline = i + 1;
                 }
-                if vt == "20" {
+                if vt == " 20" {
                     yline = i + 1;
                 }
             }

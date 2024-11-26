@@ -32,11 +32,11 @@ pub fn polylinedxfcrop(
                     let mut xline = 0;
                     let mut yline = 0;
                     for (i, v) in val.iter().enumerate() {
-                        let vt = v.trim();
-                        if vt == "10" {
+                        let vt = v.trim_end();
+                        if vt == " 10" {
                             xline = i + 1;
                         }
-                        if vt == "20" {
+                        if vt == " 20" {
                             yline = i + 1;
                         }
                     }
