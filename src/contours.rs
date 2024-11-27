@@ -241,7 +241,12 @@ pub fn heightmap2contours(
     let ymax = heightmap.maxy();
     let size = heightmap.scale;
 
-    // this "correction" is needed here since the cinterval of the heightmap might be different from the one used for the contours
+    // As per https://github.com/karttapullautin/karttapullautin/discussions/154#discussioncomment-11393907
+    // If elevation grid point elavion equals with contour interval steps you will get contour topology issues
+    // (crossing/touching contours). This was implemented to avoid that. 0.02 (two centimeters) is just a random
+    // small number to avoid that issue, insignificant enough to matter, but big buffer enough to hopefully make
+    // it not get back to "bad value" for it getting rounded somewhere. Sure, it could be some fraction of
+    // contour interval, but in real world 2 cm is insignificant enough.
     for (_, _, ele) in avg_alt.iter_mut() {
         let temp: f64 = (*ele / cinterval + 0.5).floor() * cinterval;
         if (*ele - temp).abs() < 0.02 {

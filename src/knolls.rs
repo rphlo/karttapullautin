@@ -1061,6 +1061,12 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
         }
     }
 
+    // As per https://github.com/karttapullautin/karttapullautin/discussions/154#discussioncomment-11393907
+    // If elevation grid point elavion equals with contour interval steps you will get contour topology issues
+    // (crossing/touching contours). This was implemented to avoid that. 0.02 (two centimeters) is just a random
+    // small number to avoid that issue, insignificant enough to matter, but big buffer enough to hopefully make
+    // it not get back to "bad value" for it getting rounded somewhere. Sure, it could be some fraction of
+    // contour interval, but in real world 2 cm is insignificant enough.
     for (_, _, h) in xyz2.grid.iter_mut() {
         let tmp = (*h / interval + 0.5).floor() * interval;
         if (tmp - *h).abs() < 0.02 {
