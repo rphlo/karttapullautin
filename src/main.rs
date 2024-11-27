@@ -320,6 +320,7 @@ fn main() {
             }
 
             // copy the output files back to disk
+            std::fs::create_dir_all(&config.batchoutfolder).unwrap();
             for path in fs.list(&config.batchoutfolder).unwrap() {
                 info!("Copying {} from memory fs to disk", path.display());
                 fs.save_to_disk(&path, &path).unwrap();
