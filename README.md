@@ -156,8 +156,9 @@ Make your changes, then youd run:
 
     cargo build --release
 
+The new binary will be accessible in the `target/release/` directory
+
 ## Contributors
 
 @jagge @rphlo @antbern
 
-The new binary will be accessible in the `target/release/` directory
