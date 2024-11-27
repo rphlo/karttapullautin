@@ -1,5 +1,8 @@
+use log::debug;
 use log::info;
 use pullauta::config::Config;
+use pullauta::io::fs::memory::MemoryFileSystem;
+use pullauta::io::fs::FileSystem;
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -31,6 +34,8 @@ fn main() {
 
     let config =
         Arc::new(Config::load_or_create_default().expect("Could not open or create config file"));
+
+    let fs = pullauta::io::fs::local::LocalFileSystem;
 
     let mut args: Vec<String> = env::args().collect();
 
@@ -69,9 +74,10 @@ fn main() {
     let pnorthlinesangle = config.pnorthlinesangle;
     let pnorthlineswidth = config.pnorthlineswidth;
 
-    if command.is_empty() && tmpfolder.join("vegetation.png").exists() && !batch {
+    if command.is_empty() && fs.exists(tmpfolder.join("vegetation.png")) && !batch {
         info!("Rendering png map with depressions");
         pullauta::render::render(
+            &fs,
             &config,
             &thread,
             &tmpfolder,
@@ -82,6 +88,7 @@ fn main() {
         .unwrap();
         info!("Rendering png map without depressions");
         pullauta::render::render(
+            &fs,
             &config,
             &thread,
             &tmpfolder,
@@ -152,44 +159,44 @@ fn main() {
 
         let input = &args[0];
         let output = &args[1];
-        pullauta::io::internal2xyz(input, output).unwrap();
+        pullauta::io::internal2xyz(&fs, input, output).unwrap();
         return;
     }
 
     if command == "blocks" {
-        pullauta::blocks::blocks(&tmpfolder).unwrap();
+        pullauta::blocks::blocks(&fs, &tmpfolder).unwrap();
         return;
     }
 
     if command == "dotknolls" {
-        pullauta::knolls::dotknolls(&config, &tmpfolder).unwrap();
+        pullauta::knolls::dotknolls(&fs, &config, &tmpfolder).unwrap();
         return;
     }
 
     if command == "dxfmerge" || command == "merge" {
-        pullauta::merge::dxfmerge(&config).unwrap();
+        pullauta::merge::dxfmerge(&fs, &config).unwrap();
         if command == "merge" {
             let mut scale = 1.0;
             if !args.is_empty() {
                 scale = args[0].parse::<f64>().unwrap();
             }
-            pullauta::merge::pngmergevege(&config, scale).unwrap();
+            pullauta::merge::pngmergevege(&fs, &config, scale).unwrap();
         }
         return;
     }
 
     if command == "knolldetector" {
-        pullauta::knolls::knolldetector(&config, &tmpfolder).unwrap();
+        pullauta::knolls::knolldetector(&fs, &config, &tmpfolder).unwrap();
         return;
     }
 
     if command == "makecliffs" {
-        pullauta::cliffs::makecliffs(&config, &tmpfolder).unwrap();
+        pullauta::cliffs::makecliffs(&fs, &config, &tmpfolder).unwrap();
         return;
     }
 
     if command == "makevege" {
-        pullauta::vegetation::makevege(&config, &tmpfolder).unwrap();
+        pullauta::vegetation::makevege(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "pngmerge" || command == "pngmergedepr" {
@@ -197,7 +204,7 @@ fn main() {
         if !args.is_empty() {
             scale = args[0].parse::<f64>().unwrap();
         }
-        pullauta::merge::pngmerge(&config, scale, command == "pngmergedepr").unwrap();
+        pullauta::merge::pngmerge(&fs, &config, scale, command == "pngmergedepr").unwrap();
         return;
     }
 
@@ -206,7 +213,7 @@ fn main() {
         if !args.is_empty() {
             scale = args[0].parse::<f64>().unwrap();
         }
-        pullauta::merge::pngmergevege(&config, scale).unwrap();
+        pullauta::merge::pngmergevege(&fs, &config, scale).unwrap();
         return;
     }
 
@@ -217,7 +224,8 @@ fn main() {
         let miny = args[3].parse::<f64>().unwrap();
         let maxx = args[4].parse::<f64>().unwrap();
         let maxy = args[5].parse::<f64>().unwrap();
-        pullauta::crop::polylinedxfcrop(dxffilein, dxffileout, minx, miny, maxx, maxy).unwrap();
+        pullauta::crop::polylinedxfcrop(&fs, dxffilein, dxffileout, minx, miny, maxx, maxy)
+            .unwrap();
         return;
     }
 
@@ -228,24 +236,24 @@ fn main() {
         let miny = args[3].parse::<f64>().unwrap();
         let maxx = args[4].parse::<f64>().unwrap();
         let maxy = args[5].parse::<f64>().unwrap();
-        pullauta::crop::pointdxfcrop(dxffilein, dxffileout, minx, miny, maxx, maxy).unwrap();
+        pullauta::crop::pointdxfcrop(&fs, dxffilein, dxffileout, minx, miny, maxx, maxy).unwrap();
         return;
     }
 
     if command == "smoothjoin" {
-        pullauta::merge::smoothjoin(&config, &tmpfolder).unwrap();
+        pullauta::merge::smoothjoin(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "xyzknolls" {
-        pullauta::knolls::xyzknolls(&config, &tmpfolder).unwrap();
+        pullauta::knolls::xyzknolls(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "unzipmtk" {
-        pullauta::process::unzipmtk(&config, &tmpfolder, &args).unwrap();
+        pullauta::process::unzipmtk(&fs, &config, &tmpfolder, &args).unwrap();
     }
 
     if command == "mtkshaperender" {
-        pullauta::render::mtkshaperender(&config, &tmpfolder).unwrap();
+        pullauta::render::mtkshaperender(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "xyz2contours" {
@@ -253,13 +261,14 @@ fn main() {
         let xyzfilein = args[1].clone();
         let xyzfileout = args[2].clone();
         let dxffile = args[3].clone();
-        let hmap = pullauta::contours::xyz2heightmap(&config, &tmpfolder, &xyzfilein).unwrap();
+        let hmap = pullauta::contours::xyz2heightmap(&fs, &config, &tmpfolder, &xyzfilein).unwrap();
 
         if xyzfileout != "null" && !xyzfileout.is_empty() {
-            hmap.to_file(xyzfileout).unwrap();
+            hmap.to_file(&fs, xyzfileout).unwrap();
         }
 
-        pullauta::contours::heightmap2contours(&tmpfolder, cinterval, &hmap, &dxffile).unwrap();
+        pullauta::contours::heightmap2contours(&fs, &tmpfolder, cinterval, &hmap, &dxffile)
+            .unwrap();
         return;
     }
 
@@ -267,26 +276,61 @@ fn main() {
         let angle: f64 = args[0].parse::<f64>().unwrap();
         let nwidth: usize = args[1].parse::<usize>().unwrap();
         let nodepressions: bool = args.len() > 2 && args[2] == "nodepressions";
-        pullauta::render::render(&config, &thread, &tmpfolder, angle, nwidth, nodepressions)
-            .unwrap();
+        pullauta::render::render(
+            &fs,
+            &config,
+            &thread,
+            &tmpfolder,
+            angle,
+            nwidth,
+            nodepressions,
+        )
+        .unwrap();
         return;
     }
-
     let proc = config.processes;
     if command.is_empty() && batch && proc > 1 {
-        let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
-        for i in 0..proc {
-            let config = config.clone();
-            let handle = thread::spawn(move || {
-                info!("Starting thread");
-                pullauta::process::batch_process(&config, &format!("{}", i + 1));
-                info!("Thread complete");
-            });
-            thread::sleep(time::Duration::from_millis(100));
-            handles.push(handle);
+        // inner function to reduce code duplication
+        fn inner<F: FileSystem + Send + Clone + 'static>(fs: F, proc: u64, config: &Arc<Config>) {
+            // do the processing
+            let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
+            for i in 0..proc {
+                let config = config.clone();
+                let fs = fs.clone();
+                let handle = thread::spawn(move || {
+                    info!("Starting thread");
+                    pullauta::process::batch_process(&config, &fs, &format!("{}", i + 1));
+                    info!("Thread complete");
+                });
+                thread::sleep(time::Duration::from_millis(100));
+                handles.push(handle);
+            }
+            for handle in handles {
+                handle.join().unwrap();
+            }
         }
-        for handle in handles {
-            handle.join().unwrap();
+
+        if config.experimental_use_in_memory_fs {
+            // copy all the input files into the memory file system
+            let fs = pullauta::io::fs::memory::MemoryFileSystem::new();
+            fs.create_dir_all(&config.lazfolder).unwrap();
+            for file in fs::read_dir(&config.lazfolder).unwrap() {
+                let file = file.unwrap();
+                let path = file.path();
+                println!("Copying {} into memory fs", path.display());
+                fs.load_from_disk(&path, &path).unwrap();
+            }
+
+            inner(fs.clone(), proc, &config);
+
+            // copy the output files back to disk
+            std::fs::create_dir_all(&config.batchoutfolder).unwrap();
+            for path in fs.list(&config.batchoutfolder).unwrap() {
+                info!("Copying {} from memory fs to disk", path.display());
+                fs.save_to_disk(&path, &path).unwrap();
+            }
+        } else {
+            inner(fs, proc, &config);
         }
         return;
     }
@@ -299,13 +343,13 @@ fn main() {
         if thread == "0" {
             thread = String::from("");
         }
-        pullauta::process::batch_process(&config, &thread)
+        pullauta::process::batch_process(&config, &fs, &thread)
     }
 
     if command_lowercase.ends_with(".zip") {
         let mut zips: Vec<String> = vec![command];
         zips.extend(args);
-        pullauta::process::process_zip(&config, &thread, &tmpfolder, &zips).unwrap();
+        pullauta::process::process_zip(&fs, &config, &thread, &tmpfolder, &zips).unwrap();
         return;
     }
 
@@ -318,13 +362,48 @@ fn main() {
         if args.len() > 1 {
             norender = args[1].clone() == "norender";
         }
-        pullauta::process::process_tile(
-            &config,
-            &thread,
-            &tmpfolder,
-            Path::new(&command),
-            norender,
-        )
-        .unwrap();
+
+        if config.experimental_use_in_memory_fs {
+            let fs = pullauta::io::fs::memory::MemoryFileSystem::new();
+
+            debug!("Copying input file into memory fs: {}", command);
+            // copy the input file into the memory file system
+            fs.load_from_disk(Path::new(&command), Path::new("input.laz"))
+                .expect("Could not copy input file into memory fs");
+
+            debug!("Done");
+
+            pullauta::process::process_tile(
+                &fs,
+                &config,
+                &thread,
+                &tmpfolder,
+                // Path::new(&command),
+                Path::new("input.laz"),
+                norender,
+            )
+            .unwrap();
+
+            // now write the output files to disk
+            fn copy(fs: &MemoryFileSystem, name: &str) {
+                if fs.exists(name) {
+                    info!("Copying {} from memory fs to disk", name);
+                    fs.save_to_disk(name, name)
+                        .expect("Could not copy from memory fs to disk");
+                }
+            }
+            copy(&fs, "pullautus.png");
+            copy(&fs, "pullautus_depr.png");
+        } else {
+            pullauta::process::process_tile(
+                &fs,
+                &config,
+                &thread,
+                &tmpfolder,
+                Path::new(&command),
+                norender,
+            )
+            .unwrap();
+        }
     }
 }

@@ -3,22 +3,26 @@ use imageproc::drawing::draw_line_segment_mut;
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
 use std::error::Error;
-use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 use crate::config::Config;
 use crate::io::bytes::FromToBytes;
+use crate::io::fs::FileSystem;
 use crate::io::heightmap::HeightMap;
 use crate::util::read_lines_no_alloc;
 
-pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn dotknolls(
+    fs: &impl FileSystem,
+    config: &Config,
+    tmpfolder: &Path,
+) -> Result<(), Box<dyn Error>> {
     info!("Identifying dotknolls...");
 
     let scalefactor = config.scalefactor;
 
     let heightmap_in = tmpfolder.join("xyz_knolls.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
     // in world coordinates
@@ -36,7 +40,9 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
         Luma([0xff]),
     );
 
-    let f = File::create(tmpfolder.join("dotknolls.dxf")).expect("Unable to create file");
+    let f = fs
+        .create(tmpfolder.join("dotknolls.dxf"))
+        .expect("Unable to create file");
     let mut f = BufWriter::new(f);
     write!(&mut f,
         "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
@@ -44,7 +50,7 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     ).expect("Cannot write dxf file");
 
     let input = tmpfolder.join("out2.dxf");
-    let data = fs::read_to_string(input).expect("Can not read input file");
+    let data = fs.read_to_string(input).expect("Can not read input file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
 
     for (j, rec) in data.iter().enumerate() {
@@ -90,7 +96,7 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     }
 
     let input = tmpfolder.join("dotknolls.txt");
-    read_lines_no_alloc(input, |line| {
+    read_lines_no_alloc(fs, input, |line| {
         let parts = line.split(' ');
         let r = parts.collect::<Vec<&str>>();
         if r.len() >= 3 {
@@ -138,7 +144,11 @@ pub fn dotknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     info!("Done");
     Ok(())
 }
-pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn knolldetector(
+    fs: &impl FileSystem,
+    config: &Config,
+    tmpfolder: &Path,
+) -> Result<(), Box<dyn Error>> {
     info!("Detecting knolls...");
     let scalefactor = config.scalefactor;
     let contour_interval = config.contour_interval;
@@ -148,7 +158,7 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
     let interval = 0.3 * scalefactor;
 
     let heightmap_in = tmpfolder.join("xyz_03.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
     // in world coordinates
@@ -167,10 +177,13 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
         xyz.insert((x as u64, y as u64), h);
     }
 
-    let data = fs::read_to_string(tmpfolder.join("contours03.dxf"))
+    let data = fs
+        .read_to_string(tmpfolder.join("contours03.dxf"))
         .expect("Should have been able to read the file");
     let data: Vec<&str> = data.split("POLYLINE").collect();
-    let f = File::create(tmpfolder.join("detected.dxf")).expect("Unable to create file");
+    let f = fs
+        .create(tmpfolder.join("detected.dxf"))
+        .expect("Unable to create file");
     let mut f = BufWriter::new(f);
     write!(&mut f,
         "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$EXTMIN\r\n 10\r\n{}\r\n 20\r\n{}\r\n  9\r\n$EXTMAX\r\n 10\r\n{}\r\n 20\r\n{}\r\n  0\r\nENDSEC\r\n  0\r\nSECTION\r\n  2\r\nENTITIES\r\n  0\r\n",
@@ -723,7 +736,9 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
 
     let canditates = new_candidates;
 
-    let file_pins = File::create(tmpfolder.join("pins.txt")).expect("Unable to create file");
+    let file_pins = fs
+        .create(tmpfolder.join("pins.txt"))
+        .expect("Unable to create file");
     let mut file_pins = BufWriter::new(file_pins);
 
     for l in 0..data.len() {
@@ -839,7 +854,11 @@ pub fn knolldetector(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Er
     Ok(())
 }
 
-pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn xyzknolls(
+    fs: &impl FileSystem,
+    config: &Config,
+    tmpfolder: &Path,
+) -> Result<(), Box<dyn Error>> {
     info!("Identifying knolls...");
     let scalefactor = config.scalefactor;
     let contour_interval = config.contour_interval;
@@ -848,7 +867,7 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
 
     // load the binary file
     let heightmap_in = tmpfolder.join("xyz_03.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(heightmap_in)?);
 
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
@@ -899,8 +918,8 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
     let mut pins: Vec<Pin> = Vec::new();
 
     let pins_file_in = tmpfolder.join("pins.txt");
-    if pins_file_in.exists() {
-        read_lines_no_alloc(pins_file_in, |line| {
+    if fs.exists(&pins_file_in) {
+        read_lines_no_alloc(fs, pins_file_in, |line| {
             let mut r = line.trim().split(',');
             let ele = r.nth(2).unwrap().parse::<f64>().unwrap();
             let xx = r.next().unwrap().parse::<f64>().unwrap();
@@ -1074,7 +1093,7 @@ pub fn xyzknolls(config: &Config, tmpfolder: &Path) -> Result<(), Box<dyn Error>
 
     // write the updated heightmap
     let heightmap_out = tmpfolder.join("xyz_knolls.hmap");
-    let mut writer = BufWriter::new(File::create(heightmap_out)?);
+    let mut writer = BufWriter::new(fs.create(heightmap_out)?);
     xyz2.to_bytes(&mut writer)?;
 
     info!("Done");

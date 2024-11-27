@@ -1,33 +1,30 @@
 use std::{
     fmt::Debug,
-    fs::File,
-    io::{self, BufRead},
+    io::{self, BufRead, BufReader},
     path::Path,
     time::Instant,
 };
 
 use log::debug;
 
-pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
-}
+use crate::io::fs::FileSystem;
 
 /// Iterates over the lines in a file and calls the callback with a &str reference to each line.
 /// This function does not allocate new strings for each line, as opposed to using
 /// [`io::BufReader::lines()`] as in [`read_lines`].
-pub fn read_lines_no_alloc<P>(filename: P, mut line_callback: impl FnMut(&str)) -> io::Result<()>
+pub fn read_lines_no_alloc<P>(
+    fs: &impl FileSystem,
+    filename: P,
+    mut line_callback: impl FnMut(&str),
+) -> io::Result<()>
 where
     P: AsRef<Path> + Debug,
 {
     debug!("Reading lines from {filename:?}");
     let start = Instant::now();
 
-    let file = File::open(filename)?;
-    let mut reader = io::BufReader::new(file);
+    let file = fs.open(filename)?;
+    let mut reader = BufReader::new(file);
 
     let mut line_buffer = String::new();
     let mut line_count: u32 = 0;

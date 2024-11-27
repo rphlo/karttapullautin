@@ -4,15 +4,15 @@ use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
-use std::{error::Error, fs::File, io::BufReader, path::Path};
+use std::{error::Error, io::BufReader, path::Path};
 
-use crate::io::{bytes::FromToBytes, heightmap::HeightMap, xyz::XyzInternalReader};
+use crate::io::{bytes::FromToBytes, fs::FileSystem, heightmap::HeightMap, xyz::XyzInternalReader};
 
-pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
+pub fn blocks(fs: &impl FileSystem, tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     info!("Identifying blocks...");
 
     let heightmap_in = tmpfolder.join("xyz2.hmap");
-    let mut reader = BufReader::new(File::open(heightmap_in)?);
+    let mut reader = BufReader::new(fs.open(heightmap_in)?);
     let hmap = HeightMap::from_bytes(&mut reader)?;
 
     let xstartxyz = hmap.xoffset;
@@ -35,7 +35,8 @@ pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     let white = Rgba([255, 255, 255, 255]);
 
     let xyz_file_in = tmpfolder.join("xyztemp.xyz.bin");
-    let mut reader = XyzInternalReader::open(&xyz_file_in).unwrap();
+    let file = BufReader::new(fs.open(&xyz_file_in)?);
+    let mut reader = XyzInternalReader::new(file).unwrap();
     while let Some(r) = reader.next().unwrap() {
         let (x, y, h) = (r.x, r.y, r.z);
         let r3 = r.classification;
@@ -68,8 +69,13 @@ pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    img2.save(tmpfolder.join("blocks2.png"))
-        .expect("error saving png");
+    img2.write_to(
+        &mut fs
+            .create(tmpfolder.join("blocks2.png"))
+            .expect("error saving png"),
+        image::ImageFormat::Png,
+    )
+    .expect("error saving png");
 
     let mut img = DynamicImage::ImageRgb8(img);
 
@@ -78,8 +84,13 @@ pub fn blocks(tmpfolder: &Path) -> Result<(), Box<dyn Error>> {
     let filter_size = 2;
     img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
 
-    img.save(tmpfolder.join("blocks.png"))
-        .expect("error saving png");
+    img.write_to(
+        &mut fs
+            .create(tmpfolder.join("blocks.png"))
+            .expect("error saving png"),
+        image::ImageFormat::Png,
+    )
+    .expect("error saving png");
     info!("Done");
     Ok(())
 }
