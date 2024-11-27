@@ -9,7 +9,7 @@ Due to its performance and accuracy, with its powerful features and fast results
 
 ## Usage
 
-Download the latest binary for your platform from https://github.com/rphlo/karttapullautin/releases/latest and extract the files where you want to use them.
+Download the latest binary for your platform from https://github.com/karttapullautin/karttapullautin/releases/latest and extract the files where you want to use them.
 
 ### Compiling code from source
 
@@ -19,7 +19,7 @@ You'll need to install the rust toolchain.
 
 See https://rustup.rs  
 
-Then download the latest code at https://github.com/rphlo/karttapullautin/releases/latest and compile it.
+Then download the latest code at https://github.com/karttapullautin/karttapullautin/releases/latest and compile it.
 
     cargo build --release
 
@@ -155,5 +155,9 @@ If you need to run one of those, you must use the original perl script https://w
 Make your changes, then youd run:
 
     cargo build --release
+
+## Contributors
+
+@jagge @rphlo @antbern
 
 The new binary will be accessible in the `target/release/` directory
