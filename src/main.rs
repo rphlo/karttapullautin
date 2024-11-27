@@ -288,20 +288,10 @@ fn main() {
         .unwrap();
         return;
     }
-
     let proc = config.processes;
     if command.is_empty() && batch && proc > 1 {
-        if config.experimental_use_in_memory_fs {
-            // copy all the input files into the memory file system
-            let fs = pullauta::io::fs::memory::MemoryFileSystem::new();
-            fs.create_dir_all(&config.lazfolder).unwrap();
-            for file in fs::read_dir(&config.lazfolder).unwrap() {
-                let file = file.unwrap();
-                let path = file.path();
-                println!("Copying {} into memory fs", path.display());
-                fs.load_from_disk(&path, &path).unwrap();
-            }
-
+        // inner function to reduce code duplication
+        fn inner<F: FileSystem + Send + Clone + 'static>(fs: F, proc: u64, config: &Arc<Config>) {
             // do the processing
             let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
             for i in 0..proc {
@@ -318,6 +308,20 @@ fn main() {
             for handle in handles {
                 handle.join().unwrap();
             }
+        }
+
+        if config.experimental_use_in_memory_fs {
+            // copy all the input files into the memory file system
+            let fs = pullauta::io::fs::memory::MemoryFileSystem::new();
+            fs.create_dir_all(&config.lazfolder).unwrap();
+            for file in fs::read_dir(&config.lazfolder).unwrap() {
+                let file = file.unwrap();
+                let path = file.path();
+                println!("Copying {} into memory fs", path.display());
+                fs.load_from_disk(&path, &path).unwrap();
+            }
+
+            inner(fs.clone(), proc, &config);
 
             // copy the output files back to disk
             std::fs::create_dir_all(&config.batchoutfolder).unwrap();
@@ -326,21 +330,7 @@ fn main() {
                 fs.save_to_disk(&path, &path).unwrap();
             }
         } else {
-            let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
-            for i in 0..proc {
-                let config = config.clone();
-                let fs = fs.clone();
-                let handle = thread::spawn(move || {
-                    info!("Starting thread");
-                    pullauta::process::batch_process(&config, &fs, &format!("{}", i + 1));
-                    info!("Thread complete");
-                });
-                thread::sleep(time::Duration::from_millis(100));
-                handles.push(handle);
-            }
-            for handle in handles {
-                handle.join().unwrap();
-            }
+            inner(fs, proc, &config);
         }
         return;
     }
