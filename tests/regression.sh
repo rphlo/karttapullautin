@@ -49,7 +49,7 @@ while getopts "hp:v:i:" opt; do
 done
 
 if [[ "$VERSION" != "latest" ]]; then
-	read -ra RELEASES <<< $(curl https://api.github.com/repos/rphlo/karttapullautin/releases | jq '.[] | .tag_name'  | tr -d '"')
+	read -ra RELEASES <<< $(curl https://api.github.com/repos/karttapullautin/karttapullautin/releases | jq '.[] | .tag_name'  | tr -d '"')
 	IFS=' '
 	# Flag for finding the element
 	found=false
@@ -164,7 +164,7 @@ RELEASE_DIR=$(realpath "$RELEASE_DIR")
 cd "$RELEASE_DIR"
 
 if [[ "$VERSION" == "latest" ]]; then
-	TAG=$(curl -sL https://api.github.com/repos/rphlo/karttapullautin/releases/latest | jq -r ".tag_name")
+	TAG=$(curl -sL https://api.github.com/repos/karttapullautin/karttapullautin/releases/latest | jq -r ".tag_name")
 else
 	TAG=$VERSION
 fi
@@ -201,9 +201,9 @@ if [ ! -d "$TAG" ]; then
 		FILE_NAME="karttapullautin-${ARCH}-${OS}.tar.gz"
 
 		if [[ "$VERSION" == "latest" ]]; then
-			URL="https://github.com/rphlo/karttapullautin/releases/latest/download/$FILE_NAME"
+			URL="https://github.com/karttapullautin/karttapullautin/releases/latest/download/$FILE_NAME"
 		else
-			URL="https://github.com/rphlo/karttapullautin/releases/download/$TAG/$FILE_NAME"
+			URL="https://github.com/karttapullautin/karttapullautin/releases/download/$TAG/$FILE_NAME"
 		fi
 
 		curl -L $URL | tar xvz
