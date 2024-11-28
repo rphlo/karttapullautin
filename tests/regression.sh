@@ -208,17 +208,16 @@ if [ ! -d "$TAG" ]; then
 
 		curl -L $URL | tar xvz
 		if [ ! $? -eq 0 ]; then
-			echo "Downloading release sources form https://github.com/karttapullautin/karttapullautin/archive/refs/tags/$TAG.tar.gz"
 			URL="https://github.com/karttapullautin/karttapullautin/archive/refs/tags/$TAG.tar.gz"
+			echo "Downloading release sources form $URL"
 			curl -L $URL | tar xvz
 			if [ ! $? -eq 0 ]; then
-				echo "Download unavailable for ${ARCH}-${OS}"
+				echo "Download of sources unavailable for $TAG"
 				exit 1
 			fi
 			SOURCES=$(find . -maxdepth 1 -type d ! -name '.' -exec basename {} \;)
 			echo "$SOURCES"
 			cd "$SOURCES"
-			echo "Current directory: $(pwd)"
 			cargo build --release
 			if [ ! $? -eq 0 ]; then
 				echo "Build of release sources failed"
