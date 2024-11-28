@@ -208,8 +208,24 @@ if [ ! -d "$TAG" ]; then
 
 		curl -L $URL | tar xvz
 		if [ ! $? -eq 0 ]; then
-			echo "Download unavailable for ${ARCH}-${OS}"
-			exit 1
+			echo "Downloading release sources form https://github.com/karttapullautin/karttapullautin/archive/refs/tags/$TAG.tar.gz"
+			URL="https://github.com/karttapullautin/karttapullautin/archive/refs/tags/$TAG.tar.gz"
+			curl -L $URL | tar xvz
+			if [ ! $? -eq 0 ]; then
+				echo "Download unavailable for ${ARCH}-${OS}"
+				exit 1
+			fi
+			SOURCES=$(find . -maxdepth 1 -type d ! -name '.' -exec basename {} \;)
+			echo "$SOURCES"
+			cd "$SOURCES"
+			echo "Current directory: $(pwd)"
+			cargo build --release
+			if [ ! $? -eq 0 ]; then
+				echo "Build of release sources failed"
+				exit 1
+			fi
+			cd ..
+			cp $SOURCES/target/release/pullauta pullauta
 		fi
 
 		if [ "$INI" != "auto" ]; then
@@ -240,6 +256,10 @@ else
 		fi
 	fi
 	cd ..
+fi
+
+if [ -n "${SOURCES+x}" ]; then
+  rm -rf "$TAG/$SOURCES"
 fi
 
 cd ..
