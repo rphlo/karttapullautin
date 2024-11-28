@@ -291,7 +291,11 @@ fn main() {
     let proc = config.processes;
     if command.is_empty() && batch && proc > 1 {
         // inner function to reduce code duplication
-        fn inner<F: FileSystem + Send + Clone + 'static>(fs: F, proc: u64, config: &Arc<Config>) {
+        fn launch_threads<F: FileSystem + Send + Clone + 'static>(
+            fs: F,
+            proc: u64,
+            config: &Arc<Config>,
+        ) {
             // do the processing
             let mut handles: Vec<thread::JoinHandle<()>> = Vec::with_capacity((proc + 1) as usize);
             for i in 0..proc {
@@ -321,7 +325,7 @@ fn main() {
                 fs.load_from_disk(&path, &path).unwrap();
             }
 
-            inner(fs.clone(), proc, &config);
+            launch_threads(fs.clone(), proc, &config);
 
             // copy the output files back to disk
             std::fs::create_dir_all(&config.batchoutfolder).unwrap();
@@ -330,7 +334,7 @@ fn main() {
                 fs.save_to_disk(&path, &path).unwrap();
             }
         } else {
-            inner(fs, proc, &config);
+            launch_threads(fs, proc, &config);
         }
         return;
     }
