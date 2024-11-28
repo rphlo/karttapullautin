@@ -42,7 +42,7 @@ jobs:
       run: |
         # in a new folder to make sure we have a clean environment
         mkdir latest_release && cd latest_release
-        curl -L https://github.com/rphlo/karttapullautin/releases/latest/download/karttapullautin-x86_64-linux.tar.gz | tar xvz
+        curl -L https://github.com/karttapullautin/karttapullautin/releases/latest/download/karttapullautin-x86_64-linux.tar.gz | tar xvz
         env time -o ../time_main.txt ./pullauta ../test_file.laz
         mv pullautus.png ../pullautus_main.png
         mv pullautus_depr.png ../pullautus_depr_main.png
@@ -149,7 +149,7 @@ jobs:
       run: |
         # in a new folder to make sure we have a clean environment
         mkdir latest_release && cd latest_release
-        curl -L https://github.com/rphlo/karttapullautin/releases/latest/download/karttapullautin-x86_64-linux.tar.gz | tar xvz
+        curl -L https://github.com/karttapullautin/karttapullautin/releases/latest/download/karttapullautin-x86_64-linux.tar.gz | tar xvz
 
         # prepare
         mkdir in && mkdir out
