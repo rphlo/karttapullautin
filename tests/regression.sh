@@ -207,6 +207,10 @@ if [ ! -d "$TAG" ]; then
 		fi
 
 		curl -L $URL | tar xvz
+		if [ ! $? -eq 0 ]; then
+			echo "Download unavailable for ${ARCH}-${OS}"
+			exit 1
+		fi
 
 		if [ "$INI" != "auto" ]; then
 			cp $INI "pullauta.ini"
