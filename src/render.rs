@@ -282,7 +282,7 @@ pub fn mtkshaperender(
                 }
 
                 // power line
-                if ["22300", "22312", "44500", "223311"].contains(&luokka.as_str()) {
+                if ["22300", "22311", "22312", "44500"].contains(&luokka.as_str()) {
                     imgblacktop.set_line_width(5.0);
                     thickness = 5.0;
                     color = Some(black);
