@@ -219,7 +219,7 @@ pub fn mtkshaperender(
                 }
 
                 // large pathes
-                if (luokka == "12141" || luokka == "12314") && versuh != 11.0 {
+                if (luokka == "12141" || luokka == "12314") && versuh != -11.0 {
                     thickness = 12.0;
                     image = "black";
                     color = Some(black);
@@ -230,7 +230,7 @@ pub fn mtkshaperender(
 
                 // roads
                 if ["12111", "12112", "12121", "12122", "12131", "12132"].contains(&luokka.as_str())
-                    && versuh != 11.0
+                    && versuh != -11.0
                 {
                     imgbrown.set_line_width(20.0);
                     imgbrowntop.set_line_width(20.0);
@@ -249,7 +249,7 @@ pub fn mtkshaperender(
 
                 // railroads
                 if ["14110", "14111", "14112", "14121", "14131"].contains(&luokka.as_str())
-                    && versuh != 11.0
+                    && versuh != -11.0
                 {
                     image = "black";
                     color = Some(white);
@@ -261,7 +261,7 @@ pub fn mtkshaperender(
                     }
                 }
 
-                if luokka == "12312" && versuh != 11.0 {
+                if luokka == "12312" && versuh != -11.0 {
                     dashedline = true;
                     thickness = 6.0;
                     image = "black";
@@ -271,7 +271,7 @@ pub fn mtkshaperender(
                     }
                 }
 
-                if luokka == "12313" && versuh != 11.0 {
+                if luokka == "12313" && versuh != -11.0 {
                     dashedline = true;
                     thickness = 5.0;
                     image = "black";
