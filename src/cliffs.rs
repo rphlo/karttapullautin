@@ -276,6 +276,9 @@ pub fn makecliffs(
         .expect("Cannot write dxf file");
     let c2_limit = 2.6 * 2.75;
 
+    // if we drop this already here, we can reuse the memory for the second list_alt
+    drop(list_alt);
+
     let mut list_alt = Vec2D::new(
         (((xmax - xmin) / 3.0).ceil() + 1.0) as usize,
         (((ymax - ymin) / 3.0).ceil() + 1.0) as usize,
