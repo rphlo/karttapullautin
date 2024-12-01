@@ -575,12 +575,7 @@ pub fn smoothjoin(
     let size = hmap.scale;
     let xmax = (hmap.grid.width() - 1) as u64;
     let ymax = (hmap.grid.height() - 1) as u64;
-
-    // Temporarily convert to HashMap for not having to go through all the logic below.
-    let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    for (x, y, h) in hmap.grid.iter() {
-        xyz.insert((x as u64, y as u64), h);
-    }
+    let xyz = hmap.grid;
 
     let mut steepness = Vec2D::new((xmax + 1) as usize, (ymax + 1) as usize, f64::NAN);
 
@@ -590,7 +585,7 @@ pub fn smoothjoin(
             let mut high: f64 = f64::MIN;
             for ii in i - 1..i + 2 {
                 for jj in j - 1..j + 2 {
-                    let tmp = *xyz.get(&(ii, jj)).unwrap_or(&0.0);
+                    let tmp = xyz[(ii as usize, jj as usize)];
                     if tmp < low {
                         low = tmp;
                     }
@@ -801,8 +796,8 @@ pub fn smoothjoin(
                     if (xm - xstart) / size == ((xm - xstart) / size).floor() {
                         let xx = ((xm - xstart) / size).floor() as u64;
                         let yy = ((ym - ystart) / size).floor() as u64;
-                        let h1 = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
-                        let h2 = *xyz.get(&(xx, yy + 1)).unwrap_or(&0.0);
+                        let h1 = xyz[(xx as usize, yy as usize)];
+                        let h2 = xyz[(xx as usize, yy as usize + 1)];
                         let h3 = h1 * (yy as f64 + 1.0 - (ym - ystart) / size)
                             + h2 * ((ym - ystart) / size - yy as f64);
                         h = (h3 / interval + 0.5).floor() * interval;
@@ -812,8 +807,8 @@ pub fn smoothjoin(
                     {
                         let xx = ((xm - xstart) / size).floor() as u64;
                         let yy = ((ym - ystart) / size).floor() as u64;
-                        let h1 = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
-                        let h2 = *xyz.get(&(xx + 1, yy)).unwrap_or(&0.0);
+                        let h1 = xyz[(xx as usize, yy as usize)];
+                        let h2 = xyz[(xx as usize + 1, yy as usize)];
                         let h3 = h1 * (xx as f64 + 1.0 - (xm - xstart) / size)
                             + h2 * ((xm - xstart) / size - xx as f64);
                         h = (h3 / interval + 0.5).floor() * interval;
@@ -853,7 +848,7 @@ pub fn smoothjoin(
                 let foo_x = ((x_avg - xstart) / size).floor() as u64;
                 let foo_y = ((y_avg - ystart) / size).floor() as u64;
 
-                let h_center = *xyz.get(&(foo_x, foo_y)).unwrap_or(&0.0);
+                let h_center = xyz[(foo_x as usize, foo_y as usize)];
 
                 let mut hit = 0;
 
