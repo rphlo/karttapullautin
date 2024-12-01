@@ -30,12 +30,7 @@ pub fn makevege(
     let xstart = hmap.xoffset;
     let ystart = hmap.yoffset;
     let size = hmap.scale;
-
-    // Temporarily convert to HashMap for not having to go through all the logic below.
-    let mut xyz: HashMap<(u64, u64), f64> = HashMap::default();
-    for (x, y, h) in hmap.grid.iter() {
-        xyz.insert((x as u64, y as u64), h);
-    }
+    let xyz = &hmap.grid;
 
     let thresholds = &config.thresholds;
     let block = config.greendetectsize;
@@ -102,12 +97,10 @@ pub fn makevege(
 
                 if r3 == 2
                     || h < yellowheight
-                        + *xyz
-                            .get(&(
-                                ((x - xmin) / size).floor() as u64,
-                                ((y - ymin) / size).floor() as u64,
-                            ))
-                            .unwrap_or(&0.0)
+                        + xyz[(
+                            ((x - xmin) / size).floor() as usize,
+                            ((y - ymin) / size).floor() as usize,
+                        )]
                 {
                     *yhit.entry((xx, yy)).or_insert(0) += 1;
                 } else if r4 == 1 && r5 == 1 {
@@ -149,12 +142,12 @@ pub fn makevege(
                     *firsthit.entry((xx, yy)).or_insert(0) += 1;
                 }
 
-                let xx = ((x - xmin) / size).floor() as u64;
-                let yy = ((y - ymin) / size).floor() as u64;
-                let a = *xyz.get(&(xx, yy)).unwrap_or(&0.0);
-                let b = *xyz.get(&(xx + 1, yy)).unwrap_or(&0.0);
-                let c = *xyz.get(&(xx, yy + 1)).unwrap_or(&0.0);
-                let d = *xyz.get(&(xx + 1, yy + 1)).unwrap_or(&0.0);
+                let xx = ((x - xmin) / size).floor() as usize;
+                let yy = ((y - ymin) / size).floor() as usize;
+                let a = xyz[(xx, yy)];
+                let b = xyz[(xx + 1, yy)];
+                let c = xyz[(xx, yy + 1)];
+                let d = xyz[(xx + 1, yy + 1)];
 
                 let distx = (x - xmin) / size - xx as f64;
                 let disty = (y - ymin) / size - yy as f64;
@@ -282,12 +275,10 @@ pub fn makevege(
     for x in 2..w as usize {
         for y in 2..h as usize {
             let roof = *top.get(&(x as u64, y as u64)).unwrap_or(&0.0)
-                - *xyz
-                    .get(&(
-                        (x as f64 * block / size).floor() as u64,
-                        (y as f64 * block / size).floor() as u64,
-                    ))
-                    .unwrap_or(&0.0);
+                - xyz[(
+                    (x as f64 * block / size).floor() as usize,
+                    (y as f64 * block / size).floor() as usize,
+                )];
 
             let mut firsthit2 = *firsthit.get(&(x as u64, y as u64)).unwrap_or(&0);
             for i in (x - 2)..x + 3_usize {
