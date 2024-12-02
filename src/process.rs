@@ -575,9 +575,10 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
             );
 
             img.write_to(
-                &mut fs
-                    .create(format!("pullautus{}.png", thread))
-                    .expect("could not save output png"),
+                &mut BufWriter::new(
+                    fs.create(format!("pullautus{}.png", thread))
+                        .expect("could not save output png"),
+                ),
                 image::ImageFormat::Png,
             )
             .expect("could not save output png");
@@ -598,9 +599,10 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
             );
 
             img.write_to(
-                &mut fs
-                    .create(format!("pullautus_depr{}.png", thread))
-                    .expect("could not save output png"),
+                &mut BufWriter::new(
+                    fs.create(format!("pullautus_depr{}.png", thread))
+                        .expect("could not save output png"),
+                ),
                 image::ImageFormat::Png,
             )
             .expect("could not save output png");
@@ -710,9 +712,10 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                 );
 
                 img.write_to(
-                    &mut fs
-                        .create(format!("{}/{}_undergrowth.png", batchoutfolder, laz))
-                        .expect("could not save output png"),
+                    &mut BufWriter::new(
+                        fs.create(format!("{}/{}_undergrowth.png", batchoutfolder, laz))
+                            .expect("could not save output png"),
+                    ),
                     image::ImageFormat::Png,
                 )
                 .expect("could not save output png");
@@ -732,9 +735,10 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                 image::imageops::overlay(&mut img, &orig_img.to_rgb8(), -dx as i64, -dy as i64);
 
                 img.write_to(
-                    &mut fs
-                        .create(format!("{}/{}_vege.png", batchoutfolder, laz))
-                        .expect("could not save output png"),
+                    &mut BufWriter::new(
+                        fs.create(format!("{}/{}_vege.png", batchoutfolder, laz))
+                            .expect("could not save output png"),
+                    ),
                     image::ImageFormat::Png,
                 )
                 .expect("could not save output png");
@@ -773,9 +777,10 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                         -dy as i64,
                     );
                     img.write_to(
-                        &mut fs
-                            .create(format!("{}/{}_vege_bit.png", batchoutfolder, laz))
-                            .expect("could not save output png"),
+                        &mut BufWriter::new(
+                            fs.create(format!("{}/{}_vege_bit.png", batchoutfolder, laz))
+                                .expect("could not save output png"),
+                        ),
                         image::ImageFormat::Png,
                     )
                     .expect("could not save output png");
@@ -799,9 +804,10 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
                         -dy as i64,
                     );
                     img.write_to(
-                        &mut fs
-                            .create(format!("{}/{}_undergrowth_bit.png", batchoutfolder, laz))
-                            .expect("could not save output png"),
+                        &mut BufWriter::new(
+                            fs.create(format!("{}/{}_undergrowth_bit.png", batchoutfolder, laz))
+                                .expect("could not save output png"),
+                        ),
                         image::ImageFormat::Png,
                     )
                     .expect("could not save output png");

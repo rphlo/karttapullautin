@@ -97,17 +97,19 @@ fn merge_png(
     }
 
     im.write_to(
-        &mut fs
-            .create(format!("{}.jpg", outfilename))
-            .expect("could not save output jpg"),
+        &mut BufWriter::new(
+            fs.create(format!("{}.jpg", outfilename))
+                .expect("could not save output jpg"),
+        ),
         image::ImageFormat::Jpeg,
     )
     .expect("could not save output jpg");
 
     im.write_to(
-        &mut fs
-            .create(format!("{}.png", outfilename))
-            .expect("could not save output png"),
+        &mut BufWriter::new(
+            fs.create(format!("{}.png", outfilename))
+                .expect("could not save output png"),
+        ),
         image::ImageFormat::Png,
     )
     .expect("could not save output Png");

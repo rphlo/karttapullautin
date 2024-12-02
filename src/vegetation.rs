@@ -361,18 +361,20 @@ pub fn makevege(
 
     imgye2
         .write_to(
-            &mut fs
-                .create(tmpfolder.join("yellow.png"))
-                .expect("error saving png"),
+            &mut BufWriter::new(
+                fs.create(tmpfolder.join("yellow.png"))
+                    .expect("error saving png"),
+            ),
             image::ImageFormat::Png,
         )
         .expect("could not save output png");
 
     imggr1
         .write_to(
-            &mut fs
-                .create(tmpfolder.join("greens.png"))
-                .expect("error saving png"),
+            &mut BufWriter::new(
+                fs.create(tmpfolder.join("greens.png"))
+                    .expect("error saving png"),
+            ),
             image::ImageFormat::Png,
         )
         .expect("could not save output png");
@@ -381,9 +383,10 @@ pub fn makevege(
     image::imageops::overlay(&mut img, &DynamicImage::ImageRgba8(imgye2), 0, 0);
 
     img.write_to(
-        &mut fs
-            .create(tmpfolder.join("vegetation.png"))
-            .expect("error saving png"),
+        &mut BufWriter::new(
+            fs.create(tmpfolder.join("vegetation.png"))
+                .expect("error saving png"),
+        ),
         image::ImageFormat::Png,
     )
     .expect("could not save output png");
@@ -413,9 +416,10 @@ pub fn makevege(
 
         g_img
             .write_to(
-                &mut fs
-                    .create(tmpfolder.join("greens_bit.png"))
-                    .expect("error saving png"),
+                &mut BufWriter::new(
+                    fs.create(tmpfolder.join("greens_bit.png"))
+                        .expect("error saving png"),
+                ),
                 image::ImageFormat::Png,
             )
             .expect("could not save output png");
@@ -436,9 +440,10 @@ pub fn makevege(
 
         y_img
             .write_to(
-                &mut fs
-                    .create(tmpfolder.join("yellow_bit.png"))
-                    .expect("error saving png"),
+                &mut BufWriter::new(
+                    fs.create(tmpfolder.join("yellow_bit.png"))
+                        .expect("error saving png"),
+                ),
                 image::ImageFormat::Png,
             )
             .expect("could not save output png");
@@ -449,9 +454,10 @@ pub fn makevege(
 
         img_bit
             .write_to(
-                &mut fs
-                    .create(tmpfolder.join("vegetation_bit.png"))
-                    .expect("error saving png"),
+                &mut BufWriter::new(
+                    fs.create(tmpfolder.join("vegetation_bit.png"))
+                        .expect("error saving png"),
+                ),
                 image::ImageFormat::Png,
             )
             .expect("could not save output png");
@@ -497,9 +503,10 @@ pub fn makevege(
 
     imgwater
         .write_to(
-            &mut fs
-                .create(tmpfolder.join("blueblack.png"))
-                .expect("error saving png"),
+            &mut BufWriter::new(
+                fs.create(tmpfolder.join("blueblack.png"))
+                    .expect("error saving png"),
+            ),
             image::ImageFormat::Png,
         )
         .expect("could not save output png");
@@ -641,9 +648,10 @@ pub fn makevege(
     }
     imgug
         .write_to(
-            &mut fs
-                .create(tmpfolder.join("undergrowth.png"))
-                .expect("error saving png"),
+            &mut BufWriter::new(
+                fs.create(tmpfolder.join("undergrowth.png"))
+                    .expect("error saving png"),
+            ),
             image::ImageFormat::Png,
         )
         .expect("could not save output png");
@@ -652,9 +660,10 @@ pub fn makevege(
 
     img_ug_bit_b
         .write_to(
-            &mut fs
-                .create(tmpfolder.join("undergrowth_bit.png"))
-                .expect("error saving png"),
+            &mut BufWriter::new(
+                fs.create(tmpfolder.join("undergrowth_bit.png"))
+                    .expect("error saving png"),
+            ),
             image::ImageFormat::Png,
         )
         .expect("could not save output png");
