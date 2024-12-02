@@ -6,12 +6,12 @@ use crate::{config::Config, io::fs::FileSystem};
 
 mod canvas;
 mod mapping;
-mod mtkrender;
+mod render;
 
-pub use mtkrender::mtkshaperender;
+pub use render::render;
 
 /// Unzips the shape files and renders them to a canvas.
-pub fn unzipmtk(
+pub fn unzip_and_render(
     fs: &impl FileSystem,
     config: &Config,
     tmpfolder: &Path,
@@ -36,7 +36,7 @@ pub fn unzipmtk(
             archive.decompressed_size().map(|s| s / 1024 / 1024)
         );
         archive.extract(tmpfolder).unwrap();
-        mtkrender::mtkshaperender(fs, config, tmpfolder).unwrap();
+        render::render(fs, config, tmpfolder).unwrap();
     }
     Ok(())
 }

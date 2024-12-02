@@ -250,12 +250,12 @@ fn main() {
 
     #[cfg(feature = "shapefile")]
     if command == "unzipmtk" {
-        pullauta::shapefile::unzipmtk(&fs, &config, &tmpfolder, &args).unwrap();
+        pullauta::shapefile::unzip_and_render(&fs, &config, &tmpfolder, &args).unwrap();
     }
 
     #[cfg(feature = "shapefile")]
     if command == "mtkshaperender" {
-        pullauta::shapefile::mtkshaperender(&fs, &config, &tmpfolder).unwrap();
+        pullauta::shapefile::render(&fs, &config, &tmpfolder).unwrap();
     }
 
     if command == "xyz2contours" {
