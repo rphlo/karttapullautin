@@ -1200,9 +1200,10 @@ pub fn render(
     };
 
     img.write_to(
-        &mut fs
-            .create(format!("{}.png", filename))
-            .expect("could not save output png"),
+        &mut BufWriter::new(
+            fs.create(format!("{}.png", filename))
+                .expect("could not save output png"),
+        ),
         image::ImageFormat::Png,
     )
     .expect("could not write image");

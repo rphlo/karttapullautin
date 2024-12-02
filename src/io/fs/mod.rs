@@ -35,15 +35,15 @@ pub trait FileSystem: std::fmt::Debug {
     /// Copy a file.
     fn copy(&self, from: impl AsRef<Path>, to: impl AsRef<Path>) -> Result<(), io::Error>;
 
-    /// Write an image with the desired format.
-    fn read_image(
+    /// Read an image in PNG format.
+    fn read_image_png(
         &self,
         path: impl AsRef<Path>,
     ) -> Result<image::DynamicImage, image::error::ImageError> {
-        image::ImageReader::new(std::io::BufReader::new(
+        let mut reader = image::ImageReader::new(std::io::BufReader::new(
             self.open(path).expect("Could not open file"),
-        ))
-        .with_guessed_format()?
-        .decode()
+        ));
+        reader.set_format(image::ImageFormat::Png);
+        reader.decode()
     }
 }

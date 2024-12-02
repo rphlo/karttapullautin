@@ -4,7 +4,11 @@ use imageproc::filter::median_filter;
 use imageproc::rect::Rect;
 use log::info;
 use rustc_hash::FxHashMap as HashMap;
-use std::{error::Error, io::BufReader, path::Path};
+use std::{
+    error::Error,
+    io::{BufReader, BufWriter},
+    path::Path,
+};
 
 use crate::io::{bytes::FromToBytes, fs::FileSystem, heightmap::HeightMap, xyz::XyzInternalReader};
 
@@ -70,9 +74,10 @@ pub fn blocks(fs: &impl FileSystem, tmpfolder: &Path) -> Result<(), Box<dyn Erro
     }
 
     img2.write_to(
-        &mut fs
-            .create(tmpfolder.join("blocks2.png"))
-            .expect("error saving png"),
+        &mut BufWriter::new(
+            fs.create(tmpfolder.join("blocks2.png"))
+                .expect("error saving png"),
+        ),
         image::ImageFormat::Png,
     )
     .expect("error saving png");
@@ -85,9 +90,10 @@ pub fn blocks(fs: &impl FileSystem, tmpfolder: &Path) -> Result<(), Box<dyn Erro
     img = image::DynamicImage::ImageRgb8(median_filter(&img.to_rgb8(), filter_size, filter_size));
 
     img.write_to(
-        &mut fs
-            .create(tmpfolder.join("blocks.png"))
-            .expect("error saving png"),
+        &mut BufWriter::new(
+            fs.create(tmpfolder.join("blocks.png"))
+                .expect("error saving png"),
+        ),
         image::ImageFormat::Png,
     )
     .expect("error saving png");
