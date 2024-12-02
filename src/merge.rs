@@ -28,7 +28,9 @@ fn merge_png(
     for png in png_files.iter() {
         let filename = png.as_path().file_name().unwrap().to_str().unwrap();
         let full_filename = format!("{}/{}", batchoutfolder, filename);
-        let img = fs.read_image(&full_filename).expect("Opening image failed");
+        let img = fs
+            .read_image_png(&full_filename)
+            .expect("Opening image failed");
 
         let width = img.width() as f64;
         let height = img.height() as f64;
@@ -71,7 +73,7 @@ fn merge_png(
         let pgw = Path::new(&pgw);
         let filesize = fs.file_size(png).unwrap();
         if fs.exists(png) && fs.exists(pgw) && filesize > 0 {
-            let img = fs.read_image(png).expect("Opening image failed");
+            let img = fs.read_image_png(png).expect("Opening image failed");
             let width = img.width() as f64;
             let height = img.height() as f64;
 

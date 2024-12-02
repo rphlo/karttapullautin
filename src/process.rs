@@ -560,7 +560,7 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
             .expect("Could not copy file");
 
             let orig_img = fs
-                .read_image(format!("pullautus{}.png", thread))
+                .read_image_png(format!("pullautus{}.png", thread))
                 .expect("Opening image failed");
             let mut img = RgbImage::from_pixel(
                 ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
@@ -583,7 +583,7 @@ pub fn batch_process(conf: &Config, fs: &impl FileSystem, thread: &String) {
             .expect("could not save output png");
 
             let orig_img = fs
-                .read_image(format!("pullautus_depr{}.png", thread))
+                .read_image_png(format!("pullautus_depr{}.png", thread))
                 .expect("Opening image failed");
             let mut img = RgbImage::from_pixel(
                 ((maxx - minx) * 600.0 / 254.0 / scalefactor + 2.0) as u32,
