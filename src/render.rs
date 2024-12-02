@@ -493,11 +493,7 @@ pub fn draw_curves(
 
         x0 = xstart;
 
-        // Temporarily convert to HashMap for not having to go through all the logic below.
-        let mut xyz: HashMap<(usize, usize), f64> = HashMap::default();
-        for (x, y, h) in hmap.grid.iter() {
-            xyz.insert((x, y), h);
-        }
+        let xyz = &hmap.grid;
         y0 = hmap.maxy();
 
         let sxmax = hmap.grid.width() - 1;
@@ -508,29 +504,12 @@ pub fn draw_curves(
                 let mut det: f64 = 0.0;
                 let mut high: f64 = f64::MIN;
 
-                let mut temp =
-                    (xyz.get(&(i - 4, j)).unwrap_or(&0.0) - xyz.get(&(i, j)).unwrap_or(&0.0)).abs()
-                        / 4.0;
-                let temp2 =
-                    (xyz.get(&(i, j)).unwrap_or(&0.0) - xyz.get(&(i + 4, j)).unwrap_or(&0.0)).abs()
-                        / 4.0;
-                let det2 = (xyz.get(&(i, j)).unwrap_or(&0.0)
-                    - 0.5
-                        * (xyz.get(&(i - 4, j)).unwrap_or(&0.0)
-                            + xyz.get(&(i + 4, j)).unwrap_or(&0.0)))
-                .abs()
-                    - 0.05
-                        * (xyz.get(&(i - 4, j)).unwrap_or(&0.0)
-                            - xyz.get(&(i + 4, j)).unwrap_or(&0.0))
-                        .abs();
-                let mut porr = (((xyz.get(&(i - 6, j)).unwrap_or(&0.0)
-                    - xyz.get(&(i + 6, j)).unwrap_or(&0.0))
-                    / 12.0)
-                    .abs()
-                    - ((xyz.get(&(i - 3, j)).unwrap_or(&0.0)
-                        - xyz.get(&(i + 3, j)).unwrap_or(&0.0))
-                        / 6.0)
-                        .abs())
+                let mut temp = (xyz[(i - 4, j)] - xyz[(i, j)]).abs() / 4.0;
+                let temp2 = (xyz[(i, j)] - xyz[(i + 4, j)]).abs() / 4.0;
+                let det2 = (xyz[(i, j)] - 0.5 * (xyz[(i - 4, j)] + xyz[(i + 4, j)])).abs()
+                    - 0.05 * (xyz[(i - 4, j)] - xyz[(i + 4, j)]).abs();
+                let mut porr = (((xyz[(i - 6, j)] - xyz[(i + 6, j)]) / 12.0).abs()
+                    - ((xyz[(i - 3, j)] - xyz[(i + 3, j)]) / 6.0).abs())
                 .abs();
 
                 if det2 > det {
@@ -543,29 +522,12 @@ pub fn draw_curves(
                     high = temp;
                 }
 
-                let mut temp =
-                    (xyz.get(&(i, j - 4)).unwrap_or(&0.0) - xyz.get(&(i, j)).unwrap_or(&0.0)).abs()
-                        / 4.0;
-                let temp2 =
-                    (xyz.get(&(i, j)).unwrap_or(&0.0) - xyz.get(&(i, j - 4)).unwrap_or(&0.0)).abs()
-                        / 4.0;
-                let det2 = (xyz.get(&(i, j)).unwrap_or(&0.0)
-                    - 0.5
-                        * (xyz.get(&(i, j - 4)).unwrap_or(&0.0)
-                            + xyz.get(&(i, j + 4)).unwrap_or(&0.0)))
-                .abs()
-                    - 0.05
-                        * (xyz.get(&(i, j - 4)).unwrap_or(&0.0)
-                            - xyz.get(&(i, j + 4)).unwrap_or(&0.0))
-                        .abs();
-                let porr2 = (((xyz.get(&(i, j - 6)).unwrap_or(&0.0)
-                    - xyz.get(&(i, j + 6)).unwrap_or(&0.0))
-                    / 12.0)
-                    .abs()
-                    - ((xyz.get(&(i, j - 3)).unwrap_or(&0.0)
-                        - xyz.get(&(i, j + 3)).unwrap_or(&0.0))
-                        / 6.0)
-                        .abs())
+                let mut temp = (xyz[(i, j - 4)] - xyz[(i, j)]).abs() / 4.0;
+                let temp2 = (xyz[(i, j)] - xyz[(i, j - 4)]).abs() / 4.0;
+                let det2 = (xyz[(i, j)] - 0.5 * (xyz[(i, j - 4)] + xyz[(i, j + 4)])).abs()
+                    - 0.05 * (xyz[(i, j - 4)] - xyz[(i, j + 4)]).abs();
+                let porr2 = (((xyz[(i, j - 6)] - xyz[(i, j + 6)]) / 12.0).abs()
+                    - ((xyz[(i, j - 3)] - xyz[(i, j + 3)]) / 6.0).abs())
                 .abs();
 
                 if porr2 > porr {
@@ -581,31 +543,12 @@ pub fn draw_curves(
                     high = temp;
                 }
 
-                let mut temp = (xyz.get(&(i - 4, j - 4)).unwrap_or(&0.0)
-                    - xyz.get(&(i, j)).unwrap_or(&0.0))
-                .abs()
-                    / 5.6;
-                let temp2 = (xyz.get(&(i, j)).unwrap_or(&0.0)
-                    - xyz.get(&(i + 4, j + 4)).unwrap_or(&0.0))
-                .abs()
-                    / 5.6;
-                let det2 = (xyz.get(&(i, j)).unwrap_or(&0.0)
-                    - 0.5
-                        * (xyz.get(&(i - 4, j - 4)).unwrap_or(&0.0)
-                            + xyz.get(&(i + 4, j + 4)).unwrap_or(&0.0)))
-                .abs()
-                    - 0.05
-                        * (xyz.get(&(i - 4, j - 4)).unwrap_or(&0.0)
-                            - xyz.get(&(i + 4, j + 4)).unwrap_or(&0.0))
-                        .abs();
-                let porr2 = (((xyz.get(&(i - 6, j - 6)).unwrap_or(&0.0)
-                    - xyz.get(&(i + 6, j + 6)).unwrap_or(&0.0))
-                    / 17.0)
-                    .abs()
-                    - ((xyz.get(&(i - 3, j - 3)).unwrap_or(&0.0)
-                        - xyz.get(&(i + 3, j + 3)).unwrap_or(&0.0))
-                        / 8.5)
-                        .abs())
+                let mut temp = (xyz[(i - 4, j - 4)] - xyz[(i, j)]).abs() / 5.6;
+                let temp2 = (xyz[(i, j)] - xyz[(i + 4, j + 4)]).abs() / 5.6;
+                let det2 = (xyz[(i, j)] - 0.5 * (xyz[(i - 4, j - 4)] + xyz[(i + 4, j + 4)])).abs()
+                    - 0.05 * (xyz[(i - 4, j - 4)] - xyz[(i + 4, j + 4)]).abs();
+                let porr2 = (((xyz[(i - 6, j - 6)] - xyz[(i + 6, j + 6)]) / 17.0).abs()
+                    - ((xyz[(i - 3, j - 3)] - xyz[(i + 3, j + 3)]) / 8.5).abs())
                 .abs();
 
                 if porr2 > porr {
@@ -621,31 +564,12 @@ pub fn draw_curves(
                     high = temp;
                 }
 
-                let mut temp = (xyz.get(&(i - 4, j + 4)).unwrap_or(&0.0)
-                    - xyz.get(&(i, j)).unwrap_or(&0.0))
-                .abs()
-                    / 5.6;
-                let temp2 = (xyz.get(&(i, j)).unwrap_or(&0.0)
-                    - xyz.get(&(i + 4, j - 4)).unwrap_or(&0.0))
-                .abs()
-                    / 5.6;
-                let det2 = (xyz.get(&(i, j)).unwrap_or(&0.0)
-                    - 0.5
-                        * (xyz.get(&(i + 4, j - 4)).unwrap_or(&0.0)
-                            + xyz.get(&(i - 4, j + 4)).unwrap_or(&0.0)))
-                .abs()
-                    - 0.05
-                        * (xyz.get(&(i + 4, j - 4)).unwrap_or(&0.0)
-                            - xyz.get(&(i - 4, j + 4)).unwrap_or(&0.0))
-                        .abs();
-                let porr2 = (((xyz.get(&(i + 6, j - 6)).unwrap_or(&0.0)
-                    - xyz.get(&(i - 6, j + 6)).unwrap_or(&0.0))
-                    / 17.0)
-                    .abs()
-                    - ((xyz.get(&(i + 3, j - 3)).unwrap_or(&0.0)
-                        - xyz.get(&(i - 3, j + 3)).unwrap_or(&0.0))
-                        / 8.5)
-                        .abs())
+                let mut temp = (xyz[(i - 4, j + 4)] - xyz[(i, j)]).abs() / 5.6;
+                let temp2 = (xyz[(i, j)] - xyz[(i + 4, j - 4)]).abs() / 5.6;
+                let det2 = (xyz[(i, j)] - 0.5 * (xyz[(i + 4, j - 4)] + xyz[(i - 4, j + 4)])).abs()
+                    - 0.05 * (xyz[(i + 4, j - 4)] - xyz[(i - 4, j + 4)]).abs();
+                let porr2 = (((xyz[(i + 6, j - 6)] - xyz[(i - 6, j + 6)]) / 17.0).abs()
+                    - ((xyz[(i + 3, j - 3)] - xyz[(i - 3, j + 3)]) / 8.5).abs())
                 .abs();
 
                 if porr2 > porr {
