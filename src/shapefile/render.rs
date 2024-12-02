@@ -18,7 +18,7 @@ use crate::{
 use shapefile::dbase::{FieldValue, Record};
 use shapefile::{Shape, ShapeType};
 
-pub fn mtkshaperender(
+pub fn render(
     fs: &impl FileSystem,
     config: &Config,
     tmpfolder: &Path,

@@ -43,7 +43,7 @@ pub fn process_zip(
     {
         info!("Rendering shape files");
         timing.start_section("unzip and render shape files");
-        crate::shapefile::unzipmtk(fs, config, tmpfolder, filenames).unwrap();
+        crate::shapefile::unzip_and_render(fs, config, tmpfolder, filenames).unwrap();
     }
 
     info!("Rendering png map with depressions");
