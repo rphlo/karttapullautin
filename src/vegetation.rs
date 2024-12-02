@@ -393,7 +393,7 @@ pub fn makevege(
 
     if vege_bitmode {
         let g_img = fs
-            .read_image(tmpfolder.join("greens.png"))
+            .read_image_png(tmpfolder.join("greens.png"))
             .expect("Opening image failed");
         let mut g_img = g_img.to_rgb8();
         for pixel in g_img.pixels_mut() {
@@ -421,7 +421,7 @@ pub fn makevege(
             .expect("could not save output png");
 
         let y_img = fs
-            .read_image(tmpfolder.join("yellow.png"))
+            .read_image_png(tmpfolder.join("yellow.png"))
             .expect("Opening image failed");
         let mut y_img = y_img.to_rgba8();
         for pixel in y_img.pixels_mut() {
