@@ -39,9 +39,12 @@ pub fn process_zip(
         ..
     } = config;
 
-    info!("Rendering shape files");
-    timing.start_section("unzip and render shape files");
-    unzipmtk(fs, config, tmpfolder, filenames).unwrap();
+    #[cfg(feature = "shapefile")]
+    {
+        info!("Rendering shape files");
+        timing.start_section("unzip and render shape files");
+        crate::shapefile::unzip_and_render(fs, config, tmpfolder, filenames).unwrap();
+    }
 
     info!("Rendering png map with depressions");
     timing.start_section("Rendering png map with depressions");
@@ -69,36 +72,6 @@ pub fn process_zip(
     )
     .unwrap();
 
-    Ok(())
-}
-
-pub fn unzipmtk(
-    fs: &impl FileSystem,
-    config: &Config,
-    tmpfolder: &Path,
-    filenames: &[String],
-) -> Result<(), Box<dyn Error>> {
-    let low_file = tmpfolder.join("low.png");
-    if fs.exists(&low_file) {
-        fs.remove_file(low_file).unwrap();
-    }
-
-    let high_file = tmpfolder.join("high.png");
-    if fs.exists(&high_file) {
-        fs.remove_file(high_file).unwrap();
-    }
-
-    for zip_name in filenames.iter() {
-        info!("Opening zip file {}", zip_name);
-        let file = fs.open(zip_name).unwrap();
-        let mut archive = zip::ZipArchive::new(file).unwrap();
-        info!(
-            "Extracting {:?} MB from {zip_name}",
-            archive.decompressed_size().map(|s| s / 1024 / 1024)
-        );
-        archive.extract(tmpfolder).unwrap();
-        render::mtkshaperender(fs, config, tmpfolder).unwrap();
-    }
     Ok(())
 }
 

@@ -11,6 +11,10 @@ keywords = ["map", "mapping", "lidar", "orienteering", "laz", "las"]
 categories = ["command-line-utilities"]
 publish = false
 
+[features]
+default = ["shapefile"]
+shapefile = ["dep:skia-safe", "dep:shapefile", "dep:zip"]
+
 [dependencies]
 image = { version = "0.25", default-features = false, features = [
 	"rayon",
@@ -26,14 +30,14 @@ las = { version = "0.9", features = ["laz"] }
 rand = "0.8.5"
 rust-ini = "0.21"
 rustc-hash = "2.0"
-shapefile = "0.6.0"
-skia-safe = "0.78"
+shapefile = { version = "0.6.0", optional = true }
+skia-safe = { version = "0.78", optional = true }
 zip = { version = "2.2", default-features = false, features = [
 	"bzip2",
 	"deflate",
 	"deflate64",
 	"lzma",
 	"zstd",
-] }
+], optional = true }
 log = "0.4"
 env_logger = "0.11"

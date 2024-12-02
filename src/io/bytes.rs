@@ -21,7 +21,7 @@ impl FromToBytes for f64 {
 
 impl FromToBytes for usize {
     fn from_bytes<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
-        let mut buff = [0; 8];
+        let mut buff = [0; usize::BITS as usize / 8];
         reader.read_exact(&mut buff)?;
         Ok(usize::from_ne_bytes(buff))
     }
