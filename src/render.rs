@@ -679,24 +679,16 @@ pub fn draw_curves(
                 for i in 0..x.len() {
                     help[i] = false;
                     help2[i] = true;
-                    let xx = (((x[i] / 600.0 * 254.0 * scalefactor + x0) - xstart) / size).floor();
-                    let yy = (((-y[i] / 600.0 * 254.0 * scalefactor + y0) - ystart) / size).floor();
+                    let xx = (((x[i] / 600.0 * 254.0 * scalefactor + x0) - xstart) / size).floor()
+                        as usize;
+                    let yy = (((-y[i] / 600.0 * 254.0 * scalefactor + y0) - ystart) / size).floor()
+                        as usize;
                     if curvew != 1.5
                         || formline == 0.0
-                        || steepness.get(&(xx as usize, yy as usize)).unwrap_or(&0.0)
-                            < &formlinesteepness
-                        || steepness
-                            .get(&(xx as usize, yy as usize + 1))
-                            .unwrap_or(&0.0)
-                            < &formlinesteepness
-                        || steepness
-                            .get(&(xx as usize + 1, yy as usize))
-                            .unwrap_or(&0.0)
-                            < &formlinesteepness
-                        || steepness
-                            .get(&(xx as usize + 1, yy as usize + 1))
-                            .unwrap_or(&0.0)
-                            < &formlinesteepness
+                        || steepness.get(&(xx, yy)).unwrap_or(&0.0) < &formlinesteepness
+                        || steepness.get(&(xx, yy + 1)).unwrap_or(&0.0) < &formlinesteepness
+                        || steepness.get(&(xx + 1, yy)).unwrap_or(&0.0) < &formlinesteepness
+                        || steepness.get(&(xx + 1, yy + 1)).unwrap_or(&0.0) < &formlinesteepness
                     {
                         help[i] = true;
                     }

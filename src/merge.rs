@@ -579,13 +579,13 @@ pub fn smoothjoin(
 
     let mut steepness = Vec2D::new((xmax + 1) as usize, (ymax + 1) as usize, f64::NAN);
 
-    for i in 1..xmax {
-        for j in 1..ymax {
+    for i in 1..xmax as usize {
+        for j in 1..ymax as usize {
             let mut low: f64 = f64::MAX;
             let mut high: f64 = f64::MIN;
             for ii in i - 1..i + 2 {
                 for jj in j - 1..j + 2 {
-                    let tmp = xyz[(ii as usize, jj as usize)];
+                    let tmp = xyz[(ii, jj)];
                     if tmp < low {
                         low = tmp;
                     }
@@ -594,7 +594,7 @@ pub fn smoothjoin(
                     }
                 }
             }
-            steepness[(i as usize, j as usize)] = high - low;
+            steepness[(i, j)] = high - low;
         }
     }
     let input = tmpfolder.join("out.dxf");
@@ -794,10 +794,10 @@ pub fn smoothjoin(
                     let xm = el_x[l][m];
                     let ym = el_y[l][m];
                     if (xm - xstart) / size == ((xm - xstart) / size).floor() {
-                        let xx = ((xm - xstart) / size).floor() as u64;
-                        let yy = ((ym - ystart) / size).floor() as u64;
-                        let h1 = xyz[(xx as usize, yy as usize)];
-                        let h2 = xyz[(xx as usize, yy as usize + 1)];
+                        let xx = ((xm - xstart) / size).floor() as usize;
+                        let yy = ((ym - ystart) / size).floor() as usize;
+                        let h1 = xyz[(xx, yy)];
+                        let h2 = xyz[(xx, yy + 1)];
                         let h3 = h1 * (yy as f64 + 1.0 - (ym - ystart) / size)
                             + h2 * ((ym - ystart) / size - yy as f64);
                         h = (h3 / interval + 0.5).floor() * interval;
@@ -805,10 +805,10 @@ pub fn smoothjoin(
                     } else if m < el_x_len - 1
                         && (el_y[l][m] - ystart) / size == ((el_y[l][m] - ystart) / size).floor()
                     {
-                        let xx = ((xm - xstart) / size).floor() as u64;
-                        let yy = ((ym - ystart) / size).floor() as u64;
-                        let h1 = xyz[(xx as usize, yy as usize)];
-                        let h2 = xyz[(xx as usize + 1, yy as usize)];
+                        let xx = ((xm - xstart) / size).floor() as usize;
+                        let yy = ((ym - ystart) / size).floor() as usize;
+                        let h1 = xyz[(xx, yy)];
+                        let h2 = xyz[(xx + 1, yy)];
                         let h3 = h1 * (xx as f64 + 1.0 - (xm - xstart) / size)
                             + h2 * ((xm - xstart) / size - xx as f64);
                         h = (h3 / interval + 0.5).floor() * interval;
@@ -845,10 +845,10 @@ pub fn smoothjoin(
                     }
                     m += 1;
                 }
-                let foo_x = ((x_avg - xstart) / size).floor() as u64;
-                let foo_y = ((y_avg - ystart) / size).floor() as u64;
+                let foo_x = ((x_avg - xstart) / size).floor() as usize;
+                let foo_y = ((y_avg - ystart) / size).floor() as usize;
 
-                let h_center = xyz[(foo_x as usize, foo_y as usize)];
+                let h_center = xyz[(foo_x, foo_y)];
 
                 let mut hit = 0;
 
