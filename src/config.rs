@@ -82,6 +82,7 @@ pub struct Config {
     pub proceed_yellows: bool,
     pub med: u32,
     pub med2: u32,
+    pub medyellow: u32,
     pub water: u8,
     pub buildings: u8,
     pub waterele: f64,
@@ -99,6 +100,7 @@ pub struct Config {
     pub gaplength: f64,
     pub minimumgap: u32,
     pub label_depressions: bool,
+    pub remove_touching_contours: bool,
 }
 
 pub struct Zone {
@@ -298,6 +300,7 @@ impl Config {
         let proceed_yellows: bool = gs.get("yellow_smoothing").unwrap_or("0") == "1";
         let med: u32 = parse_typed(gs, "medianboxsize", 0);
         let med2: u32 = parse_typed(gs, "medianboxsize2", 0);
+        let medyellow: u32 = parse_typed(gs, "yellowmedianboxsize", 0);
         let water = parse_typed(gs, "waterclass", 0);
         let buildings = parse_typed(gs, "buildingsclass", 0);
         let waterele = parse_typed(gs, "waterelevation", -999999.0);
@@ -328,6 +331,8 @@ impl Config {
         let gaplength: f64 = parse_typed(gs, "gaplength", 12.0);
         let minimumgap: u32 = parse_typed(gs, "minimumgap", 30);
         let label_depressions: bool = gs.get("label_formlines_depressions").unwrap_or("0") == "1";
+        let remove_touching_contours: bool =
+            gs.get("remove_touching_contours").unwrap_or("0") == "1";
         Ok(Self {
             batch: gs.get("batch").unwrap() == "1",
             processes,
@@ -390,6 +395,7 @@ impl Config {
             proceed_yellows,
             med,
             med2,
+            medyellow,
             water,
             buildings,
             waterele,
@@ -403,6 +409,7 @@ impl Config {
             gaplength,
             minimumgap,
             label_depressions,
+            remove_touching_contours,
         })
     }
 }
